@@ -1,7 +1,7 @@
 package csproj
 
 import (
-	"ManifestParser/internal"
+	"github.com/Checkmarx/manifest-parser/internal"
 	"testing"
 )
 

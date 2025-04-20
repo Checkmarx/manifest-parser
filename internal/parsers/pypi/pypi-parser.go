@@ -1,7 +1,7 @@
 package pypi
 
 import (
-	"ManifestParser/internal"
+	"github.com/Checkmarx/manifest-parser/internal"
 	"os"
 	"strings"
 )

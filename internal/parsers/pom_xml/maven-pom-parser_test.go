@@ -1,8 +1,8 @@
 package pom_xml
 
 import (
-	"ManifestParser/internal"
-	"ManifestParser/parsers/dotnet_parser"
+	"github.com/Checkmarx/manifest-parser/internal"
+	"github.com/Checkmarx/manifest-parser/parsers/dotnet_parser"
 	"testing"
 )
 

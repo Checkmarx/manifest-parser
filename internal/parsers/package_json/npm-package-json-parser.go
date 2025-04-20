@@ -1,10 +1,10 @@
 package package_json
 
 import (
-	"ManifestParser/internal"
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"github.com/Checkmarx/manifest-parser/internal"
 	"os"
 	"strings"
 )

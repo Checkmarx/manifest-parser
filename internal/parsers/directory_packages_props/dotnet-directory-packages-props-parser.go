@@ -1,9 +1,9 @@
 package directory_packages_props
 
 import (
-	"ManifestParser/internal"
-	"ManifestParser/internal/parsers/csproj"
 	"encoding/xml"
+	"github.com/Checkmarx/manifest-parser/internal"
+	"github.com/Checkmarx/manifest-parser/internal/parsers/csproj"
 	"io"
 	"os"
 	"strings"

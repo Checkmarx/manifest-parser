@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"ManifestParser/internal"
+	"github.com/Checkmarx/manifest-parser/internal"
 )
 
 type Parser interface {

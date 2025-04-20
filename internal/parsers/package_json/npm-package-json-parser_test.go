@@ -1,7 +1,7 @@
 package package_json
 
 import (
-	"ManifestParser/internal"
+	"github.com/Checkmarx/manifest-parser/internal"
 	"testing"
 )
 

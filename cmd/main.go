@@ -1,8 +1,8 @@
 package main
 
 import (
-	"ManifestParser/pkg/parser"
 	"fmt"
+	"github.com/Checkmarx/manifest-parser/pkg/parser"
 	"os"
 )
 

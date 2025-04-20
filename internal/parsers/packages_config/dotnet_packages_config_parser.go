@@ -1,8 +1,8 @@
 package packages_config
 
 import (
-	"ManifestParser/internal"
 	"encoding/xml"
+	"github.com/Checkmarx/manifest-parser/internal"
 	"io"
 	"os"
 	"strings"

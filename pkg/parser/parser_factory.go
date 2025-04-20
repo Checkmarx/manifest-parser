@@ -1,12 +1,12 @@
 package parser
 
 import (
-	"ManifestParser/internal/parsers/csproj"
-	"ManifestParser/internal/parsers/directory_packages_props"
-	"ManifestParser/internal/parsers/package_json"
-	"ManifestParser/internal/parsers/packages_config"
-	"ManifestParser/internal/parsers/pom_xml"
-	"ManifestParser/internal/parsers/pypi"
+	"github.com/Checkmarx/manifest-parser/internal/parsers/csproj"
+	"github.com/Checkmarx/manifest-parser/internal/parsers/directory_packages_props"
+	"github.com/Checkmarx/manifest-parser/internal/parsers/package_json"
+	"github.com/Checkmarx/manifest-parser/internal/parsers/packages_config"
+	"github.com/Checkmarx/manifest-parser/internal/parsers/pom_xml"
+	"github.com/Checkmarx/manifest-parser/internal/parsers/pypi"
 )
 
 func ParsersFactory(manifest string) Parser {
