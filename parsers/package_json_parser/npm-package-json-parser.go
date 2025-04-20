@@ -1,6 +1,7 @@
-package parsers
+package package_json_parser
 
 import (
+	"ManifestParser/parsers"
 	"bufio"
 	"encoding/json"
 	"fmt"
@@ -10,7 +11,7 @@ import (
 
 type NpmPackageJsonParser struct{}
 
-func (p *NpmPackageJsonParser) Parse(manifestFile string) ([]Package, error) {
+func (p *NpmPackageJsonParser) Parse(manifestFile string) ([]parsers.Package, error) {
 	file, err := os.Open(manifestFile)
 	if err != nil {
 		return nil, err
@@ -52,11 +53,11 @@ func (p *NpmPackageJsonParser) Parse(manifestFile string) ([]Package, error) {
 	}
 
 	// Extract dependencies and devDependencies.
-	var packages []Package
+	var packages []parsers.Package
 	for _, key := range []string{"dependencies", "devDependencies"} {
 		if deps, ok := packageJSON[key].(map[string]interface{}); ok {
 			for pkg, ver := range deps {
-				packages = append(packages, Package{
+				packages = append(packages, parsers.Package{
 					PackageName: pkg,
 					Version:     fmt.Sprintf("%v", ver),
 					LineStart:   lineNumbers[pkg],

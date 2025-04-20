@@ -1,6 +1,10 @@
-package parsers
+package pypi_parser
 
-import "testing"
+import (
+	"ManifestParser/parsers"
+	"ManifestParser/parsers/dotnet_parser"
+	"testing"
+)
 
 func TestPypiParser(t *testing.T) {
 	parser := &PypiParser{}
@@ -10,7 +14,7 @@ func TestPypiParser(t *testing.T) {
 		t.Error("Error parsing manifest file: ", err)
 	}
 
-	expectedPackages := []Package{
+	expectedPackages := []parsers.Package{
 		{
 			PackageName: "awacs",
 			Version:     "2.3.0",
@@ -27,5 +31,5 @@ func TestPypiParser(t *testing.T) {
 		},
 	}
 
-	validatePackages(t, packages, expectedPackages)
+	dotnet_parser.validatePackages(t, packages, expectedPackages)
 }

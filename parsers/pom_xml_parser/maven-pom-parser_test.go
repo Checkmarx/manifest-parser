@@ -1,6 +1,10 @@
-package parsers
+package pom_xml_parser
 
-import "testing"
+import (
+	"ManifestParser/parsers"
+	"ManifestParser/parsers/dotnet_parser"
+	"testing"
+)
 
 func TestMavenPomParser_Parse(t *testing.T) {
 	parser := &MavenPomParser{}
@@ -10,7 +14,7 @@ func TestMavenPomParser_Parse(t *testing.T) {
 		t.Error("Error parsing manifest file: ", err)
 	}
 
-	expectedPackages := []Package{
+	expectedPackages := []parsers.Package{
 		{
 			PackageName: "org.eclipse.jetty.ee10:jetty-ee10-bom",
 			Version:     "12.0.10",
@@ -41,5 +45,5 @@ func TestMavenPomParser_Parse(t *testing.T) {
 		},
 	}
 
-	validatePackages(t, packages, expectedPackages)
+	dotnet_parser.validatePackages(t, packages, expectedPackages)
 }

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"ManifestParser/parsers"
+	"ManifestParser/pkg/parser"
 	"fmt"
 	"os"
 )
@@ -13,7 +13,7 @@ func main() {
 	}
 	manifestFile := os.Args[1]
 
-	parser := parsers.ParserFactory(manifestFile)
+	parser := parser.ParsersFactory(manifestFile)
 	manifest, err := parser.Parse(manifestFile)
 
 	if err != nil {

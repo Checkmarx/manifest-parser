@@ -1,6 +1,8 @@
-package parsers
+package packages_config_parser
 
 import (
+	"ManifestParser/parsers"
+	"ManifestParser/parsers/dotnet_parser/csproj_parser"
 	"testing"
 )
 
@@ -18,7 +20,7 @@ func TestDotnetPackagesConfigParser_Parse(t *testing.T) {
 	}
 
 	// Verify results
-	expected := []Package{
+	expected := []parsers.Package{
 		{
 			PackageName: "Newtonsoft.Json",
 			Version:     "13.0.1",
@@ -35,5 +37,5 @@ func TestDotnetPackagesConfigParser_Parse(t *testing.T) {
 		},
 	}
 
-	validatePackages(t, packages, expected)
+	csproj_parser.validatePackages(t, packages, expected)
 }

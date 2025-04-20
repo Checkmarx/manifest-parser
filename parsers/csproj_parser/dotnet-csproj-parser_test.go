@@ -1,6 +1,9 @@
-package parsers
+package csproj_parser
 
-import "testing"
+import (
+	"ManifestParser/parsers"
+	"testing"
+)
 
 func TestDotnetCsprojParser_ParseNoVersion(t *testing.T) {
 	parser := &DotnetCsprojParser{}
@@ -10,7 +13,7 @@ func TestDotnetCsprojParser_ParseNoVersion(t *testing.T) {
 		t.Error("Error parsing manifest file: ", err)
 	}
 
-	expectedPackages := []Package{
+	expectedPackages := []parsers.Package{
 		{
 			PackageName: "Autofac",
 			Version:     "",
@@ -27,7 +30,7 @@ func TestDotnetCsprojParser_ParseNoVersion(t *testing.T) {
 		},
 	}
 
-	validatePackages(t, packages, expectedPackages)
+	ValidatePackages(t, packages, expectedPackages)
 }
 
 func TestDotnetCsprojParser_Parse(t *testing.T) {
@@ -38,7 +41,7 @@ func TestDotnetCsprojParser_Parse(t *testing.T) {
 		t.Error("Error parsing manifest file: ", err)
 	}
 
-	expectedPackages := []Package{
+	expectedPackages := []parsers.Package{
 		{
 			PackageName: "Lumo.AwsInfra",
 			Version:     "4.0.1",
@@ -55,10 +58,10 @@ func TestDotnetCsprojParser_Parse(t *testing.T) {
 		},
 	}
 
-	validatePackages(t, packages, expectedPackages)
+	ValidatePackages(t, packages, expectedPackages)
 }
 
-func validatePackages(t *testing.T, packages []Package, expectedPackages []Package) {
+func ValidatePackages(t *testing.T, packages []parsers.Package, expectedPackages []parsers.Package) {
 	if len(packages) != len(expectedPackages) {
 		t.Errorf("Expected %d packages, got %d", len(expectedPackages), len(packages))
 	}

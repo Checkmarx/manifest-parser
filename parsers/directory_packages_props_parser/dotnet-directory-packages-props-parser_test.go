@@ -1,6 +1,10 @@
-package parsers
+package directory_packages_props_parser
 
-import "testing"
+import (
+	"ManifestParser/parsers"
+	"ManifestParser/parsers/dotnet_parser/csproj_parser"
+	"testing"
+)
 
 func TestDotnetDirectoryPackagesPropsParser_Parse(t *testing.T) {
 	parser := &DotnetDirectoryPackagesPropsParser{}
@@ -10,7 +14,7 @@ func TestDotnetDirectoryPackagesPropsParser_Parse(t *testing.T) {
 		t.Error("Error parsing manifest file: ", err)
 	}
 
-	expectedPackages := []Package{
+	expectedPackages := []parsers.Package{
 		{
 			PackageName: "Autofac",
 			Version:     "8.1.0",
@@ -34,5 +38,5 @@ func TestDotnetDirectoryPackagesPropsParser_Parse(t *testing.T) {
 		},
 	}
 
-	validatePackages(t, packages, expectedPackages)
+	csproj_parser.validatePackages(t, packages, expectedPackages)
 }
