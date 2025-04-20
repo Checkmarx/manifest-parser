@@ -7,3 +7,5 @@ import (
 type Parser interface {
 	Parse(manifestFile string) ([]internal.Package, error)
 }
+
+type

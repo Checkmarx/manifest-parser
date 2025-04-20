@@ -1,8 +1,9 @@
 package package_json
 
 import (
-	"github.com/Checkmarx/manifest-parser/internal"
 	"testing"
+
+	"github.com/Checkmarx/manifest-parser/internal"
 )
 
 func TestNpmPackageJsonParser_ParseParser_Parse(t *testing.T) {
@@ -37,5 +38,5 @@ func TestNpmPackageJsonParser_ParseParser_Parse(t *testing.T) {
 		},
 	}
 
-	dotnet_parser.validatePackages(t, packages, expectedPackages)
+	internal.ValidatePackages(t, packages, expectedPackages)
 }

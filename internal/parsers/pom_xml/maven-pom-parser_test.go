@@ -1,9 +1,9 @@
 package pom_xml
 
 import (
-	"github.com/Checkmarx/manifest-parser/internal"
-	"github.com/Checkmarx/manifest-parser/parsers/dotnet_parser"
 	"testing"
+
+	"github.com/Checkmarx/manifest-parser/internal"
 )
 
 func TestMavenPomParser_Parse(t *testing.T) {
@@ -45,5 +45,5 @@ func TestMavenPomParser_Parse(t *testing.T) {
 		},
 	}
 
-	dotnet_parser.validatePackages(t, packages, expectedPackages)
+	internal.ValidatePackages(t, packages, expectedPackages)
 }

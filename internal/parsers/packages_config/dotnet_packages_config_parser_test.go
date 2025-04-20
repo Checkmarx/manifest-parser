@@ -1,9 +1,9 @@
 package packages_config
 
 import (
-	"github.com/Checkmarx/manifest-parser/internal"
-	"github.com/Checkmarx/manifest-parser/parsers/dotnet_parser/csproj_parser"
 	"testing"
+
+	"github.com/Checkmarx/manifest-parser/internal"
 )
 
 func TestDotnetPackagesConfigParser_Parse(t *testing.T) {
@@ -37,5 +37,5 @@ func TestDotnetPackagesConfigParser_Parse(t *testing.T) {
 		},
 	}
 
-	csproj_parser.validatePackages(t, packages, expected)
+	internal.ValidatePackages(t, packages, expected)
 }

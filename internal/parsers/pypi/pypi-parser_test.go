@@ -1,9 +1,9 @@
 package pypi
 
 import (
-	"github.com/Checkmarx/manifest-parser/internal"
-	"github.com/Checkmarx/manifest-parser/parsers/dotnet_parser"
 	"testing"
+
+	"github.com/Checkmarx/manifest-parser/internal"
 )
 
 func TestPypiParser(t *testing.T) {
@@ -31,5 +31,5 @@ func TestPypiParser(t *testing.T) {
 		},
 	}
 
-	dotnet_parser.validatePackages(t, packages, expectedPackages)
+	internal.ValidatePackages(t, packages, expectedPackages)
 }
