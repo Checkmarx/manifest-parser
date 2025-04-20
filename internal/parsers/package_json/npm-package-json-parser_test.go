@@ -11,7 +11,7 @@ func TestNpmPackageJsonParser_ParseParser_Parse(t *testing.T) {
 	manifestFile := "../../../test/resources/package.json"
 	packages, err := parser.Parse(manifestFile)
 	if err != nil {
-		t.Error("Error parsing manifest file: ", err)
+		t.Error("Error parsing manifest file:  ", err)
 	}
 
 	expectedPackages := []internal.Package{
