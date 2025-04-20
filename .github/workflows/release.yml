@@ -7,6 +7,11 @@ on:
         required: false
         default: ''
         description: Optional version to release. If not provided, the next patch version will be used.
+      prerelease:
+        description: Mark this release as a prerelease
+        required: false
+        default: 'false'
+        type: boolean
 
 jobs:
   tag-and-release:
@@ -61,4 +66,4 @@ jobs:
           tag_name: ${{ env.new_version }}
           release_name: Release ${{ env.new_version }}
           draft: false
-          prerelease: false
+          prerelease: ${{ github.event.inputs.prerelease }}
