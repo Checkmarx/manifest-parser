@@ -13,17 +13,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4      
-      
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # need full history for tags
+
       - name: Determine new version
         id: newver
         run: |
-          if [ -n "${{ github.event.inputs.version }}" ]; then
-            echo "Using provided version: ${{ github.event.inputs.version }}"
-            echo "new_version=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+          raw="${{ github.event.inputs.version }}"
+
+          if [ -n "$raw" ]; then
+            # Ensure 'v' prefix
+            if [[ "$raw" == v* ]]; then
+              normalized="$raw"
+            else
+              normalized="v$raw"
+            fi
+            echo "Using provided version: $normalized"
+            echo "new_version=$normalized" >> $GITHUB_ENV
             exit 0
           fi
 
+          # No input: bump patch of latest tag
           git fetch --tags
           latest=$(git describe --tags --abbrev=0)
           bare=${latest#v}
