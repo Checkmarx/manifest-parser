@@ -49,12 +49,5 @@ jobs:
         with:
           tag_name: ${{ env.new_version }}
           release_name: Release ${{ env.new_version }}
-          body: |
-            Version: ${{ env.new_version }}
-            $(if [ -n "${{ github.event.inputs.version }}" ]; then
-                echo "- (manually specified)"
-              else
-                echo "- bumped patch from latest tag"
-              fi)
           draft: false
           prerelease: false
