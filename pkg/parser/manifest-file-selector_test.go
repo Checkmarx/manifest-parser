@@ -57,3 +57,12 @@ func TestManifestFileSelector_ExpectDotnetPackagesConfig(t *testing.T) {
 		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
 	}
 }
+
+func TestManifestFileSelector_ExpectGoMod(t *testing.T) {
+	manifest := "go.mod"
+	got := selectManifestFile(manifest)
+	want := GoMod
+	if got != want {
+		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+	}
+}
