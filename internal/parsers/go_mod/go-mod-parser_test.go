@@ -8,7 +8,7 @@ import (
 
 func TestGoModParser_Parse(t *testing.T) {
 	parser := &GoModParser{}
-	manifestFile := "/Users/benalvo/CxDev/workspace/Pheonix-workspace/manifest-parser/test/resources/test_go.mod"
+	manifestFile := "../../../test/resources/test_go.mod"
 	packages, err := parser.Parse(manifestFile)
 	if err != nil {
 		t.Error("Error parsing manifest file:  ", err)
