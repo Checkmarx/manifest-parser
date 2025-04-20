@@ -8,7 +8,7 @@ import (
 
 func TestDotnetDirectoryPackagesPropsParser_Parse(t *testing.T) {
 	parser := &DotnetDirectoryPackagesPropsParser{}
-	manifestFile := "../test/resources/Directory.Packages.props"
+	manifestFile := "../../../test/resources/Directory.Packages.props"
 	packages, err := parser.Parse(manifestFile)
 	if err != nil {
 		t.Error("Error parsing manifest file: ", err)

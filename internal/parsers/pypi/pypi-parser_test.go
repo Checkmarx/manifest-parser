@@ -8,7 +8,7 @@ import (
 
 func TestPypiParser(t *testing.T) {
 	parser := &PypiParser{}
-	manifestFile := "../test/resources/requirements.txt"
+	manifestFile := "../../../test/resources/requirements.txt"
 	packages, err := parser.Parse(manifestFile)
 	if err != nil {
 		t.Error("Error parsing manifest file: ", err)

@@ -8,7 +8,7 @@ import (
 
 func TestDotnetCsprojParser_ParseNoVersion(t *testing.T) {
 	parser := &DotnetCsprojParser{}
-	manifestFile := "../test/resources/Bootstrap.csproj"
+	manifestFile := "../../../test/resources/Bootstrap.csproj"
 	packages, err := parser.Parse(manifestFile)
 	if err != nil {
 		t.Error("Error parsing manifest file: ", err)
@@ -36,7 +36,7 @@ func TestDotnetCsprojParser_ParseNoVersion(t *testing.T) {
 
 func TestDotnetCsprojParser_Parse(t *testing.T) {
 	parser := &DotnetCsprojParser{}
-	manifestFile := "../test/resources/Gateway.csproj"
+	manifestFile := "../../../test/resources/Gateway.csproj"
 	packages, err := parser.Parse(manifestFile)
 	if err != nil {
 		t.Error("Error parsing manifest file: ", err)

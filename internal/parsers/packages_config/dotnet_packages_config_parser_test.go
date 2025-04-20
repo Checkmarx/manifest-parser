@@ -11,7 +11,7 @@ func TestDotnetPackagesConfigParser_Parse(t *testing.T) {
 	// Initialize parser
 	parser := &DotnetPackagesConfigParser{}
 
-	manifestFile := "../test/resources/packages.config"
+	manifestFile := "../../../test/resources/packages.config"
 
 	// Parse the test file
 	packages, err := parser.Parse(manifestFile)

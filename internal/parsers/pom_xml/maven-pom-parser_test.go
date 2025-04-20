@@ -8,7 +8,7 @@ import (
 
 func TestMavenPomParser_Parse(t *testing.T) {
 	parser := &MavenPomParser{}
-	manifestFile := "../test/resources/pom.xml"
+	manifestFile := "../../../test/resources/pom.xml"
 	packages, err := parser.Parse(manifestFile)
 	if err != nil {
 		t.Error("Error parsing manifest file: ", err)
