@@ -1,7 +1,7 @@
 package pom_xml
 
 import (
-	"ManifestParser/internal/parsers"
+	"ManifestParser/internal"
 	"ManifestParser/parsers/dotnet_parser"
 	"testing"
 )
@@ -14,7 +14,7 @@ func TestMavenPomParser_Parse(t *testing.T) {
 		t.Error("Error parsing manifest file: ", err)
 	}
 
-	expectedPackages := []parsers.Package{
+	expectedPackages := []internal.Package{
 		{
 			PackageName: "org.eclipse.jetty.ee10:jetty-ee10-bom",
 			Version:     "12.0.10",

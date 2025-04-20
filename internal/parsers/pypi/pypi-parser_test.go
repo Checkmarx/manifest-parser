@@ -1,7 +1,7 @@
 package pypi
 
 import (
-	"ManifestParser/internal/parsers"
+	"ManifestParser/internal"
 	"ManifestParser/parsers/dotnet_parser"
 	"testing"
 )
@@ -14,7 +14,7 @@ func TestPypiParser(t *testing.T) {
 		t.Error("Error parsing manifest file: ", err)
 	}
 
-	expectedPackages := []parsers.Package{
+	expectedPackages := []internal.Package{
 		{
 			PackageName: "awacs",
 			Version:     "2.3.0",

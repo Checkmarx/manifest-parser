@@ -1,7 +1,7 @@
 package package_json
 
 import (
-	"ManifestParser/internal/parsers"
+	"ManifestParser/internal"
 	"bufio"
 	"encoding/json"
 	"fmt"
@@ -11,7 +11,7 @@ import (
 
 type NpmPackageJsonParser struct{}
 
-func (p *NpmPackageJsonParser) Parse(manifestFile string) ([]parsers.Package, error) {
+func (p *NpmPackageJsonParser) Parse(manifestFile string) ([]internal.Package, error) {
 	file, err := os.Open(manifestFile)
 	if err != nil {
 		return nil, err
@@ -53,11 +53,11 @@ func (p *NpmPackageJsonParser) Parse(manifestFile string) ([]parsers.Package, er
 	}
 
 	// Extract dependencies and devDependencies.
-	var packages []parsers.Package
+	var packages []internal.Package
 	for _, key := range []string{"dependencies", "devDependencies"} {
 		if deps, ok := packageJSON[key].(map[string]interface{}); ok {
 			for pkg, ver := range deps {
-				packages = append(packages, parsers.Package{
+				packages = append(packages, internal.Package{
 					PackageName: pkg,
 					Version:     fmt.Sprintf("%v", ver),
 					LineStart:   lineNumbers[pkg],

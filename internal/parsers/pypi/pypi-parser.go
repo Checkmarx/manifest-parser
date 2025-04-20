@@ -1,21 +1,21 @@
 package pypi
 
 import (
-	"ManifestParser/internal/parsers"
+	"ManifestParser/internal"
 	"os"
 	"strings"
 )
 
 type PypiParser struct{}
 
-func (p *PypiParser) Parse(manifestFile string) ([]parsers.Package, error) {
+func (p *PypiParser) Parse(manifestFile string) ([]internal.Package, error) {
 	content, err := os.ReadFile(manifestFile)
 	if err != nil {
 		return nil, err
 	}
 
 	// parse the content of the requirements.txt file to get the packages
-	packages := make([]parsers.Package, 0)
+	packages := make([]internal.Package, 0)
 	lines := strings.Split(string(content), "\n")
 	for l, lineContent := range lines {
 		// split the lineContent by '=='
@@ -24,7 +24,7 @@ func (p *PypiParser) Parse(manifestFile string) ([]parsers.Package, error) {
 			//invalid package lineContent
 			continue
 		}
-		packages = append(packages, parsers.Package{
+		packages = append(packages, internal.Package{
 			PackageName: parts[0],
 			Version:     parts[1],
 			LineStart:   l + 1,

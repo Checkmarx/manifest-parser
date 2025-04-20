@@ -1,7 +1,7 @@
 package packages_config
 
 import (
-	"ManifestParser/internal/parsers"
+	"ManifestParser/internal"
 	"ManifestParser/parsers/dotnet_parser/csproj_parser"
 	"testing"
 )
@@ -20,7 +20,7 @@ func TestDotnetPackagesConfigParser_Parse(t *testing.T) {
 	}
 
 	// Verify results
-	expected := []parsers.Package{
+	expected := []internal.Package{
 		{
 			PackageName: "Newtonsoft.Json",
 			Version:     "13.0.1",

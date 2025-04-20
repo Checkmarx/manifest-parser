@@ -1,9 +1,9 @@
 package parser
 
 import (
-	"ManifestParser/internal/parsers"
+	"ManifestParser/internal"
 )
 
 type Parser interface {
-	Parse(manifestFile string) ([]parsers.Package, error)
+	Parse(manifestFile string) ([]internal.Package, error)
 }

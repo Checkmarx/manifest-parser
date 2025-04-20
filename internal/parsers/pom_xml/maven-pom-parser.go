@@ -1,7 +1,7 @@
 package pom_xml
 
 import (
-	"ManifestParser/internal/parsers"
+	"ManifestParser/internal"
 	"encoding/xml"
 	"io"
 	"os"
@@ -16,14 +16,14 @@ type Dependency struct {
 	Version    string `xml:"version"`
 }
 
-func (p *MavenPomParser) Parse(manifestFile string) ([]parsers.Package, error) {
+func (p *MavenPomParser) Parse(manifestFile string) ([]internal.Package, error) {
 	content, err := os.ReadFile(manifestFile)
 	if err != nil {
 		return nil, err
 	}
 
 	decoder := xml.NewDecoder(strings.NewReader(string(content)))
-	var packages []parsers.Package
+	var packages []internal.Package
 	var currentElement *Dependency
 
 	for {
@@ -46,7 +46,7 @@ func (p *MavenPomParser) Parse(manifestFile string) ([]parsers.Package, error) {
 					return nil, err
 				}
 				lineEnd, _ := decoder.InputPos()
-				packages = append(packages, parsers.Package{
+				packages = append(packages, internal.Package{
 					PackageName: currentElement.GroupId + ":" + currentElement.ArtifactId,
 					Version:     currentElement.Version,
 					LineStart:   lineStart,

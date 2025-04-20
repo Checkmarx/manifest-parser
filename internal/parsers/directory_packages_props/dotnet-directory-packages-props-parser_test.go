@@ -1,7 +1,7 @@
 package directory_packages_props
 
 import (
-	"ManifestParser/internal/parsers"
+	"ManifestParser/internal"
 	"ManifestParser/parsers/dotnet_parser/csproj_parser"
 	"testing"
 )
@@ -14,7 +14,7 @@ func TestDotnetDirectoryPackagesPropsParser_Parse(t *testing.T) {
 		t.Error("Error parsing manifest file: ", err)
 	}
 
-	expectedPackages := []parsers.Package{
+	expectedPackages := []internal.Package{
 		{
 			PackageName: "Autofac",
 			Version:     "8.1.0",

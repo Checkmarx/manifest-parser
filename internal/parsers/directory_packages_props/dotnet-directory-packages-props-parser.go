@@ -1,7 +1,7 @@
 package directory_packages_props
 
 import (
-	"ManifestParser/internal/parsers"
+	"ManifestParser/internal"
 	"ManifestParser/internal/parsers/csproj"
 	"encoding/xml"
 	"io"
@@ -11,14 +11,14 @@ import (
 
 type DotnetDirectoryPackagesPropsParser struct{}
 
-func (p *DotnetDirectoryPackagesPropsParser) Parse(manifestFile string) ([]parsers.Package, error) {
+func (p *DotnetDirectoryPackagesPropsParser) Parse(manifestFile string) ([]internal.Package, error) {
 	content, err := os.ReadFile(manifestFile)
 	if err != nil {
 		return nil, err
 	}
 
 	decoder := xml.NewDecoder(strings.NewReader(string(content)))
-	var packages []parsers.Package
+	var packages []internal.Package
 	var currentElement *csproj.PackageReference
 
 	for {
@@ -39,7 +39,7 @@ func (p *DotnetDirectoryPackagesPropsParser) Parse(manifestFile string) ([]parse
 					return nil, err
 				}
 				line, _ := decoder.InputPos()
-				packages = append(packages, parsers.Package{
+				packages = append(packages, internal.Package{
 					PackageName: currentElement.Include,
 					Version:     currentElement.Version,
 					LineStart:   line,

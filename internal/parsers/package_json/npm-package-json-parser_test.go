@@ -1,7 +1,7 @@
 package package_json
 
 import (
-	"ManifestParser/internal/parsers"
+	"ManifestParser/internal"
 	"testing"
 )
 
@@ -13,7 +13,7 @@ func TestNpmPackageJsonParser_ParseParser_Parse(t *testing.T) {
 		t.Error("Error parsing manifest file: ", err)
 	}
 
-	expectedPackages := []parsers.Package{
+	expectedPackages := []internal.Package{
 		{
 			PackageName: "@ant-design/icons",
 			Version:     "^2.1.1",

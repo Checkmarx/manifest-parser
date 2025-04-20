@@ -1,7 +1,7 @@
 package csproj
 
 import (
-	"ManifestParser/internal/parsers"
+	"ManifestParser/internal"
 	"encoding/xml"
 	"io"
 	"os"
@@ -15,14 +15,14 @@ type PackageReference struct {
 	Version string `xml:"Version,attr"`
 }
 
-func (p *DotnetCsprojParser) Parse(manifestFile string) ([]parsers.Package, error) {
+func (p *DotnetCsprojParser) Parse(manifestFile string) ([]internal.Package, error) {
 	content, err := os.ReadFile(manifestFile)
 	if err != nil {
 		return nil, err
 	}
 
 	decoder := xml.NewDecoder(strings.NewReader(string(content)))
-	var packages []parsers.Package
+	var packages []internal.Package
 	var currentElement *PackageReference
 
 	for {
@@ -43,7 +43,7 @@ func (p *DotnetCsprojParser) Parse(manifestFile string) ([]parsers.Package, erro
 					return nil, err
 				}
 				line, _ := decoder.InputPos()
-				packages = append(packages, parsers.Package{
+				packages = append(packages, internal.Package{
 					PackageName: currentElement.Include,
 					Version:     currentElement.Version,
 					LineStart:   line,

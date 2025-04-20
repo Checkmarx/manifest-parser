@@ -1,7 +1,7 @@
 package packages_config
 
 import (
-	"ManifestParser/internal/parsers"
+	"ManifestParser/internal"
 	"encoding/xml"
 	"io"
 	"os"
@@ -10,14 +10,14 @@ import (
 
 type DotnetPackagesConfigParser struct{}
 
-func (p *DotnetPackagesConfigParser) Parse(manifest string) ([]parsers.Package, error) {
+func (p *DotnetPackagesConfigParser) Parse(manifest string) ([]internal.Package, error) {
 	content, err := os.ReadFile(manifest)
 	if err != nil {
 		return nil, err
 	}
 
 	decoder := xml.NewDecoder(strings.NewReader(string(content)))
-	var packages []parsers.Package
+	var packages []internal.Package
 
 	for {
 		tok, err := decoder.Token()
@@ -43,7 +43,7 @@ func (p *DotnetPackagesConfigParser) Parse(manifest string) ([]parsers.Package, 
 				if id != "" && version != "" {
 					lineStart, _ := decoder.InputPos()
 					lineEnd := lineStart
-					packages = append(packages, parsers.Package{
+					packages = append(packages, internal.Package{
 						PackageName: id,
 						Version:     version,
 						LineStart:   lineStart,

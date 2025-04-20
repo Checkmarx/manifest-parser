@@ -1,4 +1,4 @@
-package parsers
+package internal
 
 type Package struct {
 	PackageName string
