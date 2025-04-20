@@ -3,6 +3,7 @@ package parser
 import (
 	"github.com/Checkmarx/manifest-parser/internal/parsers/csproj"
 	"github.com/Checkmarx/manifest-parser/internal/parsers/directory_packages_props"
+	"github.com/Checkmarx/manifest-parser/internal/parsers/go_mod"
 	"github.com/Checkmarx/manifest-parser/internal/parsers/package_json"
 	"github.com/Checkmarx/manifest-parser/internal/parsers/packages_config"
 	"github.com/Checkmarx/manifest-parser/internal/parsers/pom_xml"
@@ -25,6 +26,8 @@ func ParsersFactory(manifest string) Parser {
 		return &package_json.NpmPackageJsonParser{}
 	case DotnetPackagesConfig:
 		return &packages_config.DotnetPackagesConfigParser{}
+	case GoMod:
+		return &go_mod.GoModParser{}
 	default:
 		return nil
 	}

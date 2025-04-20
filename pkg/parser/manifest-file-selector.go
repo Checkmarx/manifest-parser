@@ -14,6 +14,7 @@ const (
 	DotnetDirectoryPackagesProps
 	DotnetPackagesConfig
 	MavenPom
+	GoMod
 )
 
 // selectManifestFile a method to select a manifest file type by its name
@@ -48,6 +49,10 @@ func selectManifestFile(manifest string) Manifest {
 
 	if manifestFileName == "packages.config" {
 		return DotnetPackagesConfig
+	}
+
+	if manifestFileName == "go.mod" {
+		return GoMod
 	}
 
 	return -1
