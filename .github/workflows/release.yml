@@ -1,0 +1,60 @@
+name: Release Manifest Parser Go module new version
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        required: false
+        default: ''
+        description: Optional version to release. If not provided, the next patch version will be used.
+
+jobs:
+  tag-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4      
+      
+      - name: Determine new version
+        id: newver
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            echo "Using provided version: ${{ github.event.inputs.version }}"
+            echo "new_version=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+            exit 0
+          fi
+
+          git fetch --tags
+          latest=$(git describe --tags --abbrev=0)
+          bare=${latest#v}
+
+          IFS=. read major minor patch <<< "$bare"
+          patch=$((patch + 1))
+          new="v${major}.${minor}.${patch}"
+
+          echo "Latest tag is ${latest}, bumping patch to ${new}"
+          echo "new_version=${new}" >> $GITHUB_ENV
+
+      - name: Create and push Git tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "${{ env.new_version }}" -m "Release ${{ env.new_version }}"
+          git push origin "${{ env.new_version }}"
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ env.new_version }}
+          release_name: Release ${{ env.new_version }}
+          body: |
+            Version: ${{ env.new_version }}
+            $(if [ -n "${{ github.event.inputs.version }}" ]; then
+                echo "- (manually specified)"
+              else
+                echo "- bumped patch from latest tag"
+              fi)
+          draft: false
+          prerelease: false
