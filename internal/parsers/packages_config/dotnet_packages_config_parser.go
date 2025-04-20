@@ -1,7 +1,7 @@
-package packages_config_parser
+package packages_config
 
 import (
-	"ManifestParser/parsers"
+	"ManifestParser/internal/parsers"
 	"encoding/xml"
 	"io"
 	"os"

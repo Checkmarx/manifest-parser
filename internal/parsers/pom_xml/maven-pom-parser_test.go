@@ -1,7 +1,7 @@
-package pom_xml_parser
+package pom_xml
 
 import (
-	"ManifestParser/parsers"
+	"ManifestParser/internal/parsers"
 	"ManifestParser/parsers/dotnet_parser"
 	"testing"
 )

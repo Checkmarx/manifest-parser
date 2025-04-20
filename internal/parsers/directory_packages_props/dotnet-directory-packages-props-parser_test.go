@@ -1,7 +1,7 @@
-package directory_packages_props_parser
+package directory_packages_props
 
 import (
-	"ManifestParser/parsers"
+	"ManifestParser/internal/parsers"
 	"ManifestParser/parsers/dotnet_parser/csproj_parser"
 	"testing"
 )

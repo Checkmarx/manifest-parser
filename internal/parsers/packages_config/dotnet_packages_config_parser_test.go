@@ -1,7 +1,7 @@
-package packages_config_parser
+package packages_config
 
 import (
-	"ManifestParser/parsers"
+	"ManifestParser/internal/parsers"
 	"ManifestParser/parsers/dotnet_parser/csproj_parser"
 	"testing"
 )

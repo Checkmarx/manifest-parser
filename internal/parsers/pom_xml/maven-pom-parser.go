@@ -1,17 +1,22 @@
-package directory_packages_props_parser
+package pom_xml
 
 import (
-	"ManifestParser/parsers"
-	"ManifestParser/parsers/csproj_parser"
+	"ManifestParser/internal/parsers"
 	"encoding/xml"
 	"io"
 	"os"
 	"strings"
 )
 
-type DotnetDirectoryPackagesPropsParser struct{}
+type MavenPomParser struct{}
 
-func (p *DotnetDirectoryPackagesPropsParser) Parse(manifestFile string) ([]parsers.Package, error) {
+type Dependency struct {
+	GroupId    string `xml:"groupId"`
+	ArtifactId string `xml:"artifactId"`
+	Version    string `xml:"version"`
+}
+
+func (p *MavenPomParser) Parse(manifestFile string) ([]parsers.Package, error) {
 	content, err := os.ReadFile(manifestFile)
 	if err != nil {
 		return nil, err
@@ -19,7 +24,7 @@ func (p *DotnetDirectoryPackagesPropsParser) Parse(manifestFile string) ([]parse
 
 	decoder := xml.NewDecoder(strings.NewReader(string(content)))
 	var packages []parsers.Package
-	var currentElement *csproj_parser.PackageReference
+	var currentElement *Dependency
 
 	for {
 		tok, err := decoder.Token()
@@ -32,18 +37,20 @@ func (p *DotnetDirectoryPackagesPropsParser) Parse(manifestFile string) ([]parse
 
 		switch elem := tok.(type) {
 		case xml.StartElement:
-			if elem.Name.Local == "PackageVersion" {
-				currentElement = &csproj_parser.PackageReference{}
+			if elem.Name.Local == "dependency" {
+				currentElement = &Dependency{}
+				lineStart, _ := decoder.InputPos()
+
 				err := decoder.DecodeElement(currentElement, &elem)
 				if err != nil {
 					return nil, err
 				}
-				line, _ := decoder.InputPos()
+				lineEnd, _ := decoder.InputPos()
 				packages = append(packages, parsers.Package{
-					PackageName: currentElement.Include,
+					PackageName: currentElement.GroupId + ":" + currentElement.ArtifactId,
 					Version:     currentElement.Version,
-					LineStart:   line,
-					LineEnd:     line,
+					LineStart:   lineStart,
+					LineEnd:     lineEnd,
 					Filepath:    manifestFile,
 				})
 			}

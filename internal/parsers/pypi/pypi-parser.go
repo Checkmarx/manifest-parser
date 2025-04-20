@@ -1,7 +1,7 @@
-package pypi_parser
+package pypi
 
 import (
-	"ManifestParser/parsers"
+	"ManifestParser/internal/parsers"
 	"os"
 	"strings"
 )

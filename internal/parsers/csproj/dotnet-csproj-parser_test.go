@@ -1,7 +1,7 @@
-package csproj_parser
+package csproj
 
 import (
-	"ManifestParser/parsers"
+	"ManifestParser/internal/parsers"
 	"testing"
 )
 

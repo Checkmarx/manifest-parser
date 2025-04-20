@@ -1,7 +1,7 @@
-package package_json_parser
+package package_json
 
 import (
-	"ManifestParser/parsers"
+	"ManifestParser/internal/parsers"
 	"bufio"
 	"encoding/json"
 	"fmt"
