@@ -1,4 +1,4 @@
-package packages_config
+package config
 
 import (
 	"encoding/xml"
