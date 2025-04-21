@@ -1,4 +1,4 @@
-package pom_xml
+package xml
 
 import (
 	"testing"

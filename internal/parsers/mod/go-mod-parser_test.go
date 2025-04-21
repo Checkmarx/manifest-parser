@@ -1,4 +1,4 @@
-package go_mod
+package mod
 
 import (
 	"testing"

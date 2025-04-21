@@ -1,8 +1,8 @@
-package go_mod
+package mod
 
 import (
-	"log"
 	"os"
+	"path/filepath"
 
 	"golang.org/x/mod/modfile"
 
@@ -14,13 +14,14 @@ type GoModParser struct{}
 
 // Parse parses the Go module file and returns a list of packages.
 func (p *GoModParser) Parse(manifest string) ([]internal.Package, error) {
-	data, err := os.ReadFile(manifest)
+	cleanPath := filepath.Clean(manifest)
+	data, err := os.ReadFile(cleanPath)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	mf, err := modfile.Parse(manifest, data, nil)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	var packages []internal.Package
 	for _, req := range mf.Require {

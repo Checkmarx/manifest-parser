@@ -1,4 +1,4 @@
-package directory_packages_props
+package props
 
 import (
 	"testing"
