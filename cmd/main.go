@@ -1,26 +1,34 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
-	"github.com/Checkmarx/manifest-parser/pkg/parser"
+	"log"
 	"os"
+
+	"github.com/Checkmarx/manifest-parser/pkg/parser"
 )
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("Usage: go run main.go <manifest file>")
-		return
+		fmt.Printf("Usage: %s <manifest file>\n", os.Args[0])
+		os.Exit(1)
 	}
 	manifestFile := os.Args[1]
 
-	parser := parser.ParsersFactory(manifestFile)
-	manifest, err := parser.Parse(manifestFile)
-
-	if err != nil {
-		fmt.Println("Error parsing manifest file: ", err)
-		return
+	p := parser.ParsersFactory(manifestFile)
+	if p == nil {
+		log.Fatalf("Unsupported manifest type: %s", manifestFile)
 	}
 
-	// print the packages as json
-	fmt.Println(manifest)
+	pkgs, err := p.Parse(manifestFile)
+	if err != nil {
+		log.Fatalf("Error parsing manifest file: %v", err)
+	}
+
+	data, err := json.MarshalIndent(pkgs, "", "  ")
+	if err != nil {
+		log.Fatalf("Failed to marshal packages to JSON: %v", err)
+	}
+	fmt.Println(string(data))
 }

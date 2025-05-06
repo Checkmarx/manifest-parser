@@ -1,9 +1,12 @@
 package internal
 
 type Package struct {
-	PackageName string
-	Version     string
-	Filepath    string
-	LineStart   int
-	LineEnd     int
+	PackageManager string
+	PackageName    string
+	Version        string
+	Filepath       string
+	LineStart      int
+	LineEnd        int
+	StartIndex     int
+	EndIndex       int
 }

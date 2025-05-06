@@ -1,35 +1,134 @@
 package pypi
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/Checkmarx/manifest-parser/internal"
 )
 
-func TestPypiParser(t *testing.T) {
+// comparePackages is a helper to assert Package equality in tests.
+func comparePackages(t *testing.T, got, want internal.Package) {
+	if got.PackageManager != want.PackageManager {
+		t.Errorf("PackageManager: got %q, want %q", got.PackageManager, want.PackageManager)
+	}
+	if got.PackageName != want.PackageName {
+		t.Errorf("PackageName: got %q, want %q", got.PackageName, want.PackageName)
+	}
+	if got.Version != want.Version {
+		t.Errorf("Version: got %q, want %q", got.Version, want.Version)
+	}
+	if got.Filepath != want.Filepath {
+		t.Errorf("Filepath: got %q, want %q", got.Filepath, want.Filepath)
+	}
+	if got.LineStart != want.LineStart || got.LineEnd != want.LineEnd {
+		t.Errorf("LineStart/LineEnd: got %d/%d, want %d/%d", got.LineStart, got.LineEnd, want.LineStart, want.LineEnd)
+	}
+	if got.StartIndex != want.StartIndex || got.EndIndex != want.EndIndex {
+		t.Errorf("StartIndex/EndIndex: got %d/%d, want %d/%d", got.StartIndex, got.EndIndex, want.StartIndex, want.EndIndex)
+	}
+}
+
+func TestParseExactVersion(t *testing.T) {
+	content := "flask==1.1.2\n"
+	tmpDir := t.TempDir()
+	filePath := filepath.Join(tmpDir, "requirements.txt")
+	os.WriteFile(filePath, []byte(content), 0644)
+
 	parser := &PypiParser{}
-	manifestFile := "../../../test/resources/requirements.txt"
-	packages, err := parser.Parse(manifestFile)
+	pkgs, err := parser.Parse(filePath)
 	if err != nil {
-		t.Error("Error parsing manifest file: ", err)
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(pkgs) != 1 {
+		t.Fatalf("expected 1 package, got %d", len(pkgs))
 	}
 
-	expectedPackages := []internal.Package{
-		{
-			PackageName: "awacs",
-			Version:     "2.3.0",
-			LineStart:   1,
-			LineEnd:     1,
-			Filepath:    manifestFile,
-		},
-		{
-			PackageName: "awscli",
-			Version:     "1.32.70",
-			LineStart:   2,
-			LineEnd:     2,
-			Filepath:    manifestFile,
-		},
+	got := pkgs[0]
+	want := internal.Package{
+		PackageManager: "pypi",
+		PackageName:    "flask",
+		Version:        "1.1.2",
+		Filepath:       filePath,
+		LineStart:      1,
+		LineEnd:        1,
+		StartIndex:     1,
+		EndIndex:       5,
+	}
+	comparePackages(t, got, want)
+}
+
+func TestParseInlineComment(t *testing.T) {
+	content := "requests==2.25.1  # pinned for compatibility\n"
+	tmpDir := t.TempDir()
+	filePath := filepath.Join(tmpDir, "requirements.txt")
+	os.WriteFile(filePath, []byte(content), 0644)
+
+	parser := &PypiParser{}
+	pkgs, err := parser.Parse(filePath)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(pkgs) != 1 {
+		t.Fatalf("expected 1 package, got %d", len(pkgs))
 	}
 
-	internal.ValidatePackages(t, packages, expectedPackages)
+	got := pkgs[0]
+	want := internal.Package{
+		PackageManager: "pypi",
+		PackageName:    "requests",
+		Version:        "2.25.1",
+		Filepath:       filePath,
+		LineStart:      1,
+		LineEnd:        1,
+		StartIndex:     1,
+		EndIndex:       8,
+	}
+	comparePackages(t, got, want)
+}
+
+func TestParseVersionRange(t *testing.T) {
+	content := "django>=3.0,<4.0\n"
+	tmpDir := t.TempDir()
+	filePath := filepath.Join(tmpDir, "requirements.txt")
+	os.WriteFile(filePath, []byte(content), 0644)
+
+	parser := &PypiParser{}
+	pkgs, err := parser.Parse(filePath)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(pkgs) != 1 {
+		t.Fatalf("expected 1 package, got %d", len(pkgs))
+	}
+
+	got := pkgs[0]
+	want := internal.Package{
+		PackageManager: "pypi",
+		PackageName:    "django",
+		Version:        "latest",
+		Filepath:       filePath,
+		LineStart:      1,
+		LineEnd:        1,
+		StartIndex:     1,
+		EndIndex:       6,
+	}
+	comparePackages(t, got, want)
+}
+
+func TestParseSkipCommentLine(t *testing.T) {
+	content := "# just a comment\n"
+	tmpDir := t.TempDir()
+	filePath := filepath.Join(tmpDir, "requirements.txt")
+	os.WriteFile(filePath, []byte(content), 0644)
+
+	parser := &PypiParser{}
+	pkgs, err := parser.Parse(filePath)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(pkgs) != 0 {
+		t.Fatalf("expected 0 packages, got %d", len(pkgs))
+	}
 }
