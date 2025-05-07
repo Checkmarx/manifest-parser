@@ -54,12 +54,41 @@ func TestParseExactVersion(t *testing.T) {
 		LineStart:      1,
 		LineEnd:        1,
 		StartIndex:     1,
-		EndIndex:       5,
+		EndIndex:       12,
 	}
 	comparePackages(t, got, want)
 }
 
 func TestParseInlineComment(t *testing.T) {
+	content := "   requests==2.25.1  # pinned for compatibility\n"
+	tmpDir := t.TempDir()
+	filePath := filepath.Join(tmpDir, "requirements.txt")
+	os.WriteFile(filePath, []byte(content), 0644)
+
+	parser := &PypiParser{}
+	pkgs, err := parser.Parse(filePath)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(pkgs) != 1 {
+		t.Fatalf("expected 1 package, got %d", len(pkgs))
+	}
+
+	got := pkgs[0]
+	want := internal.Package{
+		PackageManager: "pypi",
+		PackageName:    "requests",
+		Version:        "2.25.1",
+		Filepath:       filePath,
+		LineStart:      1,
+		LineEnd:        1,
+		StartIndex:     4,
+		EndIndex:       19,
+	}
+	comparePackages(t, got, want)
+}
+
+func TestParseRequirementLineEndIndex(t *testing.T) {
 	content := "requests==2.25.1  # pinned for compatibility\n"
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "requirements.txt")
@@ -83,7 +112,7 @@ func TestParseInlineComment(t *testing.T) {
 		LineStart:      1,
 		LineEnd:        1,
 		StartIndex:     1,
-		EndIndex:       8,
+		EndIndex:       16,
 	}
 	comparePackages(t, got, want)
 }
@@ -112,7 +141,7 @@ func TestParseVersionRange(t *testing.T) {
 		LineStart:      1,
 		LineEnd:        1,
 		StartIndex:     1,
-		EndIndex:       6,
+		EndIndex:       16,
 	}
 	comparePackages(t, got, want)
 }

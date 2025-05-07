@@ -77,7 +77,13 @@ func (p *PypiParser) Parse(manifestFile string) ([]internal.Package, error) {
 		}
 		// Go uses 0-based offsets; convert to 1-based columns
 		startCol := idx + 1
-		endCol := startCol + len(pkgName) - 1
+
+		// Remove the comment part (everything after '#')
+		withoutComment := strings.SplitN(raw, "#", 2)[0]
+		// Trim only trailing spaces (right side)
+		trimmedLine := strings.TrimRight(withoutComment, " ")
+
+		endCol := len(trimmedLine)
 
 		packages = append(packages, internal.Package{
 			PackageManager: "pypi",
