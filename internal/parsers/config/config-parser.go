@@ -1,13 +1,13 @@
 package config
 
 import (
-	"github.com/Checkmarx/manifest-parser/internal"
+	"github.com/Checkmarx/manifest-parser/pkg/models"
 )
 
 type ConfigParser struct{}
 
-func (p *ConfigParser) Parse(manifestFile string) ([]internal.Package, error) {
-	return []internal.Package{
+func (p *ConfigParser) Parse(manifestFile string) ([]models.Package, error) {
+	return []models.Package{
 		{
 			PackageManager: "Dotnet - config",
 			PackageName:    "Hi, I'm a configuration file",

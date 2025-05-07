@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/Checkmarx/manifest-parser/pkg/models"
 	"testing"
 
 	"github.com/Checkmarx/manifest-parser/internal"
@@ -20,7 +21,7 @@ func TestDotnetPackagesConfigParser_Parse(t *testing.T) {
 	}
 
 	// Verify results
-	expected := []internal.Package{
+	expected := []models.Package{
 		{
 			PackageName: "Newtonsoft.Json",
 			Version:     "13.0.1",

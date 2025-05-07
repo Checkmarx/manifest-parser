@@ -1,15 +1,14 @@
 package pypi
 
 import (
+	"github.com/Checkmarx/manifest-parser/pkg/models"
 	"os"
 	"path/filepath"
 	"testing"
-
-	"github.com/Checkmarx/manifest-parser/internal"
 )
 
 // comparePackages is a helper to assert Package equality in tests.
-func comparePackages(t *testing.T, got, want internal.Package) {
+func comparePackages(t *testing.T, got, want models.Package) {
 	if got.PackageManager != want.PackageManager {
 		t.Errorf("PackageManager: got %q, want %q", got.PackageManager, want.PackageManager)
 	}
@@ -46,7 +45,7 @@ func TestParseExactVersion(t *testing.T) {
 	}
 
 	got := pkgs[0]
-	want := internal.Package{
+	want := models.Package{
 		PackageManager: "pypi",
 		PackageName:    "flask",
 		Version:        "1.1.2",
@@ -75,7 +74,7 @@ func TestParseInlineComment(t *testing.T) {
 	}
 
 	got := pkgs[0]
-	want := internal.Package{
+	want := models.Package{
 		PackageManager: "pypi",
 		PackageName:    "requests",
 		Version:        "2.25.1",
@@ -104,7 +103,7 @@ func TestParseRequirementLineEndIndex(t *testing.T) {
 	}
 
 	got := pkgs[0]
-	want := internal.Package{
+	want := models.Package{
 		PackageManager: "pypi",
 		PackageName:    "requests",
 		Version:        "2.25.1",
@@ -133,7 +132,7 @@ func TestParseVersionRange(t *testing.T) {
 	}
 
 	got := pkgs[0]
-	want := internal.Package{
+	want := models.Package{
 		PackageManager: "pypi",
 		PackageName:    "django",
 		Version:        "latest",

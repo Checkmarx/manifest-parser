@@ -2,8 +2,8 @@ package props
 
 import (
 	"encoding/xml"
-	"github.com/Checkmarx/manifest-parser/internal"
 	"github.com/Checkmarx/manifest-parser/internal/parsers/csproj"
+	"github.com/Checkmarx/manifest-parser/pkg/models"
 	"io"
 	"os"
 	"strings"
@@ -11,14 +11,14 @@ import (
 
 type DotnetDirectoryPackagesPropsParser struct{}
 
-func (p *DotnetDirectoryPackagesPropsParser) Parse(manifestFile string) ([]internal.Package, error) {
+func (p *DotnetDirectoryPackagesPropsParser) Parse(manifestFile string) ([]models.Package, error) {
 	content, err := os.ReadFile(manifestFile)
 	if err != nil {
 		return nil, err
 	}
 
 	decoder := xml.NewDecoder(strings.NewReader(string(content)))
-	var packages []internal.Package
+	var packages []models.Package
 	var currentElement *csproj.PackageReference
 
 	for {
@@ -39,7 +39,7 @@ func (p *DotnetDirectoryPackagesPropsParser) Parse(manifestFile string) ([]inter
 					return nil, err
 				}
 				line, _ := decoder.InputPos()
-				packages = append(packages, internal.Package{
+				packages = append(packages, models.Package{
 					PackageName: currentElement.Include,
 					Version:     currentElement.Version,
 					LineStart:   line,

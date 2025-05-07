@@ -1,13 +1,13 @@
 package mod
 
 import (
-	"github.com/Checkmarx/manifest-parser/internal"
+	"github.com/Checkmarx/manifest-parser/pkg/models"
 )
 
 type ModParser struct{}
 
-func (p *ModParser) Parse(manifestFile string) ([]internal.Package, error) {
-	return []internal.Package{
+func (p *ModParser) Parse(manifestFile string) ([]models.Package, error) {
+	return []models.Package{
 		{
 			PackageManager: "go - go.mod",
 			PackageName:    "Hi, I'm a Go module file",

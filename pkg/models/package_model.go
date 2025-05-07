@@ -1,4 +1,4 @@
-package internal
+package models
 
 type Package struct {
 	PackageManager string

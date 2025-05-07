@@ -1,13 +1,13 @@
 package props
 
 import (
-	"github.com/Checkmarx/manifest-parser/internal"
+	"github.com/Checkmarx/manifest-parser/pkg/models"
 )
 
 type PropsParser struct{}
 
-func (p *PropsParser) Parse(manifestFile string) ([]internal.Package, error) {
-	return []internal.Package{
+func (p *PropsParser) Parse(manifestFile string) ([]models.Package, error) {
+	return []models.Package{
 		{
 			PackageManager: "Maven - pom.xml",
 			PackageName:    "Hi, I'm a Maven properties file",

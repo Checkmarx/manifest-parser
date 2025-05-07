@@ -2,23 +2,22 @@ package pypi
 
 import (
 	"bufio"
+	"github.com/Checkmarx/manifest-parser/pkg/models"
 	"os"
 	"strings"
-
-	"github.com/Checkmarx/manifest-parser/internal"
 )
 
 // PypiParser implements parsing of requirements.txt
 type PypiParser struct{}
 
-func (p *PypiParser) Parse(manifestFile string) ([]internal.Package, error) {
+func (p *PypiParser) Parse(manifestFile string) ([]models.Package, error) {
 	file, err := os.Open(manifestFile)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
 
-	var packages []internal.Package
+	var packages []models.Package
 	scanner := bufio.NewScanner(file)
 	lineNum := 0
 
@@ -85,7 +84,7 @@ func (p *PypiParser) Parse(manifestFile string) ([]internal.Package, error) {
 
 		endCol := len(trimmedLine)
 
-		packages = append(packages, internal.Package{
+		packages = append(packages, models.Package{
 			PackageManager: "pypi",
 			PackageName:    pkgName,
 			Version:        version,

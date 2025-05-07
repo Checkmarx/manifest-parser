@@ -2,7 +2,7 @@ package config
 
 import (
 	"encoding/xml"
-	"github.com/Checkmarx/manifest-parser/internal"
+	"github.com/Checkmarx/manifest-parser/pkg/models"
 	"io"
 	"os"
 	"strings"
@@ -10,14 +10,14 @@ import (
 
 type DotnetPackagesConfigParser struct{}
 
-func (p *DotnetPackagesConfigParser) Parse(manifest string) ([]internal.Package, error) {
+func (p *DotnetPackagesConfigParser) Parse(manifest string) ([]models.Package, error) {
 	content, err := os.ReadFile(manifest)
 	if err != nil {
 		return nil, err
 	}
 
 	decoder := xml.NewDecoder(strings.NewReader(string(content)))
-	var packages []internal.Package
+	var packages []models.Package
 
 	for {
 		tok, err := decoder.Token()
@@ -43,7 +43,7 @@ func (p *DotnetPackagesConfigParser) Parse(manifest string) ([]internal.Package,
 				if id != "" && version != "" {
 					lineStart, _ := decoder.InputPos()
 					lineEnd := lineStart
-					packages = append(packages, internal.Package{
+					packages = append(packages, models.Package{
 						PackageName: id,
 						Version:     version,
 						LineStart:   lineStart,

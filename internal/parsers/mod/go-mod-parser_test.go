@@ -1,6 +1,7 @@
 package mod
 
 import (
+	"github.com/Checkmarx/manifest-parser/pkg/models"
 	"testing"
 
 	"github.com/Checkmarx/manifest-parser/internal"
@@ -14,7 +15,7 @@ func TestGoModParser_Parse(t *testing.T) {
 		t.Error("Error parsing manifest file:  ", err)
 	}
 
-	expectedPackages := []internal.Package{
+	expectedPackages := []models.Package{
 		{
 			PackageName: "github.com/gomarkdown/markdown",
 			Version:     "v0.0.0-20241102151059-6bc1ffdc6e8c",

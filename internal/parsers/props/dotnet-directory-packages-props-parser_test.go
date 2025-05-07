@@ -1,6 +1,7 @@
 package props
 
 import (
+	"github.com/Checkmarx/manifest-parser/pkg/models"
 	"testing"
 
 	"github.com/Checkmarx/manifest-parser/internal"
@@ -14,7 +15,7 @@ func TestDotnetDirectoryPackagesPropsParser_Parse(t *testing.T) {
 		t.Error("Error parsing manifest file: ", err)
 	}
 
-	expectedPackages := []internal.Package{
+	expectedPackages := []models.Package{
 		{
 			PackageName: "Autofac",
 			Version:     "8.1.0",

@@ -1,13 +1,13 @@
 package csproj
 
 import (
-	"github.com/Checkmarx/manifest-parser/internal"
+	"github.com/Checkmarx/manifest-parser/pkg/models"
 )
 
 type CsprojParser struct{}
 
-func (p *CsprojParser) Parse(manifestFile string) ([]internal.Package, error) {
-	return []internal.Package{
+func (p *CsprojParser) Parse(manifestFile string) ([]models.Package, error) {
+	return []models.Package{
 		{
 			PackageManager: "Dotnet - csproj",
 			PackageName:    "Hi, I'm a .NET file",
