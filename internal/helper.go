@@ -1,10 +1,11 @@
 package internal
 
 import (
+	"github.com/Checkmarx/manifest-parser/pkg/models"
 	"testing"
 )
 
-func ValidatePackages(t *testing.T, packages []Package, expectedPackages []Package) {
+func ValidatePackages(t *testing.T, packages []models.Package, expectedPackages []models.Package) {
 	if len(packages) != len(expectedPackages) {
 		t.Errorf("Expected %d packages, got %d", len(expectedPackages), len(packages))
 	}

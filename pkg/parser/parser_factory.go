@@ -15,19 +15,19 @@ func ParsersFactory(manifest string) Parser {
 
 	switch manifestType {
 	case MavenPom:
-		return &xml.MavenPomParser{}
+		return &xml.PackagesConfigParser{}
 	case DotnetCsproj:
-		return &csproj.DotnetCsprojParser{}
+		return &csproj.CsprojParser{}
 	case DotnetDirectoryPackagesProps:
-		return &props.DotnetDirectoryPackagesPropsParser{}
+		return &props.PropsParser{}
 	case PypiRequirements:
 		return &pypi.PypiParser{}
 	case NpmPackageJson:
 		return &json.NpmPackageJsonParser{}
 	case DotnetPackagesConfig:
-		return &config.DotnetPackagesConfigParser{}
+		return &config.ConfigParser{}
 	case GoMod:
-		return &mod.GoModParser{}
+		return &mod.ModParser{}
 	default:
 		return nil
 	}
