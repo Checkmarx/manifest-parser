@@ -1,10 +1,11 @@
 package pypi
 
 import (
-	"github.com/Checkmarx/manifest-parser/pkg/models"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/Checkmarx/manifest-parser/pkg/models"
 )
 
 // comparePackages is a helper to assert Package equality in tests.
@@ -158,5 +159,22 @@ func TestParseSkipCommentLine(t *testing.T) {
 	}
 	if len(pkgs) != 0 {
 		t.Fatalf("expected 0 packages, got %d", len(pkgs))
+	}
+}
+
+func TestParseRealRequirementsFile(t *testing.T) {
+	filePath := "requirements (4).txt"
+	parser := &PypiParser{}
+	pkgs, err := parser.Parse(filePath)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(pkgs) != 24 {
+		t.Fatalf("expected 25 packages, got %d", len(pkgs))
+	}
+
+	// Print all packages for inspection
+	for _, pkg := range pkgs {
+		t.Logf("Found package: %s==%s (line %d)", pkg.PackageName, pkg.Version, pkg.LineStart)
 	}
 }

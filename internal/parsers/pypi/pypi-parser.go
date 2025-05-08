@@ -2,9 +2,12 @@ package pypi
 
 import (
 	"bufio"
-	"github.com/Checkmarx/manifest-parser/pkg/models"
+	"log"
 	"os"
+	"regexp"
 	"strings"
+
+	"github.com/Checkmarx/manifest-parser/pkg/models"
 )
 
 // PypiParser implements parsing of requirements.txt
@@ -20,6 +23,9 @@ func (p *PypiParser) Parse(manifestFile string) ([]models.Package, error) {
 	var packages []models.Package
 	scanner := bufio.NewScanner(file)
 	lineNum := 0
+
+	// Regex to match package name, excluding extras
+	re := regexp.MustCompile(`^([a-zA-Z0-9_\-\.]+)(?:\[.*\])?(?:[>=<!~,\s].*)?$`)
 
 	for scanner.Scan() {
 		lineNum++
@@ -41,6 +47,12 @@ func (p *PypiParser) Parse(manifestFile string) ([]models.Package, error) {
 			line = strings.TrimSpace(line)
 		}
 
+		// Handle inline comments (remove everything after ; character)
+		if strings.Contains(line, ";") {
+			line = strings.SplitN(line, ";", 2)[0]
+			line = strings.TrimSpace(line)
+		}
+
 		var version string
 		switch {
 		// exact version
@@ -49,7 +61,7 @@ func (p *PypiParser) Parse(manifestFile string) ([]models.Package, error) {
 			version = parts[1]
 
 		// any range or other specifiers
-		case strings.ContainsAny(line, "><~,"):
+		case strings.ContainsAny(line, "!><~,"):
 			version = "latest"
 
 		default:
@@ -57,16 +69,14 @@ func (p *PypiParser) Parse(manifestFile string) ([]models.Package, error) {
 			continue
 		}
 
-		// extract package name (before any version specifier)
+		// Extract package name using regex instead of splitting on separators
 		pkgName := line
-		for _, sep := range []string{"==", ">=", "<=", ">", "<", "~=", "!=", ","} {
-			if strings.Contains(line, sep) {
-				parts := strings.SplitN(line, sep, 2)
-				pkgName = parts[0]
-				break
-			}
+		if match := re.FindStringSubmatch(line); match != nil {
+			pkgName = match[1] // First capture group is the package name
+		} else {
+			log.Printf("Skipping line %d in %s: no valid package name found", lineNum, manifestFile)
+			continue
 		}
-		pkgName = strings.TrimSpace(pkgName)
 
 		// compute character positions in the raw line
 		idx := strings.Index(raw, pkgName)
@@ -77,11 +87,10 @@ func (p *PypiParser) Parse(manifestFile string) ([]models.Package, error) {
 		// Go uses 0-based offsets; convert to 1-based columns
 		startCol := idx + 1
 
-		// Remove the comment part (everything after '#')
+		// Calculation of EndIndex
 		withoutComment := strings.SplitN(raw, "#", 2)[0]
 		// Trim only trailing spaces (right side)
 		trimmedLine := strings.TrimRight(withoutComment, " ")
-
 		endCol := len(trimmedLine)
 
 		packages = append(packages, models.Package{
