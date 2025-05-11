@@ -1,7 +1,7 @@
 package xml
 
 import (
-	"github.com/Checkmarx/manifest-parser/pkg/models"
+	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
 
 type PackagesConfigParser struct{}

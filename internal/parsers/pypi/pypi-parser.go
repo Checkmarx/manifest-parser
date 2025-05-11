@@ -2,12 +2,11 @@ package pypi
 
 import (
 	"bufio"
+	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 	"log"
 	"os"
 	"regexp"
 	"strings"
-
-	"github.com/Checkmarx/manifest-parser/pkg/models"
 )
 
 // PypiParser implements parsing of requirements.txt
@@ -58,15 +57,18 @@ func (p *PypiParser) Parse(manifestFile string) ([]models.Package, error) {
 		// exact version
 		case strings.Contains(line, "=="):
 			parts := strings.SplitN(line, "==", 2)
-			version = parts[1]
-
-		// any range or other specifiers
-		case strings.ContainsAny(line, "!><~,"):
-			version = "latest"
+			if len(parts) == 2 {
+				version = strings.TrimSpace(parts[1])
+				if strings.Contains(version, "*") {
+					version = "latest"
+				}
+			} else {
+				version = "latest"
+			}
 
 		default:
-			// not a valid requirement line → skip
-			continue
+			// any range or other specifiers
+			version = "latest"
 		}
 
 		// Extract package name using regex instead of splitting on separators

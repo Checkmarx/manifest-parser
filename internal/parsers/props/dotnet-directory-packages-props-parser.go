@@ -3,7 +3,7 @@ package props
 import (
 	"encoding/xml"
 	"github.com/Checkmarx/manifest-parser/internal/parsers/csproj"
-	"github.com/Checkmarx/manifest-parser/pkg/models"
+	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 	"io"
 	"os"
 	"strings"

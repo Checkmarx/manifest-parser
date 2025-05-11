@@ -1,11 +1,10 @@
 package pypi
 
 import (
+	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 	"os"
 	"path/filepath"
 	"testing"
-
-	"github.com/Checkmarx/manifest-parser/pkg/models"
 )
 
 // comparePackages is a helper to assert Package equality in tests.
@@ -162,14 +161,48 @@ func TestParseSkipCommentLine(t *testing.T) {
 	}
 }
 
-func TestParseRealRequirementsFile(t *testing.T) {
-	filePath := "requirements (4).txt"
+func TestParseWildcardVersion(t *testing.T) {
+	content := "pandas==1.2.*\n"
+	tmpDir := t.TempDir()
+	filePath := filepath.Join(tmpDir, "requirements.txt")
+	os.WriteFile(filePath, []byte(content), 0644)
+
 	parser := &PypiParser{}
 	pkgs, err := parser.Parse(filePath)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(pkgs) != 24 {
+	if len(pkgs) != 1 {
+		t.Fatalf("expected 1 package, got %d", len(pkgs))
+	}
+
+	got := pkgs[0]
+	want := models.Package{
+		PackageManager: "pypi",
+		PackageName:    "pandas",
+		Version:        "latest", // Should treat wildcard as "latest"
+		Filepath:       filePath,
+		LineStart:      1,
+		LineEnd:        1,
+		StartIndex:     1,
+		EndIndex:       13, // Length of "pandas==1.2.*"
+	}
+	comparePackages(t, got, want)
+
+	// Additional check to ensure wildcard was handled correctly
+	if got.Version != "latest" {
+		t.Errorf("Wildcard version not properly handled: got %q, want %q", got.Version, "latest")
+	}
+}
+
+func TestParseRealRequirementsFile(t *testing.T) {
+	filePath := "requirements (00).txt"
+	parser := &PypiParser{}
+	pkgs, err := parser.Parse(filePath)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(pkgs) != 25 {
 		t.Fatalf("expected 25 packages, got %d", len(pkgs))
 	}
 
