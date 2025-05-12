@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/Checkmarx/manifest-parser/pkg/models"
+	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 	"os"
 	"strings"
 )
