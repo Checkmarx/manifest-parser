@@ -71,7 +71,7 @@ func (p *PypiParser) Parse(manifestFile string) ([]models.Package, error) {
 			version = "latest"
 		}
 
-		// Extract package name using regex instead of splitting on separators
+		// Extract package name using regex
 		pkgName := line
 		if match := re.FindStringSubmatch(line); match != nil {
 			pkgName = match[1] // First capture group is the package name
