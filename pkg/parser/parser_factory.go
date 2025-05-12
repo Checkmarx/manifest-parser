@@ -15,7 +15,7 @@ func ParsersFactory(manifest string) Parser {
 
 	switch manifestType {
 	case MavenPom:
-		return &xml.PackagesConfigParser{}
+		return &xml.MavenPomParser{}
 	case DotnetCsproj:
 		return &csproj.DotnetCsprojParser{}
 	case DotnetDirectoryPackagesProps:
