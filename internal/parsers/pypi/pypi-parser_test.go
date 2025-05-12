@@ -1,10 +1,11 @@
 package pypi
 
 import (
-	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
 
 // comparePackages is a helper to assert Package equality in tests.
@@ -196,7 +197,7 @@ func TestParseWildcardVersion(t *testing.T) {
 }
 
 func TestParseRealRequirementsFile(t *testing.T) {
-	filePath := "requirements (4).txt"
+	filePath := "./testdata/requirements.txt"
 	parser := &PypiParser{}
 	pkgs, err := parser.Parse(filePath)
 	if err != nil {
