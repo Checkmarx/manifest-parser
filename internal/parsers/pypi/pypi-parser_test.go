@@ -196,7 +196,7 @@ func TestParseWildcardVersion(t *testing.T) {
 }
 
 func TestParseRealRequirementsFile(t *testing.T) {
-	filePath := "requirements (00).txt"
+	filePath := "requirements (4).txt"
 	parser := &PypiParser{}
 	pkgs, err := parser.Parse(filePath)
 	if err != nil {
