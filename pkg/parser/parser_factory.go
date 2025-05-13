@@ -1,11 +1,9 @@
 package parser
 
 import (
-	"github.com/Checkmarx/manifest-parser/internal/parsers/config"
-	"github.com/Checkmarx/manifest-parser/internal/parsers/csproj"
+	"github.com/Checkmarx/manifest-parser/internal/parsers/dotnet"
 	"github.com/Checkmarx/manifest-parser/internal/parsers/json"
 	"github.com/Checkmarx/manifest-parser/internal/parsers/mod"
-	"github.com/Checkmarx/manifest-parser/internal/parsers/props"
 	"github.com/Checkmarx/manifest-parser/internal/parsers/pypi"
 	"github.com/Checkmarx/manifest-parser/internal/parsers/xml"
 )
@@ -17,15 +15,15 @@ func ParsersFactory(manifest string) Parser {
 	case MavenPom:
 		return &xml.MavenPomParser{}
 	case DotnetCsproj:
-		return &csproj.DotnetCsprojParser{}
+		return &dotnet.DotnetCsprojParser{}
 	case DotnetDirectoryPackagesProps:
-		return &props.DotnetDirectoryPackagesPropsParser{}
+		return &dotnet.DotnetDirectoryPackagesPropsParser{}
 	case PypiRequirements:
 		return &pypi.PypiParser{}
 	case NpmPackageJson:
 		return &json.NpmPackageJsonParser{}
 	case DotnetPackagesConfig:
-		return &config.DotnetPackagesConfigParser{}
+		return &dotnet.DotnetPackagesConfigParser{}
 	case GoMod:
 		return &mod.GoModParser{}
 	default:

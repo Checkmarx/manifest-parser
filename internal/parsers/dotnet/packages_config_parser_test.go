@@ -1,8 +1,9 @@
-package config
+package dotnet
 
 import (
-	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 	"testing"
+
+	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 
 	"github.com/Checkmarx/manifest-parser/internal"
 )

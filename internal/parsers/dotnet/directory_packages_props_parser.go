@@ -1,21 +1,17 @@
-package csproj
+package dotnet
 
 import (
 	"encoding/xml"
-	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 	"io"
 	"os"
 	"strings"
+
+	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
 
-type DotnetCsprojParser struct{}
+type DotnetDirectoryPackagesPropsParser struct{}
 
-type PackageReference struct {
-	Include string `xml:"Include,attr"`
-	Version string `xml:"Version,attr"`
-}
-
-func (p *DotnetCsprojParser) Parse(manifestFile string) ([]models.Package, error) {
+func (p *DotnetDirectoryPackagesPropsParser) Parse(manifestFile string) ([]models.Package, error) {
 	content, err := os.ReadFile(manifestFile)
 	if err != nil {
 		return nil, err
@@ -36,7 +32,7 @@ func (p *DotnetCsprojParser) Parse(manifestFile string) ([]models.Package, error
 
 		switch elem := tok.(type) {
 		case xml.StartElement:
-			if elem.Name.Local == "PackageReference" {
+			if elem.Name.Local == "PackageVersion" {
 				currentElement = &PackageReference{}
 				err := decoder.DecodeElement(currentElement, &elem)
 				if err != nil {

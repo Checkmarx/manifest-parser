@@ -1,17 +1,22 @@
-package props
+package dotnet
 
 import (
 	"encoding/xml"
-	"github.com/Checkmarx/manifest-parser/internal/parsers/csproj"
-	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 	"io"
 	"os"
 	"strings"
+
+	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
 
-type DotnetDirectoryPackagesPropsParser struct{}
+type DotnetCsprojParser struct{}
 
-func (p *DotnetDirectoryPackagesPropsParser) Parse(manifestFile string) ([]models.Package, error) {
+type PackageReference struct {
+	Include string `xml:"Include,attr"`
+	Version string `xml:"Version,attr"`
+}
+
+func (p *DotnetCsprojParser) Parse(manifestFile string) ([]models.Package, error) {
 	content, err := os.ReadFile(manifestFile)
 	if err != nil {
 		return nil, err
@@ -19,7 +24,7 @@ func (p *DotnetDirectoryPackagesPropsParser) Parse(manifestFile string) ([]model
 
 	decoder := xml.NewDecoder(strings.NewReader(string(content)))
 	var packages []models.Package
-	var currentElement *csproj.PackageReference
+	var currentElement *PackageReference
 
 	for {
 		tok, err := decoder.Token()
@@ -32,8 +37,8 @@ func (p *DotnetDirectoryPackagesPropsParser) Parse(manifestFile string) ([]model
 
 		switch elem := tok.(type) {
 		case xml.StartElement:
-			if elem.Name.Local == "PackageVersion" {
-				currentElement = &csproj.PackageReference{}
+			if elem.Name.Local == "PackageReference" {
+				currentElement = &PackageReference{}
 				err := decoder.DecodeElement(currentElement, &elem)
 				if err != nil {
 					return nil, err

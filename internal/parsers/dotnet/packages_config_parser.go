@@ -1,11 +1,12 @@
-package config
+package dotnet
 
 import (
 	"encoding/xml"
-	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 	"io"
 	"os"
 	"strings"
+
+	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
 
 type DotnetPackagesConfigParser struct{}
