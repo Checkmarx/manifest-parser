@@ -1,11 +1,12 @@
-package csproj
+package dotnet
 
 import (
 	"encoding/xml"
-	"github.com/Checkmarx/manifest-parser/internal"
 	"io"
 	"os"
 	"strings"
+
+	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
 
 type DotnetCsprojParser struct{}
@@ -15,14 +16,14 @@ type PackageReference struct {
 	Version string `xml:"Version,attr"`
 }
 
-func (p *DotnetCsprojParser) Parse(manifestFile string) ([]internal.Package, error) {
+func (p *DotnetCsprojParser) Parse(manifestFile string) ([]models.Package, error) {
 	content, err := os.ReadFile(manifestFile)
 	if err != nil {
 		return nil, err
 	}
 
 	decoder := xml.NewDecoder(strings.NewReader(string(content)))
-	var packages []internal.Package
+	var packages []models.Package
 	var currentElement *PackageReference
 
 	for {
@@ -43,7 +44,7 @@ func (p *DotnetCsprojParser) Parse(manifestFile string) ([]internal.Package, err
 					return nil, err
 				}
 				line, _ := decoder.InputPos()
-				packages = append(packages, internal.Package{
+				packages = append(packages, models.Package{
 					PackageName: currentElement.Include,
 					Version:     currentElement.Version,
 					LineStart:   line,

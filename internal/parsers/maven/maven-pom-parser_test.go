@@ -1,7 +1,9 @@
-package xml
+package maven
 
 import (
 	"testing"
+
+	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 
 	"github.com/Checkmarx/manifest-parser/internal"
 )
@@ -14,7 +16,7 @@ func TestMavenPomParser_Parse(t *testing.T) {
 		t.Error("Error parsing manifest file: ", err)
 	}
 
-	expectedPackages := []internal.Package{
+	expectedPackages := []models.Package{
 		{
 			PackageName: "org.eclipse.jetty.ee10:jetty-ee10-bom",
 			Version:     "12.0.10",

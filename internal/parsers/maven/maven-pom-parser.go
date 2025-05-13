@@ -1,11 +1,12 @@
-package xml
+package maven
 
 import (
 	"encoding/xml"
-	"github.com/Checkmarx/manifest-parser/internal"
 	"io"
 	"os"
 	"strings"
+
+	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
 
 type MavenPomParser struct{}
@@ -16,14 +17,14 @@ type Dependency struct {
 	Version    string `xml:"version"`
 }
 
-func (p *MavenPomParser) Parse(manifestFile string) ([]internal.Package, error) {
+func (p *MavenPomParser) Parse(manifestFile string) ([]models.Package, error) {
 	content, err := os.ReadFile(manifestFile)
 	if err != nil {
 		return nil, err
 	}
 
 	decoder := xml.NewDecoder(strings.NewReader(string(content)))
-	var packages []internal.Package
+	var packages []models.Package
 	var currentElement *Dependency
 
 	for {
@@ -46,7 +47,7 @@ func (p *MavenPomParser) Parse(manifestFile string) ([]internal.Package, error) 
 					return nil, err
 				}
 				lineEnd, _ := decoder.InputPos()
-				packages = append(packages, internal.Package{
+				packages = append(packages, models.Package{
 					PackageName: currentElement.GroupId + ":" + currentElement.ArtifactId,
 					Version:     currentElement.Version,
 					LineStart:   lineStart,

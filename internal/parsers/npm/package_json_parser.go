@@ -1,17 +1,18 @@
-package json
+package npm
 
 import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/Checkmarx/manifest-parser/internal"
 	"os"
 	"strings"
+
+	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
 
 type NpmPackageJsonParser struct{}
 
-func (p *NpmPackageJsonParser) Parse(manifestFile string) ([]internal.Package, error) {
+func (p *NpmPackageJsonParser) Parse(manifestFile string) ([]models.Package, error) {
 	file, err := os.Open(manifestFile)
 	if err != nil {
 		return nil, err
@@ -53,11 +54,11 @@ func (p *NpmPackageJsonParser) Parse(manifestFile string) ([]internal.Package, e
 	}
 
 	// Extract dependencies and devDependencies.
-	var packages []internal.Package
+	var packages []models.Package
 	for _, key := range []string{"dependencies", "devDependencies"} {
 		if deps, ok := packageJSON[key].(map[string]interface{}); ok {
 			for pkg, ver := range deps {
-				packages = append(packages, internal.Package{
+				packages = append(packages, models.Package{
 					PackageName: pkg,
 					Version:     fmt.Sprintf("%v", ver),
 					LineStart:   lineNumbers[pkg],

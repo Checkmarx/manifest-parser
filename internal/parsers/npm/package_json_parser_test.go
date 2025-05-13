@@ -1,7 +1,9 @@
-package json
+package npm
 
 import (
 	"testing"
+
+	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 
 	"github.com/Checkmarx/manifest-parser/internal"
 )
@@ -14,7 +16,7 @@ func TestNpmPackageJsonParser_ParseParser_Parse(t *testing.T) {
 		t.Error("Error parsing manifest file:  ", err)
 	}
 
-	expectedPackages := []internal.Package{
+	expectedPackages := []models.Package{
 		{
 			PackageName: "@ant-design/icons",
 			Version:     "^2.1.1",

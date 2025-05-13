@@ -1,7 +1,9 @@
-package csproj
+package dotnet
 
 import (
 	"testing"
+
+	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 
 	"github.com/Checkmarx/manifest-parser/internal"
 )
@@ -14,7 +16,7 @@ func TestDotnetCsprojParser_ParseNoVersion(t *testing.T) {
 		t.Error("Error parsing manifest file: ", err)
 	}
 
-	expectedPackages := []internal.Package{
+	expectedPackages := []models.Package{
 		{
 			PackageName: "Autofac",
 			Version:     "",
@@ -42,7 +44,7 @@ func TestDotnetCsprojParser_Parse(t *testing.T) {
 		t.Error("Error parsing manifest file: ", err)
 	}
 
-	expectedPackages := []internal.Package{
+	expectedPackages := []models.Package{
 		{
 			PackageName: "Lumo.AwsInfra",
 			Version:     "4.0.1",

@@ -1,9 +1,9 @@
 package parser
 
 import (
-	"github.com/Checkmarx/manifest-parser/internal"
+	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
 
 type Parser interface {
-	Parse(manifestFile string) ([]internal.Package, error)
+	Parse(manifestFile string) ([]models.Package, error)
 }
