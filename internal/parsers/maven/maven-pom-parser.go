@@ -1,11 +1,12 @@
-package xml
+package maven
 
 import (
 	"encoding/xml"
-	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 	"io"
 	"os"
 	"strings"
+
+	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
 
 type MavenPomParser struct{}

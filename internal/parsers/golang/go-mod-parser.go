@@ -1,9 +1,10 @@
-package mod
+package golang
 
 import (
-	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 	"os"
 	"path/filepath"
+
+	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 
 	"golang.org/x/mod/modfile"
 )

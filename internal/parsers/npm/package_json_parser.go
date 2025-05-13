@@ -1,12 +1,13 @@
-package json
+package npm
 
 import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 	"os"
 	"strings"
+
+	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
 
 type NpmPackageJsonParser struct{}
