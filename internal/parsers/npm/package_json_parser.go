@@ -83,66 +83,12 @@ func (p *NpmPackageJsonParser) Parse(manifestFile string) ([]models.Package, err
 		}
 	}
 
-	// Helper function to resolve the exact version of a package:
-	// - Returns the exact version directly if specified in package.json
-	// - Looks up in package-lock.json if version contains range specifiers
-	// - Falls back to sensible defaults if necessary
-	getResolvedVersion := func(name, specVersion string) string {
-
-		// Check if version is already exact - if so, return it directly
-		if !strings.HasPrefix(specVersion, "^") &&
-			!strings.HasPrefix(specVersion, "~") &&
-			!strings.Contains(specVersion, "*") &&
-			!strings.Contains(specVersion, ">") &&
-			!strings.Contains(specVersion, "<") &&
-			!strings.Contains(specVersion, "latest") {
-			return specVersion
-		}
-
-		// Try v1 format first
-		if deps := lock.Dependencies; deps != nil {
-			if entry, ok := deps[name]; ok && entry.Version != "" {
-				return entry.Version
-			}
-		}
-
-		// Try v2/v3 format with various path patterns
-		if pkgs := lock.Packages; pkgs != nil {
-			// Common paths in package-lock.json
-			pathVariations := []string{
-				"node_modules/" + name,
-				"node_modules/" + name + "@" + specVersion,
-				"node_modules/" + name + "@" + strings.TrimPrefix(specVersion, "^"),
-				"node_modules/" + name + "@" + strings.TrimPrefix(specVersion, "~"),
-				"", // Root package
-			}
-
-			for _, path := range pathVariations {
-				if entry, ok := pkgs[path]; ok && entry.Version != "" {
-					return entry.Version
-				}
-			}
-		}
-
-		// For version specifiers, return "latest" as fallback
-		if strings.HasPrefix(specVersion, "^") ||
-			strings.HasPrefix(specVersion, "~") ||
-			strings.Contains(specVersion, "*") ||
-			strings.Contains(specVersion, ">") ||
-			strings.Contains(specVersion, "<") {
-			return "latest"
-		}
-
-		// Otherwise return the specified version
-		return specVersion
-	}
-
 	var results []models.Package
 
 	// Process all dependency types
 	processDeps := func(depMap map[string]string, depType string) {
 		for name, version := range depMap {
-			resolvedVersion := getResolvedVersion(name, version)
+			resolvedVersion := getResolvedVersion(name, version, lock)
 			lineStart, lineEnd, startIndex, endIndex := findPositions(string(fileContent), name)
 
 			results = append(results, models.Package{
@@ -164,4 +110,56 @@ func (p *NpmPackageJsonParser) Parse(manifestFile string) ([]models.Package, err
 	processDeps(pkg.OptionalDependencies, "optionalDependencies")
 
 	return results, nil
+}
+
+// - Returns the exact version directly if specified in package.json
+// - Looks up in package-lock.json if version contains range specifiers
+// - Falls back to sensible defaults if necessary
+func getResolvedVersion(name, specVersion string, lock lockFile) string {
+	// Check if version is already exact - if so, return it directly
+	if !strings.HasPrefix(specVersion, "^") &&
+		!strings.HasPrefix(specVersion, "~") &&
+		!strings.Contains(specVersion, "*") &&
+		!strings.Contains(specVersion, ">") &&
+		!strings.Contains(specVersion, "<") &&
+		!strings.Contains(specVersion, "latest") {
+		return specVersion
+	}
+
+	// Try v1 format first
+	if deps := lock.Dependencies; deps != nil {
+		if entry, ok := deps[name]; ok && entry.Version != "" {
+			return entry.Version
+		}
+	}
+
+	// Try v2/v3 format with various path patterns
+	if pkgs := lock.Packages; pkgs != nil {
+		// Common paths in package-lock.json
+		pathVariations := []string{
+			"node_modules/" + name,
+			"node_modules/" + name + "@" + specVersion,
+			"node_modules/" + name + "@" + strings.TrimPrefix(specVersion, "^"),
+			"node_modules/" + name + "@" + strings.TrimPrefix(specVersion, "~"),
+			"", // Root package
+		}
+
+		for _, path := range pathVariations {
+			if entry, ok := pkgs[path]; ok && entry.Version != "" {
+				return entry.Version
+			}
+		}
+	}
+
+	// For version specifiers, return "latest" as fallback
+	if strings.HasPrefix(specVersion, "^") ||
+		strings.HasPrefix(specVersion, "~") ||
+		strings.Contains(specVersion, "*") ||
+		strings.Contains(specVersion, ">") ||
+		strings.Contains(specVersion, "<") {
+		return "latest"
+	}
+
+	// Otherwise return the specified version
+	return specVersion
 }
