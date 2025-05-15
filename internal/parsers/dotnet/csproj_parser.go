@@ -2,54 +2,158 @@ package dotnet
 
 import (
 	"encoding/xml"
+	"fmt"
 	"io"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
 
+// DotnetCsprojParser implements parsing of .NET project files (.csproj)
 type DotnetCsprojParser struct{}
 
+// PackageReference represents a package reference in the .csproj file
 type PackageReference struct {
-	Include string `xml:"Include,attr"`
-	Version string `xml:"Version,attr"`
+	Include       string `xml:"Include,attr"`
+	VersionAttr   string `xml:"Version,attr"`
+	VersionNested string `xml:"Version"`
 }
 
-func (p *DotnetCsprojParser) Parse(manifestFile string) ([]models.Package, error) {
-	content, err := os.ReadFile(manifestFile)
-	if err != nil {
-		return nil, err
+// parseVersion handles version resolution
+// - Returns exact version if specified
+// - Returns "latest" for version ranges or special version specifiers
+func parseVersion(version string) string {
+	// Handle empty version
+	if version == "" {
+		return "latest"
 	}
 
+	// Handle version ranges like [1.2.3,2.0.0)
+	rangePattern := regexp.MustCompile(`\[\(?([0-9]+(?:\.[0-9]+)+).*]?$`)
+	if matches := rangePattern.FindStringSubmatch(version); matches != nil {
+		return matches[1] // Return the lower bound version
+	}
+
+	// Handle special version specifiers
+	if strings.ContainsAny(version, "[]()*^~><") {
+		return "latest"
+	}
+
+	// Return exact version
+	return version
+}
+
+// computeIndices calculates start and end indices for PackageReference elements
+// Returns startIndex and endIndex for the element in the line
+func computeIndices(lines []string, lineNum int) (startIndex, endIndex int, lineStart, lineEnd int) {
+	currentLine := lines[lineNum-1] // lineNum is 1-based so we subtract 1
+
+	// Find the position of the PackageReference tag start in the line
+	startIdx := strings.Index(currentLine, "<PackageReference")
+	if startIdx < 0 {
+		return 1, len(currentLine), lineNum, lineNum
+	}
+
+	// Check if it's a single-line format
+	if strings.Contains(currentLine, "/>") {
+		// Single-line format
+		endIdx := strings.LastIndex(currentLine, "/>") + 2 // Include the "/>" itself
+		return startIdx + 1, endIdx + 1, lineNum, lineNum
+	}
+
+	// Multi-line format
+	// Look for the closing tag </PackageReference>
+	lineEnd = lineNum
+	for i := lineNum; i < len(lines) && i < lineNum+10; i++ { // Limit search to 10 lines
+		if strings.Contains(lines[i-1], "</PackageReference>") {
+			lineEnd = i
+			endLine := lines[i-1]
+			endIdx := strings.Index(endLine, "</PackageReference>") + len("</PackageReference>")
+			return startIdx + 1, endIdx + 1, lineNum, lineEnd
+		}
+	}
+
+	// No closing tag found, return the end of the current line
+	return startIdx + 1, len(currentLine) + 1, lineNum, lineNum
+}
+
+// Parse implements the Parser interface for .csproj files
+func (p *DotnetCsprojParser) Parse(manifestFile string) ([]models.Package, error) {
+	// Read the file content
+	content, err := os.ReadFile(manifestFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read manifest file: %w", err)
+	}
+
+	// Split content into lines for index computation
+	lines := strings.Split(string(content), "\n")
+
+	// Create XML decoder
 	decoder := xml.NewDecoder(strings.NewReader(string(content)))
 	var packages []models.Package
-	var currentElement *PackageReference
 
+	// Parse XML content
 	for {
-		tok, err := decoder.Token()
+		token, err := decoder.Token()
 		if err != nil {
 			if err == io.EOF {
 				break
 			}
-			return nil, err
+			return nil, fmt.Errorf("failed to parse XML: %w", err)
 		}
 
-		switch elem := tok.(type) {
+		// Process each element
+		switch elem := token.(type) {
 		case xml.StartElement:
 			if elem.Name.Local == "PackageReference" {
-				currentElement = &PackageReference{}
-				err := decoder.DecodeElement(currentElement, &elem)
-				if err != nil {
-					return nil, err
+				var pkgRef PackageReference
+				if err := decoder.DecodeElement(&pkgRef, &elem); err != nil {
+					return nil, fmt.Errorf("failed to decode PackageReference: %w", err)
 				}
-				line, _ := decoder.InputPos()
+
+				// Skip empty package names
+				if pkgRef.Include == "" {
+					continue
+				}
+
+				// Find line number
+				lineNum := 0
+				packagePattern := fmt.Sprintf(`PackageReference.*Include="%s"`, pkgRef.Include)
+				re := regexp.MustCompile(packagePattern)
+
+				for i, line := range lines {
+					if re.MatchString(line) {
+						lineNum = i + 1 // 1-indexed line numbers
+						break
+					}
+				}
+
+				// Skip if line not found
+				if lineNum == 0 {
+					continue
+				}
+
+				// Compute indices for both single-line and multi-line formats
+				startCol, endCol, lineStart, lineEnd := computeIndices(lines, lineNum)
+
+				// Determine the version
+				version := pkgRef.VersionAttr
+				if version == "" {
+					version = pkgRef.VersionNested
+				}
+
+				// Create package entry
 				packages = append(packages, models.Package{
-					PackageName: currentElement.Include,
-					Version:     currentElement.Version,
-					LineStart:   line,
-					LineEnd:     line,
-					Filepath:    manifestFile,
+					PackageManager: "dotnet",
+					PackageName:    pkgRef.Include,
+					Version:        parseVersion(version),
+					Filepath:       manifestFile,
+					LineStart:      lineStart,
+					LineEnd:        lineEnd,
+					StartIndex:     startCol,
+					EndIndex:       endCol,
 				})
 			}
 		}

@@ -1,30 +1,40 @@
 package internal
 
 import (
-	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 	"testing"
+
+	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
+
+// ComparePackages is a helper to assert Package equality in tests
+func ComparePackages(t *testing.T, got, want models.Package) {
+	if got.PackageManager != want.PackageManager {
+		t.Errorf("PackageManager: got %q, want %q", got.PackageManager, want.PackageManager)
+	}
+	if got.PackageName != want.PackageName {
+		t.Errorf("PackageName: got %q, want %q", got.PackageName, want.PackageName)
+	}
+	if got.Version != want.Version {
+		t.Errorf("Version: got %q, want %q", got.Version, want.Version)
+	}
+	if got.Filepath != want.Filepath {
+		t.Errorf("Filepath: got %q, want %q", got.Filepath, want.Filepath)
+	}
+	if got.LineStart != want.LineStart || got.LineEnd != want.LineEnd {
+		t.Errorf("LineStart/LineEnd: got %d/%d, want %d/%d", got.LineStart, got.LineEnd, want.LineStart, want.LineEnd)
+	}
+	if got.StartIndex != want.StartIndex || got.EndIndex != want.EndIndex {
+		t.Errorf("StartIndex/EndIndex: got %d/%d, want %d/%d", got.StartIndex, got.EndIndex, want.StartIndex, want.EndIndex)
+	}
+}
 
 func ValidatePackages(t *testing.T, packages []models.Package, expectedPackages []models.Package) {
 	if len(packages) != len(expectedPackages) {
 		t.Errorf("Expected %d packages, got %d", len(expectedPackages), len(packages))
+		return
 	}
 
 	for i, pkg := range packages {
-		if pkg.PackageName != expectedPackages[i].PackageName {
-			t.Errorf("Expected package name %s, got %s", expectedPackages[i].PackageName, pkg.PackageName)
-		}
-		if pkg.Version != expectedPackages[i].Version {
-			t.Errorf("Expected package version %s, got %s", expectedPackages[i].Version, pkg.Version)
-		}
-		if pkg.LineStart != expectedPackages[i].LineStart {
-			t.Errorf("Expected package line start %d, got %d", expectedPackages[i].LineStart, pkg.LineStart)
-		}
-		if pkg.LineEnd != expectedPackages[i].LineEnd {
-			t.Errorf("Expected package line end %d, got %d", expectedPackages[i].LineEnd, pkg.LineEnd)
-		}
-		if pkg.Filepath != expectedPackages[i].Filepath {
-			t.Errorf("Expected package filepath %s, got %s", expectedPackages[i].Filepath, pkg.Filepath)
-		}
+		ComparePackages(t, pkg, expectedPackages[i])
 	}
 }
