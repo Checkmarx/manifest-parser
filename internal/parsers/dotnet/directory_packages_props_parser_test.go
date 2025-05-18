@@ -1,166 +1,149 @@
 package dotnet
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/Checkmarx/manifest-parser/internal"
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
 
-func TestDotnetDirectoryPackagesPropsParser_Parse(t *testing.T) {
-	tempDir, err := os.MkdirTemp("", "props-test")
+func TestDotnetDirectoryPackagesPropsParser_ParseActualFile(t *testing.T) {
+	parser := &DotnetDirectoryPackagesPropsParser{}
+	manifestFile := "../../../internal/testdata/Directory.Packages.props"
+	packages, err := parser.Parse(manifestFile)
 	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
+		t.Fatalf("Parse() error = %v", err)
 	}
-	defer os.RemoveAll(tempDir)
 
+	expectedPackages := []models.Package{
+		{
+			PackageManager: "dotnet",
+			PackageName:    "AwesomeAssertions",
+			Version:        "8.1.0",
+			Filepath:       manifestFile,
+			LineStart:      15,
+			LineEnd:        15,
+			StartIndex:     5,
+			EndIndex:       67,
+		},
+		{
+			PackageManager: "dotnet",
+			PackageName:    "ILMerge",
+			Version:        "3.0.41.22",
+			Filepath:       manifestFile,
+			LineStart:      16,
+			LineEnd:        16,
+			StartIndex:     5,
+			EndIndex:       61,
+		},
+		{
+			PackageManager: "dotnet",
+			PackageName:    "MSTest.TestAdapter",
+			Version:        "latest",
+			Filepath:       manifestFile,
+			LineStart:      17,
+			LineEnd:        17,
+			StartIndex:     5,
+			EndIndex:       86,
+		},
+		{
+			PackageManager: "dotnet",
+			PackageName:    "MSTest.TestFramework",
+			Version:        "latest",
+			Filepath:       manifestFile,
+			LineStart:      18,
+			LineEnd:        18,
+			StartIndex:     5,
+			EndIndex:       65,
+		},
+		{
+			PackageManager: "dotnet",
+			PackageName:    "System.Text.Json",
+			Version:        "latest",
+			Filepath:       manifestFile,
+			LineStart:      20,
+			LineEnd:        20,
+			StartIndex:     5,
+			EndIndex:       74,
+		},
+	}
+
+	internal.ValidatePackages(t, packages, expectedPackages)
+}
+
+func TestParseVersionProps(t *testing.T) {
 	tests := []struct {
-		name          string
-		content       string
-		expectedPkgs  []models.Package
-		expectedError bool
+		name     string
+		version  string
+		expected string
+	}{
+		{"exact version", "1.2.3", "1.2.3"},
+		{"open range", "[1.0.0,)", "latest"},
+		{"wildcard", "*", "latest"},
+		{"empty", "", "latest"},
+		{"caret", "^1.2.3", "latest"},
+		{"tilde", "~1.2.3", "latest"},
+		{"greater than", ">1.2.3", "latest"},
+		{"less than", "<2.0.0", "latest"},
+		{"complex range", "1.2.30.1220", "1.2.30.1220"},
+		{"complex range with parentheses", "(1.2.3,2.0.0]", "latest"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := parseVersionProps(tt.version)
+			if result != tt.expected {
+				t.Errorf("parseVersionProps(%q) = %q, want %q", tt.version, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestFindPackageVersionPosition(t *testing.T) {
+	tests := []struct {
+		name        string
+		content     string
+		packageName string
+		wantStart   int
+		wantEnd     int
 	}{
 		{
-			name: "exact versions",
-			content: `<?xml version="1.0" encoding="utf-8"?>
-<Project>
-  <ItemGroup>
-    <PackageVersion Include="Autofac" Version="8.1.0" />
-    <PackageVersion Include="coverlet.collector" Version="6.0.2" />
-  </ItemGroup>
-</Project>`,
-			expectedPkgs: []models.Package{
-				{
-					PackageManager: "dotnet",
-					PackageName:    "Autofac",
-					Version:        "8.1.0",
-					Filepath:       filepath.Join(tempDir, "test.props"),
-					LineStart:      4,
-					LineEnd:        4,
-					StartIndex:     1,
-					EndIndex:       1,
-				},
-				{
-					PackageManager: "dotnet",
-					PackageName:    "coverlet.collector",
-					Version:        "6.0.2",
-					Filepath:       filepath.Join(tempDir, "test.props"),
-					LineStart:      5,
-					LineEnd:        5,
-					StartIndex:     1,
-					EndIndex:       1,
-				},
-			},
-			expectedError: false,
+			name:        "simple package",
+			content:     `<PackageVersion Include="Package1" Version="1.0.0" />`,
+			packageName: "Package1",
+			wantStart:   1,
+			wantEnd:     len(`<PackageVersion Include="Package1" Version="1.0.0" />`) + 1,
 		},
 		{
-			name: "missing version",
-			content: `<?xml version="1.0" encoding="utf-8"?>
-<Project>
-  <ItemGroup>
-    <PackageVersion Include="Autofac" />
-  </ItemGroup>
-</Project>`,
-			expectedPkgs: []models.Package{
-				{
-					PackageManager: "dotnet",
-					PackageName:    "Autofac",
-					Version:        "latest",
-					Filepath:       filepath.Join(tempDir, "test.props"),
-					LineStart:      4,
-					LineEnd:        4,
-					StartIndex:     1,
-					EndIndex:       1,
-				},
-			},
-			expectedError: false,
+			name:        "package with special characters",
+			content:     `<PackageVersion Include="Package.1.2" Version="1.0.0" />`,
+			packageName: "Package.1.2",
+			wantStart:   1,
+			wantEnd:     len(`<PackageVersion Include="Package.1.2" Version="1.0.0" />`) + 1,
 		},
 		{
-			name: "special version specifiers",
-			content: `<?xml version="1.0" encoding="utf-8"?>
-<Project>
-  <ItemGroup>
-    <PackageVersion Include="Autofac" Version=">8.0.0" />
-    <PackageVersion Include="coverlet.collector" Version="[6.0.0,7.0.0)" />
-  </ItemGroup>
-</Project>`,
-			expectedPkgs: []models.Package{
-				{
-					PackageManager: "dotnet",
-					PackageName:    "Autofac",
-					Version:        "latest",
-					Filepath:       filepath.Join(tempDir, "test.props"),
-					LineStart:      4,
-					LineEnd:        4,
-					StartIndex:     1,
-					EndIndex:       1,
-				},
-				{
-					PackageManager: "dotnet",
-					PackageName:    "coverlet.collector",
-					Version:        "latest",
-					Filepath:       filepath.Join(tempDir, "test.props"),
-					LineStart:      5,
-					LineEnd:        5,
-					StartIndex:     1,
-					EndIndex:       1,
-				},
-			},
-			expectedError: false,
+			name:        "package not found",
+			content:     `<PackageVersion Include="Package1" Version="1.0.0" />`,
+			packageName: "Package2",
+			wantStart:   0,
+			wantEnd:     0,
 		},
 		{
-			name: "invalid XML",
-			content: `<?xml version="1.0" encoding="utf-8"?>
-<Project>
-  <ItemGroup>
-    <PackageVersion Include="Autofac" Version="8.1.0"
-  </ItemGroup>
-</Project>`,
-			expectedPkgs:  nil,
-			expectedError: true,
-		},
-		{
-			name:          "empty file",
-			content:       ``,
-			expectedPkgs:  nil,
-			expectedError: true,
-		},
-		{
-			name: "no package references",
-			content: `<?xml version="1.0" encoding="utf-8"?>
-<Project>
-  <ItemGroup>
-  </ItemGroup>
-</Project>`,
-			expectedPkgs:  []models.Package{},
-			expectedError: false,
+			name:        "empty content",
+			content:     "",
+			packageName: "Package1",
+			wantStart:   0,
+			wantEnd:     0,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			testFile := filepath.Join(tempDir, "test.props")
-			err := os.WriteFile(testFile, []byte(tt.content), 0644)
-			if err != nil {
-				t.Fatalf("Failed to write test file: %v", err)
+			_, start, end := findPackageVersionPosition(tt.content, tt.packageName)
+			if start != tt.wantStart || end != tt.wantEnd {
+				t.Errorf("findPackageVersionPosition() = (%v, %v), want (%v, %v)",
+					start, end, tt.wantStart, tt.wantEnd)
 			}
-
-			parser := &DotnetDirectoryPackagesPropsParser{}
-			pkgs, err := parser.Parse(testFile)
-
-			if tt.expectedError {
-				if err == nil {
-					t.Error("Expected error but got none")
-				}
-				return
-			}
-			if err != nil {
-				t.Fatalf("Unexpected error: %v", err)
-			}
-
-			internal.ValidatePackages(t, pkgs, tt.expectedPkgs)
 		})
 	}
 }

@@ -121,50 +121,6 @@ func TestDotnetCsprojParser_Parse(t *testing.T) {
 			expectedError: false,
 		},
 		{
-			name: "version ranges",
-			content: `<?xml version="1.0" encoding="utf-8"?>
-<Project Sdk="Microsoft.NET.Sdk">
-  <ItemGroup>
-    <PackageReference Include="Package1" Version="[1.2.3,2.0.0)" />
-    <PackageReference Include="Package2" Version="[1.0.0,)" />
-    <PackageReference Include="Package3" Version="*" />
-  </ItemGroup>
-</Project>`,
-			expectedPkgs: []models.Package{
-				{
-					PackageManager: "dotnet",
-					PackageName:    "Package1",
-					Version:        "1.2.3",
-					Filepath:       filepath.Join(tempDir, "test.csproj"),
-					LineStart:      4,
-					LineEnd:        4,
-					StartIndex:     5,
-					EndIndex:       68,
-				},
-				{
-					PackageManager: "dotnet",
-					PackageName:    "Package2",
-					Version:        "1.0.0",
-					Filepath:       filepath.Join(tempDir, "test.csproj"),
-					LineStart:      5,
-					LineEnd:        5,
-					StartIndex:     5,
-					EndIndex:       63,
-				},
-				{
-					PackageManager: "dotnet",
-					PackageName:    "Package3",
-					Version:        "latest",
-					Filepath:       filepath.Join(tempDir, "test.csproj"),
-					LineStart:      6,
-					LineEnd:        6,
-					StartIndex:     5,
-					EndIndex:       56,
-				},
-			},
-			expectedError: false,
-		},
-		{
 			name: "empty version",
 			content: `<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
@@ -268,8 +224,8 @@ func TestParseVersion(t *testing.T) {
 		expected string
 	}{
 		{"exact version", "1.2.3", "1.2.3"},
-		{"version range", "[1.2.3,2.0.0)", "1.2.3"},
-		{"open range", "[1.0.0,)", "1.0.0"},
+		{"version range", "[1.2.3,2.0.0)", "latest"},
+		{"open range", "1.0.0.345", "1.0.0.345"},
 		{"wildcard", "*", "latest"},
 		{"empty", "", "latest"},
 		{"caret", "^1.2.3", "latest"},

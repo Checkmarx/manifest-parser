@@ -30,14 +30,13 @@ func parseVersion(version string) string {
 		return "latest"
 	}
 
-	// Handle version ranges like [1.2.3,2.0.0)
-	rangePattern := regexp.MustCompile(`\[\(?([0-9]+(?:\.[0-9]+)+).*]?$`)
-	if matches := rangePattern.FindStringSubmatch(version); matches != nil {
-		return matches[1] // Return the lower bound version
+	// If the version contains any kind of brackets, return "latest"
+	if strings.ContainsAny(version, "[]()") {
+		return "latest"
 	}
 
 	// Handle special version specifiers
-	if strings.ContainsAny(version, "[]()*^~><") {
+	if strings.ContainsAny(version, "*^~><") {
 		return "latest"
 	}
 
