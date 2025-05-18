@@ -11,14 +11,49 @@ import (
 
 type DotnetPackagesConfigParser struct{}
 
+type PackageConfig struct {
+	ID      string
+	Version string
+	Line    int
+}
+
+// parseVersionConfig handles version resolution for packages.config
+func parseVersionConfig(version string) string {
+	if version == "" {
+		return "latest"
+	}
+	if strings.ContainsAny(version, "[]()") {
+		return "latest"
+	}
+	if strings.ContainsAny(version, "*^~><") {
+		return "latest"
+	}
+	return version
+}
+
+// findPackageTagPosition returns the start column (1-based, including leading spaces) for the <package tag in the line, and EndIndex as the length of the line + 1 (VSCode-style, col after last char)
+func findPackageTagPosition(lines []string, lineNum int) (startCol, endCol int) {
+	if lineNum > 0 && lineNum <= len(lines) {
+		line := lines[lineNum-1]
+		idx := strings.Index(line, "<package")
+		if idx >= 0 {
+			startCol = idx + 1     // 1-based, including leading spaces
+			endCol = len(line) + 1 // VSCode-style: col after last char
+			return startCol, endCol
+		}
+	}
+	return 0, 0
+}
+
 func (p *DotnetPackagesConfigParser) Parse(manifest string) ([]models.Package, error) {
 	content, err := os.ReadFile(manifest)
 	if err != nil {
 		return nil, err
 	}
 
+	lines := strings.Split(string(content), "\n")
 	decoder := xml.NewDecoder(strings.NewReader(string(content)))
-	var packages []models.Package
+	var pkgs []PackageConfig
 
 	for {
 		tok, err := decoder.Token()
@@ -43,17 +78,28 @@ func (p *DotnetPackagesConfigParser) Parse(manifest string) ([]models.Package, e
 				}
 				if id != "" && version != "" {
 					lineStart, _ := decoder.InputPos()
-					lineEnd := lineStart
-					packages = append(packages, models.Package{
-						PackageName: id,
-						Version:     version,
-						LineStart:   lineStart,
-						LineEnd:     lineEnd,
-						Filepath:    manifest,
+					pkgs = append(pkgs, PackageConfig{
+						ID:      id,
+						Version: version,
+						Line:    lineStart,
 					})
 				}
 			}
 		}
+	}
+
+	var packages []models.Package
+	for _, pkg := range pkgs {
+		startCol, endCol := findPackageTagPosition(lines, pkg.Line)
+		packages = append(packages, models.Package{
+			PackageName: pkg.ID,
+			Version:     parseVersionConfig(pkg.Version),
+			LineStart:   pkg.Line,
+			LineEnd:     pkg.Line,
+			StartIndex:  startCol,
+			EndIndex:    endCol,
+			Filepath:    manifest,
+		})
 	}
 	return packages, nil
 }
