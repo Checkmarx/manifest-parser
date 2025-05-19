@@ -48,7 +48,7 @@ func computeIndices(raw, pkgName string) (int, int) {
 	startCol := idx + 1
 	withoutComment := strings.SplitN(raw, "#", 2)[0]
 	trimmedLine := strings.TrimRight(withoutComment, " ")
-	endCol := len(trimmedLine)
+	endCol := len(trimmedLine) + 1
 	return startCol, endCol
 }
 
