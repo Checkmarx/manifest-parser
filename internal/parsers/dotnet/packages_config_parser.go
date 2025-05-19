@@ -17,6 +17,8 @@ type PackageConfig struct {
 	Line    int
 }
 
+const PackageTag = "package"
+
 // parseVersionConfig handles version resolution for packages.config
 func parseVersionConfig(version string) string {
 	if version == "" {
@@ -66,7 +68,7 @@ func (p *DotnetPackagesConfigParser) Parse(manifest string) ([]models.Package, e
 
 		switch elem := tok.(type) {
 		case xml.StartElement:
-			if elem.Name.Local == "package" {
+			if elem.Name.Local == PackageTag {
 				var id, version string
 				for _, attr := range elem.Attr {
 					if attr.Name.Local == "id" {

@@ -21,6 +21,9 @@ type PackageReference struct {
 	VersionNested string `xml:"Version"`
 }
 
+// PackageReferenceTag is the XML tag for package references in .csproj files
+const PackageReferenceTag = "PackageReference"
+
 // parseVersion handles version resolution
 // - Returns exact version if specified
 // - Returns "latest" for version ranges or special version specifiers
@@ -110,7 +113,7 @@ func (p *DotnetCsprojParser) Parse(manifestFile string) ([]models.Package, error
 		// Process each element
 		switch elem := token.(type) {
 		case xml.StartElement:
-			if elem.Name.Local == "PackageReference" {
+			if elem.Name.Local == PackageReferenceTag {
 				var pkgRef PackageReference
 				if err := decoder.DecodeElement(&pkgRef, &elem); err != nil {
 					return nil, fmt.Errorf("failed to decode PackageReference: %w", err)

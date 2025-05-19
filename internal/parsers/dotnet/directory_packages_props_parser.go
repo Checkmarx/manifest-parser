@@ -21,6 +21,8 @@ type PackageVersion struct {
 	Version string `xml:"Version,attr"`
 }
 
+const PackageVersionTag = "PackageVersion"
+
 // parseVersion handles version resolution for Directory.Packages.props
 // Returns:
 // - Exact version if specified
@@ -94,7 +96,7 @@ func (p *DotnetDirectoryPackagesPropsParser) Parse(manifestFile string) ([]model
 		// Process each element
 		switch elem := token.(type) {
 		case xml.StartElement:
-			if elem.Name.Local == "PackageVersion" {
+			if elem.Name.Local == PackageVersionTag {
 				var pkgVer PackageVersion
 				if err := decoder.DecodeElement(&pkgVer, &elem); err != nil {
 					return nil, fmt.Errorf("failed to decode PackageVersion: %w", err)
