@@ -63,17 +63,20 @@ func computeIndices(lines []string, lineNum int) (startIndex, endIndex int, line
 	}
 
 	// Multi-line format
-	// Look for the closing tag </PackageReference>
-	lineEnd = lineNum
-	for i := lineNum; i < len(lines) && i < lineNum+10; i++ { // Limit search to 10 lines
-		if strings.Contains(lines[i-1], "</PackageReference>") {
-			lineEnd = i
-			endLine := lines[i-1]
-			endIdx := strings.Index(endLine, "</PackageReference>") + len("</PackageReference>")
-			return startIdx + 1, endIdx + 1, lineNum, lineEnd
+	// TODO: Multi-line PackageReference support will be handled in the future.
+	// Currently, if the tag spans multiple lines, we only return the first line.
+	// The following code is commented out for now:
+	/*
+		lineEnd = lineNum
+		for i := lineNum; i < len(lines) && i < lineNum+10; i++ { // Limit search to 10 lines
+			if strings.Contains(lines[i-1], "</PackageReference>") {
+				lineEnd = i
+				endLine := lines[i-1]
+				endIdx := strings.Index(endLine, "</PackageReference>") + len("</PackageReference>")
+				return startIdx + 1, endIdx + 1, lineNum, lineEnd
+			}
 		}
-	}
-
+	*/
 	// No closing tag found, return the end of the current line
 	return startIdx + 1, len(currentLine) + 1, lineNum, lineNum
 }

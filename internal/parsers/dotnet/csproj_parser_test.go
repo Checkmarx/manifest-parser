@@ -43,10 +43,10 @@ func TestDotnetCsprojParser_ParseNoVersion(t *testing.T) {
 			PackageName:    "Microsoft.TeamFoundationServer.Client",
 			Version:        "19.225.1",
 			LineStart:      33,
-			LineEnd:        35,
+			LineEnd:        33,
 			Filepath:       manifestFile,
 			StartIndex:     5,
-			EndIndex:       24,
+			EndIndex:       71,
 		},
 		{
 			PackageManager: "dotnet",
