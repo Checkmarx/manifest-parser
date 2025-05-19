@@ -155,7 +155,7 @@ func (p *DotnetCsprojParser) Parse(manifestFile string) ([]models.Package, error
 					PackageManager: "dotnet",
 					PackageName:    pkgRef.Include,
 					Version:        parseVersion(version),
-					Filepath:       manifestFile,
+					FilePath:       manifestFile,
 					LineStart:      lineStart,
 					LineEnd:        lineEnd,
 					StartIndex:     startCol,

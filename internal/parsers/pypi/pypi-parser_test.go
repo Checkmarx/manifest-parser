@@ -19,8 +19,8 @@ func comparePackages(t *testing.T, got, want models.Package) {
 	if got.Version != want.Version {
 		t.Errorf("Version: got %q, want %q", got.Version, want.Version)
 	}
-	if got.Filepath != want.Filepath {
-		t.Errorf("Filepath: got %q, want %q", got.Filepath, want.Filepath)
+	if got.FilePath != want.FilePath {
+		t.Errorf("FilePath: got %q, want %q", got.FilePath, want.FilePath)
 	}
 	if got.LineStart != want.LineStart || got.LineEnd != want.LineEnd {
 		t.Errorf("LineStart/LineEnd: got %d/%d, want %d/%d", got.LineStart, got.LineEnd, want.LineStart, want.LineEnd)
@@ -50,7 +50,7 @@ func TestParseExactVersion(t *testing.T) {
 		PackageManager: "pypi",
 		PackageName:    "flask",
 		Version:        "1.1.2",
-		Filepath:       filePath,
+		FilePath:       filePath,
 		LineStart:      1,
 		LineEnd:        1,
 		StartIndex:     1,
@@ -79,7 +79,7 @@ func TestParseInlineComment(t *testing.T) {
 		PackageManager: "pypi",
 		PackageName:    "requests",
 		Version:        "2.25.1",
-		Filepath:       filePath,
+		FilePath:       filePath,
 		LineStart:      1,
 		LineEnd:        1,
 		StartIndex:     4,
@@ -108,7 +108,7 @@ func TestParseRequirementLineEndIndex(t *testing.T) {
 		PackageManager: "pypi",
 		PackageName:    "requests",
 		Version:        "2.25.1",
-		Filepath:       filePath,
+		FilePath:       filePath,
 		LineStart:      1,
 		LineEnd:        1,
 		StartIndex:     1,
@@ -137,7 +137,7 @@ func TestParseVersionRange(t *testing.T) {
 		PackageManager: "pypi",
 		PackageName:    "django",
 		Version:        "latest",
-		Filepath:       filePath,
+		FilePath:       filePath,
 		LineStart:      1,
 		LineEnd:        1,
 		StartIndex:     1,
@@ -182,7 +182,7 @@ func TestParseWildcardVersion(t *testing.T) {
 		PackageManager: "pypi",
 		PackageName:    "pandas",
 		Version:        "latest", // Should treat wildcard as "latest"
-		Filepath:       filePath,
+		FilePath:       filePath,
 		LineStart:      1,
 		LineEnd:        1,
 		StartIndex:     1,

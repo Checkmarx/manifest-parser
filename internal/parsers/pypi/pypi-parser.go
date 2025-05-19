@@ -93,7 +93,7 @@ func (p *PypiParser) Parse(manifestFile string) ([]models.Package, error) {
 			PackageManager: "pypi",
 			PackageName:    pkgName,
 			Version:        version,
-			Filepath:       manifestFile,
+			FilePath:       manifestFile,
 			LineStart:      lineNum,
 			LineEnd:        lineNum,
 			StartIndex:     startCol,

@@ -1,8 +1,9 @@
 package dotnet
 
 import (
-	"github.com/Checkmarx/manifest-parser/internal/testdata"
 	"testing"
+
+	"github.com/Checkmarx/manifest-parser/internal/testdata"
 
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
@@ -20,7 +21,7 @@ func TestDotnetDirectoryPackagesPropsParser_ParseActualFile(t *testing.T) {
 			PackageManager: "dotnet",
 			PackageName:    "AwesomeAssertions",
 			Version:        "8.1.0",
-			Filepath:       manifestFile,
+			FilePath:       manifestFile,
 			LineStart:      15,
 			LineEnd:        15,
 			StartIndex:     5,
@@ -30,7 +31,7 @@ func TestDotnetDirectoryPackagesPropsParser_ParseActualFile(t *testing.T) {
 			PackageManager: "dotnet",
 			PackageName:    "ILMerge",
 			Version:        "3.0.41.22",
-			Filepath:       manifestFile,
+			FilePath:       manifestFile,
 			LineStart:      16,
 			LineEnd:        16,
 			StartIndex:     5,
@@ -40,7 +41,7 @@ func TestDotnetDirectoryPackagesPropsParser_ParseActualFile(t *testing.T) {
 			PackageManager: "dotnet",
 			PackageName:    "MSTest.TestAdapter",
 			Version:        "latest",
-			Filepath:       manifestFile,
+			FilePath:       manifestFile,
 			LineStart:      17,
 			LineEnd:        17,
 			StartIndex:     5,
@@ -50,7 +51,7 @@ func TestDotnetDirectoryPackagesPropsParser_ParseActualFile(t *testing.T) {
 			PackageManager: "dotnet",
 			PackageName:    "MSTest.TestFramework",
 			Version:        "latest",
-			Filepath:       manifestFile,
+			FilePath:       manifestFile,
 			LineStart:      18,
 			LineEnd:        18,
 			StartIndex:     5,
@@ -60,7 +61,7 @@ func TestDotnetDirectoryPackagesPropsParser_ParseActualFile(t *testing.T) {
 			PackageManager: "dotnet",
 			PackageName:    "System.Text.Json",
 			Version:        "latest",
-			Filepath:       manifestFile,
+			FilePath:       manifestFile,
 			LineStart:      20,
 			LineEnd:        20,
 			StartIndex:     5,

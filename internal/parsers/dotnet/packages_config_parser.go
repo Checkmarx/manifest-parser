@@ -100,7 +100,7 @@ func (p *DotnetPackagesConfigParser) Parse(manifest string) ([]models.Package, e
 			LineEnd:     pkg.Line,
 			StartIndex:  startCol,
 			EndIndex:    endCol,
-			Filepath:    manifest,
+			FilePath:    manifest,
 		})
 	}
 	return packages, nil

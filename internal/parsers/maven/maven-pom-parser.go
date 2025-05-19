@@ -52,7 +52,7 @@ func (p *MavenPomParser) Parse(manifestFile string) ([]models.Package, error) {
 					Version:     currentElement.Version,
 					LineStart:   lineStart,
 					LineEnd:     lineEnd,
-					Filepath:    manifestFile,
+					FilePath:    manifestFile,
 				})
 			}
 		}

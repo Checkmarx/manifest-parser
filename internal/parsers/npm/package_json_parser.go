@@ -3,10 +3,11 @@ package npm
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
 
 // Full package.json structure to capture all dependency types
@@ -95,7 +96,7 @@ func (p *NpmPackageJsonParser) Parse(manifestFile string) ([]models.Package, err
 				PackageManager: "npm",
 				PackageName:    name,
 				Version:        resolvedVersion,
-				Filepath:       manifestFile,
+				FilePath:       manifestFile,
 				LineStart:      lineStart,
 				LineEnd:        lineEnd,
 				StartIndex:     startIndex,

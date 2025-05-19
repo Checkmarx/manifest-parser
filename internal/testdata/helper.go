@@ -17,8 +17,8 @@ func ComparePackages(t *testing.T, got, want models.Package) {
 	if got.Version != want.Version {
 		t.Errorf("Version: got %q, want %q", got.Version, want.Version)
 	}
-	if got.Filepath != want.Filepath {
-		t.Errorf("Filepath: got %q, want %q", got.Filepath, want.Filepath)
+	if got.FilePath != want.FilePath {
+		t.Errorf("FilePath: got %q, want %q", got.FilePath, want.FilePath)
 	}
 	if got.LineStart != want.LineStart || got.LineEnd != want.LineEnd {
 		t.Errorf("LineStart/LineEnd: got %d/%d, want %d/%d", got.LineStart, got.LineEnd, want.LineStart, want.LineEnd)
