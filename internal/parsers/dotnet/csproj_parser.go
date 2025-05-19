@@ -90,10 +90,11 @@ func (p *DotnetCsprojParser) Parse(manifestFile string) ([]models.Package, error
 	}
 
 	// Split content into lines for index computation
-	lines := strings.Split(string(content), "\n")
+	strContent := string(content)
+	lines := strings.Split(strContent, "\n")
 
 	// Create XML decoder
-	decoder := xml.NewDecoder(strings.NewReader(string(content)))
+	decoder := xml.NewDecoder(strings.NewReader(strContent))
 	var packages []models.Package
 
 	// Parse XML content

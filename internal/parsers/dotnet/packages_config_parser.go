@@ -50,9 +50,9 @@ func (p *DotnetPackagesConfigParser) Parse(manifest string) ([]models.Package, e
 	if err != nil {
 		return nil, err
 	}
-
-	lines := strings.Split(string(content), "\n")
-	decoder := xml.NewDecoder(strings.NewReader(string(content)))
+	strContent := string(content)
+	lines := strings.Split(strContent, "\n")
+	decoder := xml.NewDecoder(strings.NewReader(strContent))
 	var pkgs []PackageConfig
 
 	for {

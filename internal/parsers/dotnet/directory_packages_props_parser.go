@@ -76,7 +76,9 @@ func (p *DotnetDirectoryPackagesPropsParser) Parse(manifestFile string) ([]model
 	}
 
 	// Create XML decoder
-	decoder := xml.NewDecoder(strings.NewReader(string(content)))
+	strContent := string(content)
+
+	decoder := xml.NewDecoder(strings.NewReader(strContent))
 	var packages []models.Package
 
 	// Parse XML content
@@ -107,7 +109,7 @@ func (p *DotnetDirectoryPackagesPropsParser) Parse(manifestFile string) ([]model
 				line, _ := decoder.InputPos()
 
 				// Find package version position in file
-				_, startCol, endCol := findPackageVersionPosition(string(content), pkgVer.Include)
+				_, startCol, endCol := findPackageVersionPosition(strContent, pkgVer.Include)
 
 				// Create package entry
 				packages = append(packages, models.Package{
