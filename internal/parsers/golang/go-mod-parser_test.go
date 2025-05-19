@@ -1,11 +1,10 @@
 package golang
 
 import (
+	"github.com/Checkmarx/manifest-parser/internal/testdata"
 	"testing"
 
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
-
-	"github.com/Checkmarx/manifest-parser/internal"
 )
 
 func TestGoModParser_Parse(t *testing.T) {
@@ -47,5 +46,5 @@ func TestGoModParser_Parse(t *testing.T) {
 		},
 	}
 
-	internal.ValidatePackages(t, packages, expectedPackages)
+	testdata.ValidatePackages(t, packages, expectedPackages)
 }

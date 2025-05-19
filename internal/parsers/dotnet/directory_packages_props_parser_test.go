@@ -1,9 +1,9 @@
 package dotnet
 
 import (
+	"github.com/Checkmarx/manifest-parser/internal/testdata"
 	"testing"
 
-	"github.com/Checkmarx/manifest-parser/internal"
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
 
@@ -68,7 +68,7 @@ func TestDotnetDirectoryPackagesPropsParser_ParseActualFile(t *testing.T) {
 		},
 	}
 
-	internal.ValidatePackages(t, packages, expectedPackages)
+	testdata.ValidatePackages(t, packages, expectedPackages)
 }
 
 func TestParseVersionProps(t *testing.T) {

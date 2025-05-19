@@ -1,11 +1,11 @@
 package dotnet
 
 import (
+	"github.com/Checkmarx/manifest-parser/internal/testdata"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/Checkmarx/manifest-parser/internal"
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
 
@@ -70,7 +70,7 @@ func TestDotnetCsprojParser_ParseNoVersion(t *testing.T) {
 		},
 	}
 
-	internal.ValidatePackages(t, packages, expectedPackages)
+	testdata.ValidatePackages(t, packages, expectedPackages)
 }
 
 func TestDotnetCsprojParser_Parse(t *testing.T) {
@@ -212,7 +212,7 @@ func TestDotnetCsprojParser_Parse(t *testing.T) {
 			}
 
 			// Check packages
-			internal.ValidatePackages(t, pkgs, tt.expectedPkgs)
+			testdata.ValidatePackages(t, pkgs, tt.expectedPkgs)
 		})
 	}
 }

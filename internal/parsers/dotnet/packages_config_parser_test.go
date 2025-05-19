@@ -1,11 +1,10 @@
 package dotnet
 
 import (
+	"github.com/Checkmarx/manifest-parser/internal/testdata"
 	"testing"
 
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
-
-	"github.com/Checkmarx/manifest-parser/internal"
 )
 
 func TestDotnetPackagesConfigParser_ParseRealFile_Actual(t *testing.T) {
@@ -100,5 +99,5 @@ func TestDotnetPackagesConfigParser_ParseRealFile_Actual(t *testing.T) {
 		},
 	}
 
-	internal.ValidatePackages(t, packages, expectedPackages)
+	testdata.ValidatePackages(t, packages, expectedPackages)
 }
