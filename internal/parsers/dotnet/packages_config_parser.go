@@ -31,14 +31,14 @@ func parseVersionConfig(version string) string {
 	return version
 }
 
-// findPackageTagPosition returns the start column (1-based, including leading spaces) for the <package tag in the line, and EndIndex as the length of the line + 1 (VSCode-style, col after last char)
+// findPackageTagPosition returns the start column and EndIndex as the length of the line + 1
 func findPackageTagPosition(lines []string, lineNum int) (startCol, endCol int) {
 	if lineNum > 0 && lineNum <= len(lines) {
 		line := lines[lineNum-1]
 		idx := strings.Index(line, "<package")
 		if idx >= 0 {
-			startCol = idx + 1     // 1-based, including leading spaces
-			endCol = len(line) + 1 // VSCode-style: col after last char
+			startCol = idx + 1 // 1-based, including leading spaces
+			endCol = len(line) + 1
 			return startCol, endCol
 		}
 	}
