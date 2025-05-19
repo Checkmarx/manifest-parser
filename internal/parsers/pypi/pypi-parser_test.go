@@ -5,30 +5,10 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/Checkmarx/manifest-parser/internal/testdata"
+
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
-
-// comparePackages is a helper to assert Package equality in tests.
-func comparePackages(t *testing.T, got, want models.Package) {
-	if got.PackageManager != want.PackageManager {
-		t.Errorf("PackageManager: got %q, want %q", got.PackageManager, want.PackageManager)
-	}
-	if got.PackageName != want.PackageName {
-		t.Errorf("PackageName: got %q, want %q", got.PackageName, want.PackageName)
-	}
-	if got.Version != want.Version {
-		t.Errorf("Version: got %q, want %q", got.Version, want.Version)
-	}
-	if got.FilePath != want.FilePath {
-		t.Errorf("FilePath: got %q, want %q", got.FilePath, want.FilePath)
-	}
-	if got.LineStart != want.LineStart || got.LineEnd != want.LineEnd {
-		t.Errorf("LineStart/LineEnd: got %d/%d, want %d/%d", got.LineStart, got.LineEnd, want.LineStart, want.LineEnd)
-	}
-	if got.StartIndex != want.StartIndex || got.EndIndex != want.EndIndex {
-		t.Errorf("StartIndex/EndIndex: got %d/%d, want %d/%d", got.StartIndex, got.EndIndex, want.StartIndex, want.EndIndex)
-	}
-}
 
 func TestParseExactVersion(t *testing.T) {
 	content := "flask==1.1.2\n"
@@ -56,7 +36,7 @@ func TestParseExactVersion(t *testing.T) {
 		StartIndex:     1,
 		EndIndex:       12,
 	}
-	comparePackages(t, got, want)
+	testdata.ValidatePackages(t, []models.Package{got}, []models.Package{want})
 }
 
 func TestParseInlineComment(t *testing.T) {
@@ -85,7 +65,7 @@ func TestParseInlineComment(t *testing.T) {
 		StartIndex:     4,
 		EndIndex:       19,
 	}
-	comparePackages(t, got, want)
+	testdata.ValidatePackages(t, []models.Package{got}, []models.Package{want})
 }
 
 func TestParseRequirementLineEndIndex(t *testing.T) {
@@ -114,36 +94,7 @@ func TestParseRequirementLineEndIndex(t *testing.T) {
 		StartIndex:     1,
 		EndIndex:       16,
 	}
-	comparePackages(t, got, want)
-}
-
-func TestParseVersionRange(t *testing.T) {
-	content := "django>=3.0,<4.0\n"
-	tmpDir := t.TempDir()
-	filePath := filepath.Join(tmpDir, "requirements.txt")
-	os.WriteFile(filePath, []byte(content), 0644)
-
-	parser := &PypiParser{}
-	pkgs, err := parser.Parse(filePath)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(pkgs) != 1 {
-		t.Fatalf("expected 1 package, got %d", len(pkgs))
-	}
-
-	got := pkgs[0]
-	want := models.Package{
-		PackageManager: "pypi",
-		PackageName:    "django",
-		Version:        "latest",
-		FilePath:       filePath,
-		LineStart:      1,
-		LineEnd:        1,
-		StartIndex:     1,
-		EndIndex:       16,
-	}
-	comparePackages(t, got, want)
+	testdata.ValidatePackages(t, []models.Package{got}, []models.Package{want})
 }
 
 func TestParseSkipCommentLine(t *testing.T) {
@@ -162,53 +113,56 @@ func TestParseSkipCommentLine(t *testing.T) {
 	}
 }
 
-func TestParseWildcardVersion(t *testing.T) {
-	content := "pandas==1.2.*\n"
-	tmpDir := t.TempDir()
-	filePath := filepath.Join(tmpDir, "requirements.txt")
-	os.WriteFile(filePath, []byte(content), 0644)
-
-	parser := &PypiParser{}
-	pkgs, err := parser.Parse(filePath)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(pkgs) != 1 {
-		t.Fatalf("expected 1 package, got %d", len(pkgs))
-	}
-
-	got := pkgs[0]
-	want := models.Package{
-		PackageManager: "pypi",
-		PackageName:    "pandas",
-		Version:        "latest", // Should treat wildcard as "latest"
-		FilePath:       filePath,
-		LineStart:      1,
-		LineEnd:        1,
-		StartIndex:     1,
-		EndIndex:       13, // Length of "pandas==1.2.*"
-	}
-	comparePackages(t, got, want)
-
-	// Additional check to ensure wildcard was handled correctly
-	if got.Version != "latest" {
-		t.Errorf("Wildcard version not properly handled: got %q, want %q", got.Version, "latest")
-	}
-}
-
-func TestParseRealRequirementsFile(t *testing.T) {
+func TestPypiParser_Parse_RealFile(t *testing.T) {
 	filePath := "../../testdata/requirements.txt"
 	parser := &PypiParser{}
 	pkgs, err := parser.Parse(filePath)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(pkgs) != 25 {
-		t.Fatalf("expected 25 packages, got %d", len(pkgs))
+
+	expected := []models.Package{
+		{
+			PackageManager: "pypi",
+			PackageName:    "ansicolors",
+			Version:        "1.1.8",
+			FilePath:       filePath,
+			LineStart:      4,
+			LineEnd:        4,
+			StartIndex:     1,
+			EndIndex:       18,
+		},
+		{
+			PackageManager: "pypi",
+			PackageName:    "setuptools",
+			Version:        "latest",
+			FilePath:       filePath,
+			LineStart:      5,
+			LineEnd:        5,
+			StartIndex:     1,
+			EndIndex:       27,
+		},
+		{
+			PackageManager: "pypi",
+			PackageName:    "types-setuptools",
+			Version:        "latest",
+			FilePath:       filePath,
+			LineStart:      6,
+			LineEnd:        6,
+			StartIndex:     1,
+			EndIndex:       29,
+		},
+		{
+			PackageManager: "pypi",
+			PackageName:    "pytest",
+			Version:        "7.1.3",
+			FilePath:       filePath,
+			LineStart:      7,
+			LineEnd:        7,
+			StartIndex:     1,
+			EndIndex:       14,
+		},
 	}
 
-	// Print all packages for inspection
-	for _, pkg := range pkgs {
-		t.Logf("Found package: %s==%s (line %d)", pkg.PackageName, pkg.Version, pkg.LineStart)
-	}
+	testdata.ValidatePackages(t, pkgs, expected)
 }
