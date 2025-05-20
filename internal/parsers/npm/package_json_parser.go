@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
@@ -46,15 +47,23 @@ func findPositions(fileContent string, key string) (lineStart, lineEnd, startInd
 	keyPattern := fmt.Sprintf("\"%s\"", key)
 	for i, line := range lines {
 		if strings.Contains(line, keyPattern) {
-			// Get character positions within the line
-			startPos := strings.Index(line, keyPattern)
-			if startPos != -1 {
-				lineStart = i + 1 // 1-indexed for line numbers
-				lineEnd = i + 1
-				startIndex = startPos
-				endIndex = startPos + len(keyPattern)
-				return
+			// Find the start of the line (after indentation)
+			startPos := 0
+			for j, char := range line {
+				if char != ' ' && char != '\t' {
+					startPos = j
+					break
+				}
 			}
+
+			// Find the end of the line (including all spaces and comma)
+			endPos := len(line)
+
+			lineStart = i
+			lineEnd = i
+			startIndex = startPos + 1 // 1-indexed for column numbers
+			endIndex = endPos + 1     // Include the entire line length
+			return
 		}
 	}
 	return 0, 0, 0, 0
@@ -109,6 +118,11 @@ func (p *NpmPackageJsonParser) Parse(manifestFile string) ([]models.Package, err
 	processDeps(pkg.DevDependencies, "devDependencies")
 	processDeps(pkg.PeerDependencies, "peerDependencies")
 	processDeps(pkg.OptionalDependencies, "optionalDependencies")
+
+	// Sort packages by line number
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].LineStart < results[j].LineStart
+	})
 
 	return results, nil
 }

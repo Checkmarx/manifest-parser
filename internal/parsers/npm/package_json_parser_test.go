@@ -2,11 +2,13 @@ package npm
 
 import (
 	"encoding/json"
-	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/Checkmarx/manifest-parser/internal/testdata"
+	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
 
 // TestBasicPackageJsonParsing tests the basic ability to parse a simple package.json
@@ -668,4 +670,70 @@ func TestRealWorldPackageJson(t *testing.T) {
 			t.Errorf("Found unexpected package: %s==%s", name, actualPackages[name])
 		}
 	}
+}
+
+// TestParse_RealTestdataPackageJson tests parsing the real package.json from internal/testdata
+func TestParse_RealTestdataPackageJson(t *testing.T) {
+	parser := &NpmPackageJsonParser{}
+	manifestFile := "../../../internal/testdata/package.json"
+
+	packages, err := parser.Parse(manifestFile)
+	if err != nil {
+		t.Error("Error parsing manifest file: ", err)
+	}
+
+	expectedPackages := []models.Package{
+		{
+			PackageManager: "npm",
+			PackageName:    "@istanbuljs/nyc-config-typescript",
+			Version:        "1.0.2",
+			FilePath:       manifestFile,
+			LineStart:      8,
+			LineEnd:        8,
+			StartIndex:     5,
+			EndIndex:       50,
+		},
+		{
+			PackageManager: "npm",
+			PackageName:    "@checkmarxdev/ast-cli-javascript-wrapper",
+			Version:        "latest",
+			FilePath:       manifestFile,
+			LineStart:      9,
+			LineEnd:        9,
+			StartIndex:     5,
+			EndIndex:       75,
+		},
+		{
+			PackageManager: "npm",
+			PackageName:    "webpack-cli",
+			Version:        "latest",
+			FilePath:       manifestFile,
+			LineStart:      10,
+			LineEnd:        10,
+			StartIndex:     5,
+			EndIndex:       28,
+		},
+		{
+			PackageManager: "npm",
+			PackageName:    "validator",
+			Version:        "13.12.0",
+			FilePath:       manifestFile,
+			LineStart:      13,
+			LineEnd:        13,
+			StartIndex:     5,
+			EndIndex:       28,
+		},
+		{
+			PackageManager: "npm",
+			PackageName:    "@popperjs/core",
+			Version:        "latest",
+			FilePath:       manifestFile,
+			LineStart:      14,
+			LineEnd:        14,
+			StartIndex:     5,
+			EndIndex:       32,
+		},
+	}
+
+	testdata.ValidatePackages(t, packages, expectedPackages)
 }
