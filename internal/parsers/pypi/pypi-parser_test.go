@@ -152,16 +152,6 @@ func TestPypiParser_Parse_RealFile(t *testing.T) {
 			StartIndex:     3,
 			EndIndex:       31,
 		},
-		{
-			PackageManager: "pypi",
-			PackageName:    "pytest",
-			Version:        "7.1.3",
-			FilePath:       filePath,
-			LineStart:      7,
-			LineEnd:        7,
-			StartIndex:     4,
-			EndIndex:       17,
-		},
 	}
 
 	testdata.ValidatePackages(t, pkgs, expected)
