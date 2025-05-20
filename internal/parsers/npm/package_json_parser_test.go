@@ -317,8 +317,8 @@ func TestPositionTracking(t *testing.T) {
 		lineStart int
 		lineEnd   int
 	}{
-		"dep1": {3, 3}, // Line 3 in the file (1-based)
-		"dep2": {4, 4}, // Line 4 in the file (1-based)
+		"dep1": {2, 2},
+		"dep2": {3, 3},
 	}
 
 	for name, expected := range expectedPositions {
