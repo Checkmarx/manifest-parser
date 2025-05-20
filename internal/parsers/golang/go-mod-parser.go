@@ -3,6 +3,7 @@ package golang
 import (
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 
@@ -23,14 +24,38 @@ func (p *GoModParser) Parse(manifest string) ([]models.Package, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Split file into lines for position calculation
+	lines := strings.Split(string(data), "\n")
+
 	var packages []models.Package
 	for _, req := range mf.Require {
+		// Find the line where the dependency appears
+		depName := req.Mod.Path
+		depVersion := req.Mod.Version
+		lineNum := req.Syntax.Start.Line // 1-based
+		if lineNum <= 0 || lineNum > len(lines) {
+			continue // skip if out of range
+		}
+		line := lines[lineNum-1]
+
+		// Find the start index of the dependency name in the line
+		startIdx := strings.Index(line, depName)
+		if startIdx == -1 {
+			startIdx = 0 // fallback
+		}
+		// End index: end of the line (like csproj_parser.go logic)
+		endIdx := len(line)
+
 		packages = append(packages, models.Package{
-			PackageName: req.Mod.Path,
-			Version:     req.Mod.Version,
-			LineStart:   req.Syntax.Start.Line,
-			LineEnd:     req.Syntax.End.Line,
-			Filepath:    manifest,
+			PackageManager: "go",
+			PackageName:    depName,
+			Version:        depVersion,
+			FilePath:       manifest,
+			LineStart:      lineNum,
+			LineEnd:        lineNum,
+			StartIndex:     startIdx + 1, // 1-based
+			EndIndex:       endIdx + 1,   // 1-based, like VSCode
 		})
 	}
 	return packages, nil

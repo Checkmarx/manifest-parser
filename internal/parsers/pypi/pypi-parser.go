@@ -48,7 +48,7 @@ func computeIndices(raw, pkgName string) (int, int) {
 	startCol := idx + 1
 	withoutComment := strings.SplitN(raw, "#", 2)[0]
 	trimmedLine := strings.TrimRight(withoutComment, " ")
-	endCol := len(trimmedLine)
+	endCol := len(trimmedLine) + 1
 	return startCol, endCol
 }
 
@@ -93,7 +93,7 @@ func (p *PypiParser) Parse(manifestFile string) ([]models.Package, error) {
 			PackageManager: "pypi",
 			PackageName:    pkgName,
 			Version:        version,
-			Filepath:       manifestFile,
+			FilePath:       manifestFile,
 			LineStart:      lineNum,
 			LineEnd:        lineNum,
 			StartIndex:     startCol,

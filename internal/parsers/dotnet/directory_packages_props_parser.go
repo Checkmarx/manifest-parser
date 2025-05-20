@@ -118,7 +118,7 @@ func (p *DotnetDirectoryPackagesPropsParser) Parse(manifestFile string) ([]model
 					PackageManager: "dotnet",
 					PackageName:    pkgVer.Include,
 					Version:        parseVersionProps(pkgVer.Version),
-					Filepath:       manifestFile,
+					FilePath:       manifestFile,
 					LineStart:      line,
 					LineEnd:        line,
 					StartIndex:     startCol,

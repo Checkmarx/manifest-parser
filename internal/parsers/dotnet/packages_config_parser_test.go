@@ -1,8 +1,9 @@
 package dotnet
 
 import (
-	"github.com/Checkmarx/manifest-parser/internal/testdata"
 	"testing"
+
+	"github.com/Checkmarx/manifest-parser/internal/testdata"
 
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
@@ -23,7 +24,7 @@ func TestDotnetPackagesConfigParser_ParseRealFile_Actual(t *testing.T) {
 			LineEnd:     3,
 			StartIndex:  3,
 			EndIndex:    110,
-			Filepath:    manifestFile,
+			FilePath:    manifestFile,
 		},
 		{
 			PackageName: "Microsoft.Net.Compilers",
@@ -32,7 +33,7 @@ func TestDotnetPackagesConfigParser_ParseRealFile_Actual(t *testing.T) {
 			LineEnd:     4,
 			StartIndex:  3,
 			EndIndex:    112,
-			Filepath:    manifestFile,
+			FilePath:    manifestFile,
 		},
 		{
 			PackageName: "Microsoft.Web.Infrastructure",
@@ -41,7 +42,7 @@ func TestDotnetPackagesConfigParser_ParseRealFile_Actual(t *testing.T) {
 			LineEnd:     5,
 			StartIndex:  3,
 			EndIndex:    90,
-			Filepath:    manifestFile,
+			FilePath:    manifestFile,
 		},
 		{
 			PackageName: "Microsoft.Web.Xdt",
@@ -50,7 +51,7 @@ func TestDotnetPackagesConfigParser_ParseRealFile_Actual(t *testing.T) {
 			LineEnd:     6,
 			StartIndex:  3,
 			EndIndex:    77,
-			Filepath:    manifestFile,
+			FilePath:    manifestFile,
 		},
 		{
 			PackageName: "Newtonsoft.Json",
@@ -59,7 +60,7 @@ func TestDotnetPackagesConfigParser_ParseRealFile_Actual(t *testing.T) {
 			LineEnd:     7,
 			StartIndex:  3,
 			EndIndex:    100,
-			Filepath:    manifestFile,
+			FilePath:    manifestFile,
 		},
 		{
 			PackageName: "NuGet.Core",
@@ -68,7 +69,7 @@ func TestDotnetPackagesConfigParser_ParseRealFile_Actual(t *testing.T) {
 			LineEnd:     8,
 			StartIndex:  3,
 			EndIndex:    71,
-			Filepath:    manifestFile,
+			FilePath:    manifestFile,
 		},
 		{
 			PackageName: "NuGet.Server",
@@ -77,7 +78,7 @@ func TestDotnetPackagesConfigParser_ParseRealFile_Actual(t *testing.T) {
 			LineEnd:     9,
 			StartIndex:  3,
 			EndIndex:    73,
-			Filepath:    manifestFile,
+			FilePath:    manifestFile,
 		},
 		{
 			PackageName: "RouteMagic",
@@ -86,7 +87,7 @@ func TestDotnetPackagesConfigParser_ParseRealFile_Actual(t *testing.T) {
 			LineEnd:     10,
 			StartIndex:  3,
 			EndIndex:    68,
-			Filepath:    manifestFile,
+			FilePath:    manifestFile,
 		},
 		{
 			PackageName: "WebActivatorEx",
@@ -95,7 +96,7 @@ func TestDotnetPackagesConfigParser_ParseRealFile_Actual(t *testing.T) {
 			LineEnd:     11,
 			StartIndex:  3,
 			EndIndex:    74,
-			Filepath:    manifestFile,
+			FilePath:    manifestFile,
 		},
 	}
 

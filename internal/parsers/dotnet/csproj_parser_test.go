@@ -1,10 +1,11 @@
 package dotnet
 
 import (
-	"github.com/Checkmarx/manifest-parser/internal/testdata"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/Checkmarx/manifest-parser/internal/testdata"
 
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
@@ -24,7 +25,7 @@ func TestDotnetCsprojParser_ParseNoVersion(t *testing.T) {
 			Version:        "17.0.507",
 			LineStart:      31,
 			LineEnd:        31,
-			Filepath:       manifestFile,
+			FilePath:       manifestFile,
 			StartIndex:     5,
 			EndIndex:       88,
 		},
@@ -34,7 +35,7 @@ func TestDotnetCsprojParser_ParseNoVersion(t *testing.T) {
 			Version:        "16.0.29.6",
 			LineStart:      32,
 			LineEnd:        32,
-			Filepath:       manifestFile,
+			FilePath:       manifestFile,
 			StartIndex:     5,
 			EndIndex:       83,
 		},
@@ -44,7 +45,7 @@ func TestDotnetCsprojParser_ParseNoVersion(t *testing.T) {
 			Version:        "19.225.1",
 			LineStart:      33,
 			LineEnd:        33,
-			Filepath:       manifestFile,
+			FilePath:       manifestFile,
 			StartIndex:     5,
 			EndIndex:       71,
 		},
@@ -54,7 +55,7 @@ func TestDotnetCsprojParser_ParseNoVersion(t *testing.T) {
 			Version:        "17.0.32112.339",
 			LineStart:      36,
 			LineEnd:        36,
-			Filepath:       manifestFile,
+			FilePath:       manifestFile,
 			StartIndex:     5,
 			EndIndex:       87,
 		},
@@ -64,7 +65,7 @@ func TestDotnetCsprojParser_ParseNoVersion(t *testing.T) {
 			Version:        "4.7.1",
 			LineStart:      37,
 			LineEnd:        37,
-			Filepath:       manifestFile,
+			FilePath:       manifestFile,
 			StartIndex:     5,
 			EndIndex:       63,
 		},
@@ -101,7 +102,7 @@ func TestDotnetCsprojParser_Parse(t *testing.T) {
 					PackageManager: "dotnet",
 					PackageName:    "Newtonsoft.Json",
 					Version:        "13.0.1",
-					Filepath:       filepath.Join(tempDir, "test.csproj"),
+					FilePath:       filepath.Join(tempDir, "test.csproj"),
 					LineStart:      4,
 					LineEnd:        4,
 					StartIndex:     5,
@@ -111,7 +112,7 @@ func TestDotnetCsprojParser_Parse(t *testing.T) {
 					PackageManager: "dotnet",
 					PackageName:    "Microsoft.Extensions.Logging",
 					Version:        "6.0.0",
-					Filepath:       filepath.Join(tempDir, "test.csproj"),
+					FilePath:       filepath.Join(tempDir, "test.csproj"),
 					LineStart:      5,
 					LineEnd:        5,
 					StartIndex:     5,
@@ -133,7 +134,7 @@ func TestDotnetCsprojParser_Parse(t *testing.T) {
 					PackageManager: "dotnet",
 					PackageName:    "Package1",
 					Version:        "latest",
-					Filepath:       filepath.Join(tempDir, "test.csproj"),
+					FilePath:       filepath.Join(tempDir, "test.csproj"),
 					LineStart:      4,
 					LineEnd:        4,
 					StartIndex:     5,
@@ -176,7 +177,7 @@ func TestDotnetCsprojParser_Parse(t *testing.T) {
 					PackageManager: "dotnet",
 					PackageName:    "Community.VisualStudio.VSCT",
 					Version:        "16.0.29.6",
-					Filepath:       filepath.Join(tempDir, "test.csproj"),
+					FilePath:       filepath.Join(tempDir, "test.csproj"),
 					LineStart:      4,
 					LineEnd:        4,
 					StartIndex:     5,

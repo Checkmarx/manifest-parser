@@ -4,7 +4,7 @@ type Package struct {
 	PackageManager string
 	PackageName    string
 	Version        string
-	Filepath       string
+	FilePath       string
 	LineStart      int
 	LineEnd        int
 	StartIndex     int
