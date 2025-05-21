@@ -96,8 +96,8 @@ func (p *DotnetPackagesConfigParser) Parse(manifest string) ([]models.Package, e
 		packages = append(packages, models.Package{
 			PackageName: pkg.ID,
 			Version:     parseVersionConfig(pkg.Version),
-			LineStart:   pkg.Line,
-			LineEnd:     pkg.Line,
+			LineStart:   pkg.Line - 1,
+			LineEnd:     pkg.Line - 1,
 			StartIndex:  startCol,
 			EndIndex:    endCol,
 			FilePath:    manifest,

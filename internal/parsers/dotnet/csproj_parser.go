@@ -50,7 +50,7 @@ func parseVersion(version string) string {
 // computeIndices calculates start and end indices for PackageReference elements
 // Returns startIndex and endIndex for the element in the line
 func computeIndices(lines []string, lineNum int) (startIndex, endIndex int, lineStart, lineEnd int) {
-	currentLine := lines[lineNum] // lineNum is 1-based so we subtract 1
+	currentLine := lines[lineNum]
 
 	// Find the position of the PackageReference tag start in the line
 	startIdx := strings.Index(currentLine, "<PackageReference")

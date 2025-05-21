@@ -107,8 +107,10 @@ func (p *DotnetDirectoryPackagesPropsParser) Parse(manifestFile string) ([]model
 					continue
 				}
 
-				// Get line number from decoder
+				// Get line number from decoder and convert from 1-based to 0-based indexing
+				// since our models.Package struct expects 0-based line numbers
 				line, _ := decoder.InputPos()
+				line--
 
 				// Find package version position in file
 				_, startCol, endCol := findPackageVersionPosition(strContent, pkgVer.Include)
