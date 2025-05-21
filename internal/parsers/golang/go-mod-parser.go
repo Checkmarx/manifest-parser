@@ -54,8 +54,8 @@ func (p *GoModParser) Parse(manifest string) ([]models.Package, error) {
 			FilePath:       manifest,
 			LineStart:      lineNum,
 			LineEnd:        lineNum,
-			StartIndex:     startIdx + 1, // 1-based
-			EndIndex:       endIdx + 1,   // 1-based, like VSCode
+			StartIndex:     startIdx,
+			EndIndex:       endIdx,
 		})
 	}
 	return packages, nil

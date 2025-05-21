@@ -45,10 +45,10 @@ func computeIndices(raw, pkgName string) (int, int) {
 	if idx < 0 {
 		idx = strings.Index(raw, strings.TrimLeft(raw, " \t"))
 	}
-	startCol := idx + 1
+	startCol := idx
 	withoutComment := strings.SplitN(raw, "#", 2)[0]
 	trimmedLine := strings.TrimRight(withoutComment, " ")
-	endCol := len(trimmedLine) + 1
+	endCol := len(trimmedLine)
 	return startCol, endCol
 }
 

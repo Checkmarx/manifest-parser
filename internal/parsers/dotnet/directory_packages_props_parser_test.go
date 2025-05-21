@@ -1,76 +1,10 @@
 package dotnet
 
 import (
-	"testing"
-
 	"github.com/Checkmarx/manifest-parser/internal/testdata"
-
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
+	"testing"
 )
-
-func TestDotnetDirectoryPackagesPropsParser_ParseActualFile(t *testing.T) {
-	parser := &DotnetDirectoryPackagesPropsParser{}
-	manifestFile := "../../../internal/testdata/Directory.Packages.props"
-	packages, err := parser.Parse(manifestFile)
-	if err != nil {
-		t.Fatalf("Parse() error = %v", err)
-	}
-
-	expectedPackages := []models.Package{
-		{
-			PackageManager: "dotnet",
-			PackageName:    "AwesomeAssertions",
-			Version:        "8.1.0",
-			FilePath:       manifestFile,
-			LineStart:      15,
-			LineEnd:        15,
-			StartIndex:     5,
-			EndIndex:       67,
-		},
-		{
-			PackageManager: "dotnet",
-			PackageName:    "ILMerge",
-			Version:        "3.0.41.22",
-			FilePath:       manifestFile,
-			LineStart:      16,
-			LineEnd:        16,
-			StartIndex:     5,
-			EndIndex:       61,
-		},
-		{
-			PackageManager: "dotnet",
-			PackageName:    "MSTest.TestAdapter",
-			Version:        "latest",
-			FilePath:       manifestFile,
-			LineStart:      17,
-			LineEnd:        17,
-			StartIndex:     5,
-			EndIndex:       86,
-		},
-		{
-			PackageManager: "dotnet",
-			PackageName:    "MSTest.TestFramework",
-			Version:        "latest",
-			FilePath:       manifestFile,
-			LineStart:      18,
-			LineEnd:        18,
-			StartIndex:     5,
-			EndIndex:       65,
-		},
-		{
-			PackageManager: "dotnet",
-			PackageName:    "System.Text.Json",
-			Version:        "latest",
-			FilePath:       manifestFile,
-			LineStart:      20,
-			LineEnd:        20,
-			StartIndex:     5,
-			EndIndex:       74,
-		},
-	}
-
-	testdata.ValidatePackages(t, packages, expectedPackages)
-}
 
 func TestParseVersionProps(t *testing.T) {
 	tests := []struct {
@@ -147,4 +81,68 @@ func TestFindPackageVersionPosition(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDotnetDirectoryPackagesPropsParser_ParseActualFile(t *testing.T) {
+	parser := &DotnetDirectoryPackagesPropsParser{}
+	manifestFile := "../../../internal/testdata/Directory.Packages.props"
+	packages, err := parser.Parse(manifestFile)
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	expectedPackages := []models.Package{
+		{
+			PackageManager: "dotnet",
+			PackageName:    "AwesomeAssertions",
+			Version:        "8.1.0",
+			FilePath:       manifestFile,
+			LineStart:      15,
+			LineEnd:        15,
+			StartIndex:     5,
+			EndIndex:       67,
+		},
+		{
+			PackageManager: "dotnet",
+			PackageName:    "ILMerge",
+			Version:        "3.0.41.22",
+			FilePath:       manifestFile,
+			LineStart:      16,
+			LineEnd:        16,
+			StartIndex:     5,
+			EndIndex:       61,
+		},
+		{
+			PackageManager: "dotnet",
+			PackageName:    "MSTest.TestAdapter",
+			Version:        "latest",
+			FilePath:       manifestFile,
+			LineStart:      17,
+			LineEnd:        17,
+			StartIndex:     5,
+			EndIndex:       86,
+		},
+		{
+			PackageManager: "dotnet",
+			PackageName:    "MSTest.TestFramework",
+			Version:        "latest",
+			FilePath:       manifestFile,
+			LineStart:      18,
+			LineEnd:        18,
+			StartIndex:     5,
+			EndIndex:       65,
+		},
+		{
+			PackageManager: "dotnet",
+			PackageName:    "System.Text.Json",
+			Version:        "latest",
+			FilePath:       manifestFile,
+			LineStart:      20,
+			LineEnd:        20,
+			StartIndex:     5,
+			EndIndex:       74,
+		},
+	}
+
+	testdata.ValidatePackages(t, packages, expectedPackages)
 }

@@ -58,7 +58,7 @@ func findPackageVersionPosition(content string, packageName string) (lineNum, st
 		loc := re.FindStringIndex(line)
 		if loc != nil {
 			// endCol = length of the line (till the last character)
-			return i + 1, loc[0] + 1, len(line) + 1
+			return i, loc[0], len(line)
 		}
 	}
 	return 0, 0, 0 // Not found
