@@ -94,7 +94,7 @@ func TestDotnetDirectoryPackagesPropsParser_ParseActualFile(t *testing.T) {
 
 	expectedPackages := []models.Package{
 		{
-			PackageManager: "dotnet",
+			PackageManager: "nuget",
 			PackageName:    "AwesomeAssertions",
 			Version:        "8.1.0",
 			FilePath:       manifestFile,
@@ -104,7 +104,7 @@ func TestDotnetDirectoryPackagesPropsParser_ParseActualFile(t *testing.T) {
 			EndIndex:       66,
 		},
 		{
-			PackageManager: "dotnet",
+			PackageManager: "nuget",
 			PackageName:    "ILMerge",
 			Version:        "3.0.41.22",
 			FilePath:       manifestFile,
@@ -114,7 +114,7 @@ func TestDotnetDirectoryPackagesPropsParser_ParseActualFile(t *testing.T) {
 			EndIndex:       60,
 		},
 		{
-			PackageManager: "dotnet",
+			PackageManager: "nuget",
 			PackageName:    "MSTest.TestAdapter",
 			Version:        "latest",
 			FilePath:       manifestFile,
@@ -124,7 +124,7 @@ func TestDotnetDirectoryPackagesPropsParser_ParseActualFile(t *testing.T) {
 			EndIndex:       85,
 		},
 		{
-			PackageManager: "dotnet",
+			PackageManager: "nuget",
 			PackageName:    "MSTest.TestFramework",
 			Version:        "latest",
 			FilePath:       manifestFile,
@@ -134,7 +134,7 @@ func TestDotnetDirectoryPackagesPropsParser_ParseActualFile(t *testing.T) {
 			EndIndex:       64,
 		},
 		{
-			PackageManager: "dotnet",
+			PackageManager: "nuget",
 			PackageName:    "System.Text.Json",
 			Version:        "latest",
 			FilePath:       manifestFile,

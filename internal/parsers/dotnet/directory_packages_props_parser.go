@@ -117,7 +117,7 @@ func (p *DotnetDirectoryPackagesPropsParser) Parse(manifestFile string) ([]model
 
 				// Create package entry
 				packages = append(packages, models.Package{
-					PackageManager: "dotnet",
+					PackageManager: "nuget",
 					PackageName:    pkgVer.Include,
 					Version:        parseVersionProps(pkgVer.Version),
 					FilePath:       manifestFile,

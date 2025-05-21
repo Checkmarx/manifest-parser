@@ -35,7 +35,7 @@ func TestDotnetCsprojParser_Parse(t *testing.T) {
 </Project>`,
 			expectedPkgs: []models.Package{
 				{
-					PackageManager: "dotnet",
+					PackageManager: "nuget",
 					PackageName:    "Newtonsoft.Json",
 					Version:        "13.0.1",
 					FilePath:       filepath.Join(tempDir, "test.csproj"),
@@ -45,7 +45,7 @@ func TestDotnetCsprojParser_Parse(t *testing.T) {
 					EndIndex:       67,
 				},
 				{
-					PackageManager: "dotnet",
+					PackageManager: "nuget",
 					PackageName:    "Microsoft.Extensions.Logging",
 					Version:        "6.0.0",
 					FilePath:       filepath.Join(tempDir, "test.csproj"),
@@ -67,7 +67,7 @@ func TestDotnetCsprojParser_Parse(t *testing.T) {
 </Project>`,
 			expectedPkgs: []models.Package{
 				{
-					PackageManager: "dotnet",
+					PackageManager: "nuget",
 					PackageName:    "Package1",
 					Version:        "latest",
 					FilePath:       filepath.Join(tempDir, "test.csproj"),
@@ -110,7 +110,7 @@ func TestDotnetCsprojParser_Parse(t *testing.T) {
 </Project>`,
 			expectedPkgs: []models.Package{
 				{
-					PackageManager: "dotnet",
+					PackageManager: "nuget",
 					PackageName:    "Community.VisualStudio.VSCT",
 					Version:        "16.0.29.6",
 					FilePath:       filepath.Join(tempDir, "test.csproj"),
@@ -191,7 +191,7 @@ func TestDotnetCsprojParser_ParseNoVersion(t *testing.T) {
 
 	expectedPackages := []models.Package{
 		{
-			PackageManager: "dotnet",
+			PackageManager: "nuget",
 			PackageName:    "Community.VisualStudio.Toolkit.17",
 			Version:        "17.0.507",
 			LineStart:      30,
@@ -201,7 +201,7 @@ func TestDotnetCsprojParser_ParseNoVersion(t *testing.T) {
 			EndIndex:       87,
 		},
 		{
-			PackageManager: "dotnet",
+			PackageManager: "nuget",
 			PackageName:    "Community.VisualStudio.VSCT",
 			Version:        "16.0.29.6",
 			LineStart:      31,
@@ -211,7 +211,7 @@ func TestDotnetCsprojParser_ParseNoVersion(t *testing.T) {
 			EndIndex:       82,
 		},
 		{
-			PackageManager: "dotnet",
+			PackageManager: "nuget",
 			PackageName:    "Microsoft.TeamFoundationServer.Client",
 			Version:        "19.225.1",
 			LineStart:      32,
@@ -221,7 +221,7 @@ func TestDotnetCsprojParser_ParseNoVersion(t *testing.T) {
 			EndIndex:       70,
 		},
 		{
-			PackageManager: "dotnet",
+			PackageManager: "nuget",
 			PackageName:    "Microsoft.VisualStudio.SDK",
 			Version:        "17.0.32112.339",
 			LineStart:      35,
@@ -231,7 +231,7 @@ func TestDotnetCsprojParser_ParseNoVersion(t *testing.T) {
 			EndIndex:       86,
 		},
 		{
-			PackageManager: "dotnet",
+			PackageManager: "nuget",
 			PackageName:    "System.Json",
 			Version:        "4.7.1",
 			LineStart:      36,

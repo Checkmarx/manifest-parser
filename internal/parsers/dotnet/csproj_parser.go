@@ -152,7 +152,7 @@ func (p *DotnetCsprojParser) Parse(manifestFile string) ([]models.Package, error
 
 				// Create package entry
 				packages = append(packages, models.Package{
-					PackageManager: "dotnet",
+					PackageManager: "nuget",
 					PackageName:    pkgRef.Include,
 					Version:        parseVersion(version),
 					FilePath:       manifestFile,

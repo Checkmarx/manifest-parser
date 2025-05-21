@@ -94,13 +94,14 @@ func (p *DotnetPackagesConfigParser) Parse(manifest string) ([]models.Package, e
 	for _, pkg := range pkgs {
 		startCol, endCol := findPackageTagPosition(lines, pkg.Line)
 		packages = append(packages, models.Package{
-			PackageName: pkg.ID,
-			Version:     parseVersionConfig(pkg.Version),
-			LineStart:   pkg.Line - 1,
-			LineEnd:     pkg.Line - 1,
-			StartIndex:  startCol,
-			EndIndex:    endCol,
-			FilePath:    manifest,
+			PackageManager: "nuget",
+			PackageName:    pkg.ID,
+			Version:        parseVersionConfig(pkg.Version),
+			FilePath:       manifest,
+			LineStart:      pkg.Line - 1,
+			LineEnd:        pkg.Line - 1,
+			StartIndex:     startCol,
+			EndIndex:       endCol,
 		})
 	}
 	return packages, nil
