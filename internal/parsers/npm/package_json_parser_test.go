@@ -690,8 +690,8 @@ func TestParse_RealTestdataPackageJson(t *testing.T) {
 			FilePath:       manifestFile,
 			LineStart:      8,
 			LineEnd:        8,
-			StartIndex:     5,
-			EndIndex:       50,
+			StartIndex:     4,
+			EndIndex:       49,
 		},
 		{
 			PackageManager: "npm",
@@ -700,8 +700,8 @@ func TestParse_RealTestdataPackageJson(t *testing.T) {
 			FilePath:       manifestFile,
 			LineStart:      9,
 			LineEnd:        9,
-			StartIndex:     5,
-			EndIndex:       75,
+			StartIndex:     4,
+			EndIndex:       74,
 		},
 		{
 			PackageManager: "npm",
@@ -710,8 +710,8 @@ func TestParse_RealTestdataPackageJson(t *testing.T) {
 			FilePath:       manifestFile,
 			LineStart:      10,
 			LineEnd:        10,
-			StartIndex:     5,
-			EndIndex:       28,
+			StartIndex:     4,
+			EndIndex:       27,
 		},
 		{
 			PackageManager: "npm",
@@ -720,8 +720,8 @@ func TestParse_RealTestdataPackageJson(t *testing.T) {
 			FilePath:       manifestFile,
 			LineStart:      13,
 			LineEnd:        13,
-			StartIndex:     5,
-			EndIndex:       28,
+			StartIndex:     4,
+			EndIndex:       27,
 		},
 		{
 			PackageManager: "npm",
@@ -730,8 +730,8 @@ func TestParse_RealTestdataPackageJson(t *testing.T) {
 			FilePath:       manifestFile,
 			LineStart:      14,
 			LineEnd:        14,
-			StartIndex:     5,
-			EndIndex:       32,
+			StartIndex:     4,
+			EndIndex:       31,
 		},
 	}
 

@@ -33,8 +33,8 @@ func TestParseExactVersion(t *testing.T) {
 		FilePath:       filePath,
 		LineStart:      1,
 		LineEnd:        1,
-		StartIndex:     1,
-		EndIndex:       13,
+		StartIndex:     0,
+		EndIndex:       12,
 	}
 	testdata.ValidatePackages(t, []models.Package{got}, []models.Package{want})
 }
@@ -62,8 +62,8 @@ func TestParseInlineComment(t *testing.T) {
 		FilePath:       filePath,
 		LineStart:      1,
 		LineEnd:        1,
-		StartIndex:     4,
-		EndIndex:       20,
+		StartIndex:     3,
+		EndIndex:       19,
 	}
 	testdata.ValidatePackages(t, []models.Package{got}, []models.Package{want})
 }
@@ -91,8 +91,8 @@ func TestParseRequirementLineEndIndex(t *testing.T) {
 		FilePath:       filePath,
 		LineStart:      1,
 		LineEnd:        1,
-		StartIndex:     1,
-		EndIndex:       17,
+		StartIndex:     0,
+		EndIndex:       16,
 	}
 	testdata.ValidatePackages(t, []models.Package{got}, []models.Package{want})
 }
@@ -129,8 +129,8 @@ func TestPypiParser_Parse_RealFile(t *testing.T) {
 			FilePath:       filePath,
 			LineStart:      4,
 			LineEnd:        4,
-			StartIndex:     1,
-			EndIndex:       18,
+			StartIndex:     0,
+			EndIndex:       17,
 		},
 		{
 			PackageManager: "pypi",
@@ -139,8 +139,8 @@ func TestPypiParser_Parse_RealFile(t *testing.T) {
 			FilePath:       filePath,
 			LineStart:      5,
 			LineEnd:        5,
-			StartIndex:     2,
-			EndIndex:       24,
+			StartIndex:     1,
+			EndIndex:       23,
 		},
 		{
 			PackageManager: "pypi",
@@ -149,8 +149,8 @@ func TestPypiParser_Parse_RealFile(t *testing.T) {
 			FilePath:       filePath,
 			LineStart:      6,
 			LineEnd:        6,
-			StartIndex:     3,
-			EndIndex:       31,
+			StartIndex:     2,
+			EndIndex:       30,
 		},
 	}
 

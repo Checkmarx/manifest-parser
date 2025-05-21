@@ -25,8 +25,8 @@ func TestGoModParser_Parse(t *testing.T) {
 			FilePath:       manifestFile,
 			LineStart:      6,
 			LineEnd:        6,
-			StartIndex:     9,
-			EndIndex:       56,
+			StartIndex:     8,
+			EndIndex:       55,
 		},
 		{
 			PackageManager: "go",
@@ -35,8 +35,8 @@ func TestGoModParser_Parse(t *testing.T) {
 			FilePath:       manifestFile,
 			LineStart:      7,
 			LineEnd:        7,
-			StartIndex:     9,
-			EndIndex:       79,
+			StartIndex:     8,
+			EndIndex:       78,
 		},
 		{
 			PackageManager: "go",
@@ -45,8 +45,8 @@ func TestGoModParser_Parse(t *testing.T) {
 			FilePath:       manifestFile,
 			LineStart:      8,
 			LineEnd:        8,
-			StartIndex:     9,
-			EndIndex:       41,
+			StartIndex:     8,
+			EndIndex:       40,
 		},
 		{
 			PackageManager: "go",
@@ -55,8 +55,8 @@ func TestGoModParser_Parse(t *testing.T) {
 			FilePath:       manifestFile,
 			LineStart:      12,
 			LineEnd:        12,
-			StartIndex:     9,
-			EndIndex:       43,
+			StartIndex:     8,
+			EndIndex:       42,
 		},
 		{
 			PackageManager: "go",
@@ -65,8 +65,8 @@ func TestGoModParser_Parse(t *testing.T) {
 			FilePath:       manifestFile,
 			LineStart:      13,
 			LineEnd:        13,
-			StartIndex:     9,
-			EndIndex:       75,
+			StartIndex:     8,
+			EndIndex:       74,
 		},
 		{
 			PackageManager: "go",
@@ -75,8 +75,8 @@ func TestGoModParser_Parse(t *testing.T) {
 			FilePath:       manifestFile,
 			LineStart:      14,
 			LineEnd:        14,
-			StartIndex:     9,
-			EndIndex:       44,
+			StartIndex:     8,
+			EndIndex:       43,
 		},
 	}
 
