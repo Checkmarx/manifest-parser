@@ -58,7 +58,7 @@ func findPackageVersionPosition(content string, packageName string) (lineNum, st
 		loc := re.FindStringIndex(line)
 		if loc != nil {
 			// endCol = length of the line (till the last character)
-			return i + 1, loc[0] + 1, len(line) + 1
+			return i, loc[0], len(line)
 		}
 	}
 	return 0, 0, 0 // Not found
@@ -107,15 +107,17 @@ func (p *DotnetDirectoryPackagesPropsParser) Parse(manifestFile string) ([]model
 					continue
 				}
 
-				// Get line number from decoder
+				// Get line number from decoder and convert from 1-based to 0-based indexing
+				// since our models.Package struct expects 0-based line numbers
 				line, _ := decoder.InputPos()
+				line--
 
 				// Find package version position in file
 				_, startCol, endCol := findPackageVersionPosition(strContent, pkgVer.Include)
 
 				// Create package entry
 				packages = append(packages, models.Package{
-					PackageManager: "dotnet",
+					PackageManager: "nuget",
 					PackageName:    pkgVer.Include,
 					Version:        parseVersionProps(pkgVer.Version),
 					FilePath:       manifestFile,

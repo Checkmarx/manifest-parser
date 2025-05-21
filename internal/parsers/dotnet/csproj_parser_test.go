@@ -10,70 +10,6 @@ import (
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
 
-func TestDotnetCsprojParser_ParseNoVersion(t *testing.T) {
-	parser := &DotnetCsprojParser{}
-	manifestFile := "../../../internal/testdata/ast-visual-studio-extension.csproj"
-	packages, err := parser.Parse(manifestFile)
-	if err != nil {
-		t.Error("Error parsing manifest file: ", err)
-	}
-
-	expectedPackages := []models.Package{
-		{
-			PackageManager: "dotnet",
-			PackageName:    "Community.VisualStudio.Toolkit.17",
-			Version:        "17.0.507",
-			LineStart:      31,
-			LineEnd:        31,
-			FilePath:       manifestFile,
-			StartIndex:     5,
-			EndIndex:       88,
-		},
-		{
-			PackageManager: "dotnet",
-			PackageName:    "Community.VisualStudio.VSCT",
-			Version:        "16.0.29.6",
-			LineStart:      32,
-			LineEnd:        32,
-			FilePath:       manifestFile,
-			StartIndex:     5,
-			EndIndex:       83,
-		},
-		{
-			PackageManager: "dotnet",
-			PackageName:    "Microsoft.TeamFoundationServer.Client",
-			Version:        "19.225.1",
-			LineStart:      33,
-			LineEnd:        33,
-			FilePath:       manifestFile,
-			StartIndex:     5,
-			EndIndex:       71,
-		},
-		{
-			PackageManager: "dotnet",
-			PackageName:    "Microsoft.VisualStudio.SDK",
-			Version:        "17.0.32112.339",
-			LineStart:      36,
-			LineEnd:        36,
-			FilePath:       manifestFile,
-			StartIndex:     5,
-			EndIndex:       87,
-		},
-		{
-			PackageManager: "dotnet",
-			PackageName:    "System.Json",
-			Version:        "4.7.1",
-			LineStart:      37,
-			LineEnd:        37,
-			FilePath:       manifestFile,
-			StartIndex:     5,
-			EndIndex:       63,
-		},
-	}
-
-	testdata.ValidatePackages(t, packages, expectedPackages)
-}
-
 func TestDotnetCsprojParser_Parse(t *testing.T) {
 	// Create a temporary directory for test files
 	tempDir, err := os.MkdirTemp("", "csproj-test")
@@ -99,24 +35,24 @@ func TestDotnetCsprojParser_Parse(t *testing.T) {
 </Project>`,
 			expectedPkgs: []models.Package{
 				{
-					PackageManager: "dotnet",
+					PackageManager: "nuget",
 					PackageName:    "Newtonsoft.Json",
 					Version:        "13.0.1",
 					FilePath:       filepath.Join(tempDir, "test.csproj"),
-					LineStart:      4,
-					LineEnd:        4,
-					StartIndex:     5,
-					EndIndex:       68,
+					LineStart:      3,
+					LineEnd:        3,
+					StartIndex:     4,
+					EndIndex:       67,
 				},
 				{
-					PackageManager: "dotnet",
+					PackageManager: "nuget",
 					PackageName:    "Microsoft.Extensions.Logging",
 					Version:        "6.0.0",
 					FilePath:       filepath.Join(tempDir, "test.csproj"),
-					LineStart:      5,
-					LineEnd:        5,
-					StartIndex:     5,
-					EndIndex:       80,
+					LineStart:      4,
+					LineEnd:        4,
+					StartIndex:     4,
+					EndIndex:       79,
 				},
 			},
 			expectedError: false,
@@ -131,14 +67,14 @@ func TestDotnetCsprojParser_Parse(t *testing.T) {
 </Project>`,
 			expectedPkgs: []models.Package{
 				{
-					PackageManager: "dotnet",
+					PackageManager: "nuget",
 					PackageName:    "Package1",
 					Version:        "latest",
 					FilePath:       filepath.Join(tempDir, "test.csproj"),
-					LineStart:      4,
-					LineEnd:        4,
-					StartIndex:     5,
-					EndIndex:       55,
+					LineStart:      3,
+					LineEnd:        3,
+					StartIndex:     4,
+					EndIndex:       54,
 				},
 			},
 			expectedError: false,
@@ -174,14 +110,14 @@ func TestDotnetCsprojParser_Parse(t *testing.T) {
 </Project>`,
 			expectedPkgs: []models.Package{
 				{
-					PackageManager: "dotnet",
+					PackageManager: "nuget",
 					PackageName:    "Community.VisualStudio.VSCT",
 					Version:        "16.0.29.6",
 					FilePath:       filepath.Join(tempDir, "test.csproj"),
-					LineStart:      4,
-					LineEnd:        4,
-					StartIndex:     5,
-					EndIndex:       83,
+					LineStart:      3,
+					LineEnd:        3,
+					StartIndex:     4,
+					EndIndex:       82,
 				},
 			},
 			expectedError: false,
@@ -243,4 +179,68 @@ func TestParseVersion(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDotnetCsprojParser_ParseNoVersion(t *testing.T) {
+	parser := &DotnetCsprojParser{}
+	manifestFile := "../../../internal/testdata/ast-visual-studio-extension.csproj"
+	packages, err := parser.Parse(manifestFile)
+	if err != nil {
+		t.Error("Error parsing manifest file: ", err)
+	}
+
+	expectedPackages := []models.Package{
+		{
+			PackageManager: "nuget",
+			PackageName:    "Community.VisualStudio.Toolkit.17",
+			Version:        "17.0.507",
+			LineStart:      30,
+			LineEnd:        30,
+			FilePath:       manifestFile,
+			StartIndex:     4,
+			EndIndex:       87,
+		},
+		{
+			PackageManager: "nuget",
+			PackageName:    "Community.VisualStudio.VSCT",
+			Version:        "16.0.29.6",
+			LineStart:      31,
+			LineEnd:        31,
+			FilePath:       manifestFile,
+			StartIndex:     4,
+			EndIndex:       82,
+		},
+		{
+			PackageManager: "nuget",
+			PackageName:    "Microsoft.TeamFoundationServer.Client",
+			Version:        "19.225.1",
+			LineStart:      32,
+			LineEnd:        32,
+			FilePath:       manifestFile,
+			StartIndex:     4,
+			EndIndex:       70,
+		},
+		{
+			PackageManager: "nuget",
+			PackageName:    "Microsoft.VisualStudio.SDK",
+			Version:        "17.0.32112.339",
+			LineStart:      35,
+			LineEnd:        35,
+			FilePath:       manifestFile,
+			StartIndex:     4,
+			EndIndex:       86,
+		},
+		{
+			PackageManager: "nuget",
+			PackageName:    "System.Json",
+			Version:        "4.7.1",
+			LineStart:      36,
+			LineEnd:        36,
+			FilePath:       manifestFile,
+			StartIndex:     4,
+			EndIndex:       62,
+		},
+	}
+
+	testdata.ValidatePackages(t, packages, expectedPackages)
 }

@@ -61,8 +61,8 @@ func findPositions(fileContent string, key string) (lineStart, lineEnd, startInd
 
 			lineStart = i
 			lineEnd = i
-			startIndex = startPos + 1 // 1-indexed for column numbers
-			endIndex = endPos + 1     // Include the entire line length
+			startIndex = startPos
+			endIndex = endPos
 			return
 		}
 	}

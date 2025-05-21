@@ -33,14 +33,14 @@ func parseVersionConfig(version string) string {
 	return version
 }
 
-// findPackageTagPosition returns the start column and EndIndex as the length of the line + 1
+// findPackageTagPosition returns the start column and EndIndex as the length of the line
 func findPackageTagPosition(lines []string, lineNum int) (startCol, endCol int) {
 	if lineNum > 0 && lineNum <= len(lines) {
 		line := lines[lineNum-1]
 		idx := strings.Index(line, "<package")
 		if idx >= 0 {
-			startCol = idx + 1 // 1-based, including leading spaces
-			endCol = len(line) + 1
+			startCol = idx
+			endCol = len(line)
 			return startCol, endCol
 		}
 	}
@@ -94,13 +94,14 @@ func (p *DotnetPackagesConfigParser) Parse(manifest string) ([]models.Package, e
 	for _, pkg := range pkgs {
 		startCol, endCol := findPackageTagPosition(lines, pkg.Line)
 		packages = append(packages, models.Package{
-			PackageName: pkg.ID,
-			Version:     parseVersionConfig(pkg.Version),
-			LineStart:   pkg.Line,
-			LineEnd:     pkg.Line,
-			StartIndex:  startCol,
-			EndIndex:    endCol,
-			FilePath:    manifest,
+			PackageManager: "nuget",
+			PackageName:    pkg.ID,
+			Version:        parseVersionConfig(pkg.Version),
+			FilePath:       manifest,
+			LineStart:      pkg.Line - 1,
+			LineEnd:        pkg.Line - 1,
+			StartIndex:     startCol,
+			EndIndex:       endCol,
 		})
 	}
 	return packages, nil
