@@ -39,20 +39,63 @@ func TestDotnetCsprojParser_Parse(t *testing.T) {
 					PackageName:    "Newtonsoft.Json",
 					Version:        "13.0.1",
 					FilePath:       filepath.Join(tempDir, "test.csproj"),
-					LineStart:      3,
-					LineEnd:        3,
-					StartIndex:     4,
-					EndIndex:       67,
+					Locations: []models.Location{
+						{
+							Line:       3,
+							StartIndex: 4,
+							EndIndex:   67,
+						},
+					},
 				},
 				{
 					PackageManager: "nuget",
 					PackageName:    "Microsoft.Extensions.Logging",
 					Version:        "6.0.0",
 					FilePath:       filepath.Join(tempDir, "test.csproj"),
-					LineStart:      4,
-					LineEnd:        4,
-					StartIndex:     4,
-					EndIndex:       79,
+					Locations: []models.Location{
+						{
+							Line:       4,
+							StartIndex: 4,
+							EndIndex:   79,
+						},
+					},
+				},
+			},
+			expectedError: false,
+		},
+		{
+			name: "multi-line package reference",
+			content: `<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="Microsoft.TeamFoundationServer.Client">
+      <Version>19.225.1</Version>
+    </PackageReference>
+  </ItemGroup>
+</Project>`,
+			expectedPkgs: []models.Package{
+				{
+					PackageManager: "nuget",
+					PackageName:    "Microsoft.TeamFoundationServer.Client",
+					Version:        "19.225.1",
+					FilePath:       filepath.Join(tempDir, "test.csproj"),
+					Locations: []models.Location{
+						{
+							Line:       3,
+							StartIndex: 4,
+							EndIndex:   70,
+						},
+						{
+							Line:       4,
+							StartIndex: 6,
+							EndIndex:   33,
+						},
+						{
+							Line:       5,
+							StartIndex: 4,
+							EndIndex:   23,
+						},
+					},
 				},
 			},
 			expectedError: false,
@@ -71,10 +114,13 @@ func TestDotnetCsprojParser_Parse(t *testing.T) {
 					PackageName:    "Package1",
 					Version:        "latest",
 					FilePath:       filepath.Join(tempDir, "test.csproj"),
-					LineStart:      3,
-					LineEnd:        3,
-					StartIndex:     4,
-					EndIndex:       54,
+					Locations: []models.Location{
+						{
+							Line:       3,
+							StartIndex: 4,
+							EndIndex:   54,
+						},
+					},
 				},
 			},
 			expectedError: false,
@@ -114,10 +160,13 @@ func TestDotnetCsprojParser_Parse(t *testing.T) {
 					PackageName:    "Community.VisualStudio.VSCT",
 					Version:        "16.0.29.6",
 					FilePath:       filepath.Join(tempDir, "test.csproj"),
-					LineStart:      3,
-					LineEnd:        3,
-					StartIndex:     4,
-					EndIndex:       82,
+					Locations: []models.Location{
+						{
+							Line:       3,
+							StartIndex: 4,
+							EndIndex:   82,
+						},
+					},
 				},
 			},
 			expectedError: false,
@@ -194,51 +243,64 @@ func TestDotnetCsprojParser_ParseNoVersion(t *testing.T) {
 			PackageManager: "nuget",
 			PackageName:    "Community.VisualStudio.Toolkit.17",
 			Version:        "17.0.507",
-			LineStart:      30,
-			LineEnd:        30,
 			FilePath:       manifestFile,
-			StartIndex:     4,
-			EndIndex:       87,
+			Locations: []models.Location{
+				{
+					Line:       30,
+					StartIndex: 4,
+					EndIndex:   87,
+				},
+			},
 		},
 		{
 			PackageManager: "nuget",
 			PackageName:    "Community.VisualStudio.VSCT",
 			Version:        "16.0.29.6",
-			LineStart:      31,
-			LineEnd:        31,
 			FilePath:       manifestFile,
-			StartIndex:     4,
-			EndIndex:       82,
+			Locations: []models.Location{
+				{
+					Line:       31,
+					StartIndex: 4,
+					EndIndex:   82,
+				},
+			},
 		},
 		{
 			PackageManager: "nuget",
 			PackageName:    "Microsoft.TeamFoundationServer.Client",
 			Version:        "19.225.1",
-			LineStart:      32,
-			LineEnd:        32,
 			FilePath:       manifestFile,
-			StartIndex:     4,
-			EndIndex:       70,
+			Locations: []models.Location{
+				{Line: 32, StartIndex: 4, EndIndex: 70},
+				{Line: 33, StartIndex: 6, EndIndex: 33},
+				{Line: 34, StartIndex: 4, EndIndex: 23},
+			},
 		},
 		{
 			PackageManager: "nuget",
 			PackageName:    "Microsoft.VisualStudio.SDK",
 			Version:        "17.0.32112.339",
-			LineStart:      35,
-			LineEnd:        35,
 			FilePath:       manifestFile,
-			StartIndex:     4,
-			EndIndex:       86,
+			Locations: []models.Location{
+				{
+					Line:       35,
+					StartIndex: 4,
+					EndIndex:   86,
+				},
+			},
 		},
 		{
 			PackageManager: "nuget",
 			PackageName:    "System.Json",
 			Version:        "4.7.1",
-			LineStart:      36,
-			LineEnd:        36,
 			FilePath:       manifestFile,
-			StartIndex:     4,
-			EndIndex:       62,
+			Locations: []models.Location{
+				{
+					Line:       36,
+					StartIndex: 4,
+					EndIndex:   62,
+				},
+			},
 		},
 	}
 

@@ -31,10 +31,11 @@ func TestParseExactVersion(t *testing.T) {
 		PackageName:    "flask",
 		Version:        "1.1.2",
 		FilePath:       filePath,
-		LineStart:      1,
-		LineEnd:        1,
-		StartIndex:     0,
-		EndIndex:       12,
+		Locations: []models.Location{{
+			Line:       0,
+			StartIndex: 0,
+			EndIndex:   12,
+		}},
 	}
 	testdata.ValidatePackages(t, []models.Package{got}, []models.Package{want})
 }
@@ -60,10 +61,11 @@ func TestParseInlineComment(t *testing.T) {
 		PackageName:    "requests",
 		Version:        "2.25.1",
 		FilePath:       filePath,
-		LineStart:      1,
-		LineEnd:        1,
-		StartIndex:     3,
-		EndIndex:       19,
+		Locations: []models.Location{{
+			Line:       0,
+			StartIndex: 3,
+			EndIndex:   19,
+		}},
 	}
 	testdata.ValidatePackages(t, []models.Package{got}, []models.Package{want})
 }
@@ -89,10 +91,11 @@ func TestParseRequirementLineEndIndex(t *testing.T) {
 		PackageName:    "requests",
 		Version:        "2.25.1",
 		FilePath:       filePath,
-		LineStart:      1,
-		LineEnd:        1,
-		StartIndex:     0,
-		EndIndex:       16,
+		Locations: []models.Location{{
+			Line:       0,
+			StartIndex: 0,
+			EndIndex:   16,
+		}},
 	}
 	testdata.ValidatePackages(t, []models.Package{got}, []models.Package{want})
 }
@@ -127,30 +130,33 @@ func TestPypiParser_Parse_RealFile(t *testing.T) {
 			PackageName:    "ansicolors",
 			Version:        "1.1.8",
 			FilePath:       filePath,
-			LineStart:      4,
-			LineEnd:        4,
-			StartIndex:     0,
-			EndIndex:       17,
+			Locations: []models.Location{{
+				Line:       3,
+				StartIndex: 0,
+				EndIndex:   17,
+			}},
 		},
 		{
 			PackageManager: "pypi",
 			PackageName:    "setuptools",
 			Version:        "latest",
 			FilePath:       filePath,
-			LineStart:      5,
-			LineEnd:        5,
-			StartIndex:     1,
-			EndIndex:       23,
+			Locations: []models.Location{{
+				Line:       4,
+				StartIndex: 1,
+				EndIndex:   23,
+			}},
 		},
 		{
 			PackageManager: "pypi",
 			PackageName:    "types-setuptools",
 			Version:        "latest",
 			FilePath:       filePath,
-			LineStart:      6,
-			LineEnd:        6,
-			StartIndex:     2,
-			EndIndex:       30,
+			Locations: []models.Location{{
+				Line:       5,
+				StartIndex: 2,
+				EndIndex:   30,
+			}},
 		},
 	}
 

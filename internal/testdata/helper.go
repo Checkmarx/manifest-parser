@@ -6,6 +6,26 @@ import (
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
 
+// CompareLocations is a helper to assert Location equality in tests
+func CompareLocations(t *testing.T, got, want []models.Location) {
+	if len(got) != len(want) {
+		t.Errorf("Locations: got %d locations, want %d", len(got), len(want))
+		return
+	}
+
+	for i, loc := range got {
+		if loc.Line != want[i].Line {
+			t.Errorf("Location[%d].Line: got %d, want %d", i, loc.Line, want[i].Line)
+		}
+		if loc.StartIndex != want[i].StartIndex {
+			t.Errorf("Location[%d].StartIndex: got %d, want %d", i, loc.StartIndex, want[i].StartIndex)
+		}
+		if loc.EndIndex != want[i].EndIndex {
+			t.Errorf("Location[%d].EndIndex: got %d, want %d", i, loc.EndIndex, want[i].EndIndex)
+		}
+	}
+}
+
 // ComparePackages is a helper to assert Package equality in tests
 func ComparePackages(t *testing.T, got, want models.Package) {
 	if got.PackageManager != want.PackageManager {
@@ -20,12 +40,7 @@ func ComparePackages(t *testing.T, got, want models.Package) {
 	if got.FilePath != want.FilePath {
 		t.Errorf("FilePath: got %q, want %q", got.FilePath, want.FilePath)
 	}
-	if got.LineStart != want.LineStart || got.LineEnd != want.LineEnd {
-		t.Errorf("LineStart/LineEnd: got %d/%d, want %d/%d", got.LineStart, got.LineEnd, want.LineStart, want.LineEnd)
-	}
-	if got.StartIndex != want.StartIndex || got.EndIndex != want.EndIndex {
-		t.Errorf("StartIndex/EndIndex: got %d/%d, want %d/%d", got.StartIndex, got.EndIndex, want.StartIndex, want.EndIndex)
-	}
+	CompareLocations(t, got.Locations, want.Locations)
 }
 
 func ValidatePackages(t *testing.T, packages []models.Package, expectedPackages []models.Package) {
