@@ -163,10 +163,11 @@ func (p *MavenPomParser) Parse(manifestFile string) ([]models.Package, error) {
 			PackageName:    dep.GroupId + ":" + dep.ArtifactId,
 			Version:        resolveVersion(dep.Version, props, project.DependencyManagement.Dependencies, dep.GroupId, dep.ArtifactId),
 			FilePath:       manifestFile,
-			LineStart:      lineNum,
-			LineEnd:        lineNum,
-			StartIndex:     startIdx,
-			EndIndex:       endIdx,
+			Locations: []models.Location{{
+				Line:       lineNum,
+				StartIndex: startIdx,
+				EndIndex:   endIdx,
+			}},
 		})
 	}
 

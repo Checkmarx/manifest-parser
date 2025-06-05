@@ -52,10 +52,13 @@ func (p *GoModParser) Parse(manifest string) ([]models.Package, error) {
 			PackageName:    depName,
 			Version:        depVersion,
 			FilePath:       manifest,
-			LineStart:      lineNum,
-			LineEnd:        lineNum,
-			StartIndex:     startIdx,
-			EndIndex:       endIdx,
+			Locations: []models.Location{
+				{
+					Line:       lineNum,
+					StartIndex: startIdx,
+					EndIndex:   endIdx,
+				},
+			},
 		})
 	}
 	return packages, nil
