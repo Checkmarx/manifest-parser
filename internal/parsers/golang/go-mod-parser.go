@@ -33,7 +33,7 @@ func (p *GoModParser) Parse(manifest string) ([]models.Package, error) {
 		// Find the line where the dependency appears
 		depName := req.Mod.Path
 		depVersion := req.Mod.Version
-		lineNum := req.Syntax.Start.Line // 1-based
+		lineNum := req.Syntax.Start.Line
 		if lineNum <= 0 || lineNum > len(lines) {
 			continue // skip if out of range
 		}
@@ -54,7 +54,7 @@ func (p *GoModParser) Parse(manifest string) ([]models.Package, error) {
 			FilePath:       manifest,
 			Locations: []models.Location{
 				{
-					Line:       lineNum,
+					Line:       lineNum - 1,
 					StartIndex: startIdx,
 					EndIndex:   endIdx,
 				},
