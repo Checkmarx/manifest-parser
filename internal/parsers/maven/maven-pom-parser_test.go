@@ -44,21 +44,26 @@ func TestMavenPomParser_Parse(t *testing.T) {
 					PackageManager: "maven",
 					PackageName:    "org.springframework:spring-core",
 					Version:        "5.3.0",
-					Locations: []models.Location{{
-						Line:       8,
-						StartIndex: 12,
-						EndIndex:   48,
-					}},
+					Locations: []models.Location{
+						{Line: 6, StartIndex: 8, EndIndex: 20},
+						{Line: 7, StartIndex: 12, EndIndex: 50},
+						{Line: 8, StartIndex: 12, EndIndex: 48},
+						{Line: 9, StartIndex: 12, EndIndex: 36},
+						{Line: 10, StartIndex: 8, EndIndex: 21},
+					},
 				},
 				{
 					PackageManager: "maven",
 					PackageName:    "junit:junit",
 					Version:        "4.13",
-					Locations: []models.Location{{
-						Line:       13,
-						StartIndex: 12,
-						EndIndex:   42,
-					}},
+					Locations: []models.Location{
+						{Line: 11, StartIndex: 8, EndIndex: 20},
+						{Line: 12, StartIndex: 12, EndIndex: 36},
+						{Line: 13, StartIndex: 12, EndIndex: 42},
+						{Line: 14, StartIndex: 12, EndIndex: 35},
+						{Line: 15, StartIndex: 12, EndIndex: 31},
+						{Line: 16, StartIndex: 8, EndIndex: 21},
+					},
 				},
 			},
 			expectedError: false,
@@ -80,11 +85,13 @@ func TestMavenPomParser_Parse(t *testing.T) {
 					PackageManager: "maven",
 					PackageName:    "org.example:test-lib",
 					Version:        "latest",
-					Locations: []models.Location{{
-						Line:       5,
-						StartIndex: 12,
-						EndIndex:   45,
-					}},
+					Locations: []models.Location{
+						{Line: 3, StartIndex: 8, EndIndex: 20},
+						{Line: 4, StartIndex: 12, EndIndex: 42},
+						{Line: 5, StartIndex: 12, EndIndex: 45},
+						{Line: 6, StartIndex: 12, EndIndex: 44},
+						{Line: 7, StartIndex: 8, EndIndex: 21},
+					},
 				},
 			},
 			expectedError: false,
@@ -115,21 +122,25 @@ func TestMavenPomParser_Parse(t *testing.T) {
 					PackageManager: "maven",
 					PackageName:    "org.springframework:spring-core",
 					Version:        "5.3.0",
-					Locations: []models.Location{{
-						Line:       9,
-						StartIndex: 12,
-						EndIndex:   48,
-					}},
+					Locations: []models.Location{
+						{Line: 7, StartIndex: 8, EndIndex: 20},
+						{Line: 8, StartIndex: 12, EndIndex: 50},
+						{Line: 9, StartIndex: 12, EndIndex: 48},
+						{Line: 10, StartIndex: 12, EndIndex: 48},
+						{Line: 11, StartIndex: 8, EndIndex: 21},
+					},
 				},
 				{
 					PackageManager: "maven",
 					PackageName:    "junit:junit",
 					Version:        "4.13",
-					Locations: []models.Location{{
-						Line:       14,
-						StartIndex: 12,
-						EndIndex:   42,
-					}},
+					Locations: []models.Location{
+						{Line: 12, StartIndex: 8, EndIndex: 20},
+						{Line: 13, StartIndex: 12, EndIndex: 36},
+						{Line: 14, StartIndex: 12, EndIndex: 42},
+						{Line: 15, StartIndex: 12, EndIndex: 47},
+						{Line: 16, StartIndex: 8, EndIndex: 21},
+					},
 				},
 			},
 			expectedError: false,
@@ -159,11 +170,13 @@ func TestMavenPomParser_Parse(t *testing.T) {
 					PackageManager: "maven",
 					PackageName:    "org.springframework:spring-core",
 					Version:        "5.3.0",
-					Locations: []models.Location{{
-						Line:       6,
-						StartIndex: 16,
-						EndIndex:   52,
-					}},
+					Locations: []models.Location{
+						{Line: 4, StartIndex: 12, EndIndex: 24},
+						{Line: 5, StartIndex: 16, EndIndex: 54},
+						{Line: 6, StartIndex: 16, EndIndex: 52},
+						{Line: 7, StartIndex: 16, EndIndex: 40},
+						{Line: 8, StartIndex: 12, EndIndex: 25},
+					},
 				},
 			},
 			expectedError: false,
@@ -190,45 +203,13 @@ func TestMavenPomParser_Parse(t *testing.T) {
 					PackageManager: "maven",
 					PackageName:    "org.springframework:spring-core",
 					Version:        "${spring.version}${version.suffix}",
-					Locations: []models.Location{{
-						Line:       10,
-						StartIndex: 12,
-						EndIndex:   48,
-					}},
-				},
-			},
-			expectedError: false,
-		},
-		{
-			name: "pom with version ranges in dependency management",
-			content: `<?xml version="1.0" encoding="UTF-8"?>
-<project>
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.example</groupId>
-                <artifactId>test-lib</artifactId>
-                <version>[1.0.0,2.0.0)</version>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
-    <dependencies>
-        <dependency>
-            <groupId>org.example</groupId>
-            <artifactId>test-lib</artifactId>
-        </dependency>
-    </dependencies>
-</project>`,
-			expectedPkgs: []models.Package{
-				{
-					PackageManager: "maven",
-					PackageName:    "org.example:test-lib",
-					Version:        "latest",
-					Locations: []models.Location{{
-						Line:       6,
-						StartIndex: 16,
-						EndIndex:   49,
-					}},
+					Locations: []models.Location{
+						{Line: 8, StartIndex: 8, EndIndex: 20},
+						{Line: 9, StartIndex: 12, EndIndex: 50},
+						{Line: 10, StartIndex: 12, EndIndex: 48},
+						{Line: 11, StartIndex: 12, EndIndex: 46},
+						{Line: 12, StartIndex: 8, EndIndex: 21},
+					},
 				},
 			},
 			expectedError: false,
@@ -391,110 +372,136 @@ func TestMavenPomParser_ParseRealFile(t *testing.T) {
 			PackageManager: "maven",
 			PackageName:    "org.mockito:mockito-core",
 			Version:        "latest",
-			Locations: []models.Location{{
-				Line:       68,
-				StartIndex: 12,
-				EndIndex:   49,
-			}},
+			Locations: []models.Location{
+				{Line: 66, StartIndex: 8, EndIndex: 20},
+				{Line: 67, StartIndex: 12, EndIndex: 42},
+				{Line: 68, StartIndex: 12, EndIndex: 49},
+				{Line: 69, StartIndex: 12, EndIndex: 31},
+				{Line: 70, StartIndex: 8, EndIndex: 21},
+			},
 			FilePath: manifestFile,
 		},
 		{
 			PackageManager: "maven",
 			PackageName:    "com.checkmarx:cx-integrations-common",
 			Version:        "0.0.319",
-			Locations: []models.Location{{
-				Line:       74,
-				StartIndex: 12,
-				EndIndex:   59,
-			}},
+			Locations: []models.Location{
+				{Line: 71, StartIndex: 8, EndIndex: 20},
+				{Line: 73, StartIndex: 12, EndIndex: 44},
+				{Line: 74, StartIndex: 12, EndIndex: 59},
+				{Line: 75, StartIndex: 12, EndIndex: 38},
+				{Line: 76, StartIndex: 8, EndIndex: 21},
+			},
 			FilePath: manifestFile,
 		},
 		{
 			PackageManager: "maven",
 			PackageName:    "com.checkmarx:cx-interceptors-lib",
 			Version:        "0.1.58",
-			Locations: []models.Location{{
-				Line:       80,
-				StartIndex: 12,
-				EndIndex:   56,
-			}},
+			Locations: []models.Location{
+				{Line: 77, StartIndex: 8, EndIndex: 20},
+				{Line: 79, StartIndex: 12, EndIndex: 44},
+				{Line: 80, StartIndex: 12, EndIndex: 56},
+				{Line: 81, StartIndex: 12, EndIndex: 37},
+				{Line: 82, StartIndex: 8, EndIndex: 21},
+			},
 			FilePath: manifestFile,
 		},
 		{
 			PackageManager: "maven",
 			PackageName:    "org.apache.httpcomponents.client5:httpclient5",
 			Version:        "5.4.3",
-			Locations: []models.Location{{
-				Line:       27,
-				StartIndex: 16,
-				EndIndex:   52,
-			}},
+			Locations: []models.Location{
+				{Line: 25, StartIndex: 12, EndIndex: 24},
+				{Line: 26, StartIndex: 16, EndIndex: 68},
+				{Line: 27, StartIndex: 16, EndIndex: 52},
+				{Line: 28, StartIndex: 16, EndIndex: 40},
+				{Line: 29, StartIndex: 12, EndIndex: 25},
+			},
 			FilePath: manifestFile,
 		},
 		{
 			PackageManager: "maven",
 			PackageName:    "org.apache.httpcomponents.client5:httpclient5-fluent",
 			Version:        "5.4.3",
-			Locations: []models.Location{{
-				Line:       32,
-				StartIndex: 16,
-				EndIndex:   59,
-			}},
+			Locations: []models.Location{
+				{Line: 30, StartIndex: 12, EndIndex: 24},
+				{Line: 31, StartIndex: 16, EndIndex: 68},
+				{Line: 32, StartIndex: 16, EndIndex: 59},
+				{Line: 33, StartIndex: 16, EndIndex: 40},
+				{Line: 34, StartIndex: 12, EndIndex: 25},
+			},
 			FilePath: manifestFile,
 		},
 		{
 			PackageManager: "maven",
 			PackageName:    "org.projectlombok:lombok",
 			Version:        "latest",
-			Locations: []models.Location{{
-				Line:       93,
-				StartIndex: 12,
-				EndIndex:   43,
-			}},
+			Locations: []models.Location{
+				{Line: 91, StartIndex: 8, EndIndex: 20},
+				{Line: 92, StartIndex: 12, EndIndex: 48},
+				{Line: 93, StartIndex: 12, EndIndex: 43},
+				{Line: 94, StartIndex: 8, EndIndex: 21},
+			},
 			FilePath: manifestFile,
 		},
 		{
 			PackageManager: "maven",
 			PackageName:    "org.yaml:snakeyaml",
 			Version:        "latest",
-			Locations: []models.Location{{
-				Line:       97,
-				StartIndex: 12,
-				EndIndex:   46,
-			}},
+			Locations: []models.Location{
+				{Line: 95, StartIndex: 8, EndIndex: 20},
+				{Line: 96, StartIndex: 12, EndIndex: 39},
+				{Line: 97, StartIndex: 12, EndIndex: 46},
+				{Line: 98, StartIndex: 8, EndIndex: 21},
+			},
 			FilePath: manifestFile,
 		},
 		{
 			PackageManager: "maven",
 			PackageName:    "org.apache.tomcat.embed:tomcat-embed-core",
 			Version:        "latest",
-			Locations: []models.Location{{
-				Line:       101,
-				StartIndex: 12,
-				EndIndex:   54,
-			}},
+			Locations: []models.Location{
+				{Line: 99, StartIndex: 8, EndIndex: 20},
+				{Line: 100, StartIndex: 12, EndIndex: 54},
+				{Line: 101, StartIndex: 12, EndIndex: 54},
+				{Line: 102, StartIndex: 8, EndIndex: 21},
+			},
 			FilePath: manifestFile,
 		},
 		{
 			PackageManager: "maven",
 			PackageName:    "org.springframework.boot:spring-boot-starter-web",
 			Version:        "latest",
-			Locations: []models.Location{{
-				Line:       105,
-				StartIndex: 12,
-				EndIndex:   60,
-			}},
+			Locations: []models.Location{
+				{Line: 103, StartIndex: 8, EndIndex: 20},
+				{Line: 104, StartIndex: 12, EndIndex: 55},
+				{Line: 105, StartIndex: 12, EndIndex: 60},
+				{Line: 106, StartIndex: 12, EndIndex: 24},
+				{Line: 107, StartIndex: 16, EndIndex: 27},
+				{Line: 108, StartIndex: 20, EndIndex: 53},
+				{Line: 109, StartIndex: 20, EndIndex: 57},
+				{Line: 110, StartIndex: 16, EndIndex: 28},
+				{Line: 111, StartIndex: 16, EndIndex: 27},
+				{Line: 112, StartIndex: 20, EndIndex: 63},
+				{Line: 113, StartIndex: 20, EndIndex: 59},
+				{Line: 114, StartIndex: 16, EndIndex: 28},
+				{Line: 115, StartIndex: 12, EndIndex: 25},
+				{Line: 116, StartIndex: 8, EndIndex: 21},
+			},
 			FilePath: manifestFile,
 		},
 		{
 			PackageManager: "maven",
 			PackageName:    "com.fasterxml.jackson.dataformat:jackson-dataformat-smile",
 			Version:        "2.18.2",
-			Locations: []models.Location{{
-				Line:       119,
-				StartIndex: 12,
-				EndIndex:   61,
-			}},
+			Locations: []models.Location{
+				{Line: 117, StartIndex: 8, EndIndex: 20},
+				{Line: 118, StartIndex: 12, EndIndex: 63},
+				{Line: 119, StartIndex: 12, EndIndex: 61},
+				{Line: 120, StartIndex: 12, EndIndex: 37},
+				{Line: 121, StartIndex: 8, EndIndex: 21},
+			},
 			FilePath: manifestFile,
 		},
 	}

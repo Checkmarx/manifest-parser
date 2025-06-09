@@ -66,17 +66,21 @@ func resolveVersion(raw string, props map[string]string, managedDeps []MavenDepe
 	return raw
 }
 
-// findDependencyLocation finds the exact location of a dependency in the POM file
-// Returns line number (0-based), start index, and end index of the artifactId line
-func findDependencyLocation(lines []string, dep MavenDependency) (lineNum, startIdx, endIdx int) {
+// findDependencyLocations finds all locations for a dependency in the POM file
+// Returns all lines from <dependency> to </dependency> inclusive, excluding comments
+func findDependencyLocations(lines []string, dep MavenDependency) []models.Location {
+	var locations []models.Location
+
 	// Search for the dependency block
 	for i := 0; i < len(lines); i++ {
 		line := strings.TrimSpace(lines[i])
 
 		// Look for the beginning of a dependency block
 		if strings.Contains(line, "<dependency>") {
+			dependencyStartLine := i
+
 			// Now search for the groupId in the following lines
-			for j := i + 1; j < len(lines) && j < i+10; j++ { // Limit to 10 lines
+			for j := i + 1; j < len(lines) && j < i+15; j++ { // Limit to 15 lines
 				innerLine := strings.TrimSpace(lines[j])
 
 				// Check if this is the end of the dependency
@@ -87,7 +91,7 @@ func findDependencyLocation(lines []string, dep MavenDependency) (lineNum, start
 				// Look for matching groupId
 				if strings.Contains(innerLine, "<groupId>") && strings.Contains(innerLine, dep.GroupId) {
 					// Now verify that the artifactId also matches in the same dependency block
-					for k := j + 1; k < len(lines) && k < i+10; k++ {
+					for k := j + 1; k < len(lines) && k < i+15; k++ {
 						artifactLine := strings.TrimSpace(lines[k])
 
 						if strings.Contains(artifactLine, "</dependency>") {
@@ -95,25 +99,57 @@ func findDependencyLocation(lines []string, dep MavenDependency) (lineNum, start
 						}
 
 						if strings.Contains(artifactLine, "<artifactId>") && strings.Contains(artifactLine, dep.ArtifactId) {
-							// Found it! Return the location of the artifactId line
-							lineNum = k // 0-based line numbers
+							// Found the matching dependency! Now collect all lines from start to end
 
-							// Find the start of the <artifactId> tag (0-based column)
-							startIdx = strings.Index(lines[k], "<artifactId>")
+							// Add the opening <dependency> line
+							startIdx := strings.Index(lines[dependencyStartLine], "<dependency>")
 							if startIdx == -1 {
-								// Fallback to start of line if tag not found
 								startIdx = 0
 							}
+							locations = append(locations, models.Location{
+								Line:       dependencyStartLine,
+								StartIndex: startIdx,
+								EndIndex:   len(lines[dependencyStartLine]),
+							})
 
-							// Find the end of the closing </artifactId> tag
-							if closingTagPos := strings.Index(lines[k], "</artifactId>"); closingTagPos != -1 {
-								endIdx = closingTagPos + len("</artifactId>")
-							} else {
-								// Fallback to end of line
-								endIdx = len(lines[k])
+							// Add all intermediate lines (skip comments)
+							for m := dependencyStartLine + 1; m < len(lines) && m < dependencyStartLine+15; m++ {
+								currentLine := lines[m]
+								trimmedLine := strings.TrimSpace(currentLine)
+
+								// Check if this is the closing </dependency> line
+								if strings.Contains(currentLine, "</dependency>") {
+									closingStartIdx := strings.Index(currentLine, "</dependency>")
+									closingEndIdx := strings.Index(currentLine, "</dependency>") + len("</dependency>")
+									locations = append(locations, models.Location{
+										Line:       m,
+										StartIndex: closingStartIdx,
+										EndIndex:   closingEndIdx,
+									})
+									break
+								}
+
+								// Skip comment lines
+								if strings.HasPrefix(trimmedLine, "<!--") {
+									continue
+								}
+
+								// Add intermediate line (find meaningful content, not just whitespace)
+								if trimmedLine != "" {
+									// Find the start of actual content (skip leading whitespace)
+									contentStartIdx := strings.Index(currentLine, strings.TrimLeft(trimmedLine, " \t"))
+									if contentStartIdx == -1 {
+										contentStartIdx = 0
+									}
+									locations = append(locations, models.Location{
+										Line:       m,
+										StartIndex: contentStartIdx,
+										EndIndex:   len(currentLine),
+									})
+								}
 							}
 
-							return lineNum, startIdx, endIdx
+							return locations
 						}
 					}
 					break
@@ -122,8 +158,8 @@ func findDependencyLocation(lines []string, dep MavenDependency) (lineNum, start
 		}
 	}
 
-	// If not found, return 0
-	return 0, 0, 0
+	// If not found, return empty slice
+	return []models.Location{}
 }
 
 // Parse implements the Parser interface for Maven POM files
@@ -155,7 +191,7 @@ func (p *MavenPomParser) Parse(manifestFile string) ([]models.Package, error) {
 	// Process each dependency
 	for _, dep := range allDeps {
 		// Use the enhanced location finding function
-		lineNum, startIdx, endIdx := findDependencyLocation(lines, dep)
+		locations := findDependencyLocations(lines, dep)
 
 		// Create package entry
 		packages = append(packages, models.Package{
@@ -163,11 +199,7 @@ func (p *MavenPomParser) Parse(manifestFile string) ([]models.Package, error) {
 			PackageName:    dep.GroupId + ":" + dep.ArtifactId,
 			Version:        resolveVersion(dep.Version, props, project.DependencyManagement.Dependencies, dep.GroupId, dep.ArtifactId),
 			FilePath:       manifestFile,
-			Locations: []models.Location{{
-				Line:       lineNum,
-				StartIndex: startIdx,
-				EndIndex:   endIdx,
-			}},
+			Locations:      locations,
 		})
 	}
 
