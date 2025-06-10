@@ -47,41 +47,65 @@ func parseVersion(version string) string {
 	return version
 }
 
-// computeIndices calculates start and end indices for PackageReference elements
-// Returns startIndex and endIndex for the element in the line
-func computeIndices(lines []string, lineNum int) (startIndex, endIndex int, lineStart, lineEnd int) {
-	currentLine := lines[lineNum]
+// computeLocations calculates all locations for a PackageReference element
+func computeLocations(lines []string, startLine int) []models.Location {
+	var locations []models.Location
+	currentLine := lines[startLine]
 
 	// Find the position of the PackageReference tag start in the line
 	startIdx := strings.Index(currentLine, "<PackageReference")
 	if startIdx < 0 {
-		return 1, len(currentLine), lineNum, lineNum
+		return []models.Location{{
+			Line:       startLine,
+			StartIndex: 1,
+			EndIndex:   len(currentLine),
+		}}
 	}
 
 	// Check if it's a single-line format
 	if strings.Contains(currentLine, "/>") {
 		// Single-line format
 		endIdx := strings.LastIndex(currentLine, "/>") + 2 // Include the "/>" itself
-		return startIdx, endIdx, lineNum, lineNum
+		return []models.Location{{
+			Line:       startLine,
+			StartIndex: startIdx,
+			EndIndex:   endIdx,
+		}}
 	}
 
 	// Multi-line format
-	// TODO: Multi-line PackageReference support will be handled in the future.
-	// Currently, if the tag spans multiple lines, we only return the first line.
-	// The following code is commented out for now:
-	/*
-		lineEnd = lineNum
-		for i := lineNum; i < len(lines) && i < lineNum+10; i++ { // Limit search to 10 lines
-			if strings.Contains(lines[i], "</PackageReference>") {
-				lineEnd = i
-				endLine := lines[i]
-				endIdx := strings.Index(endLine, "</PackageReference>") + len("</PackageReference>")
-				return startIdx , endIdx , lineNum, lineEnd
-			}
+	// Add the first line
+	locations = append(locations, models.Location{
+		Line:       startLine,
+		StartIndex: startIdx,
+		EndIndex:   len(currentLine),
+	})
+
+	// Add all lines until the closing tag
+	for i := startLine + 1; i < len(lines) && i < startLine+10; i++ { // Limit search to 10 lines
+		line := lines[i]
+		if strings.Contains(line, "</PackageReference>") {
+			startIdxInLineEnd := strings.Index(line, "</PackageReference>")
+
+			endIdx := strings.Index(line, "</PackageReference>") + len("</PackageReference>")
+			locations = append(locations, models.Location{
+				Line:       i,
+				StartIndex: startIdxInLineEnd, // True start index including indentation
+				EndIndex:   endIdx,
+			})
+			break
 		}
-	*/
-	// No closing tag found, return the end of the current line
-	return startIdx, len(currentLine), lineNum, lineNum
+
+		startIdxInLine := strings.Index(line, "<Version>")
+		// Add intermediate lines
+		locations = append(locations, models.Location{
+			Line:       i,
+			StartIndex: startIdxInLine,
+			EndIndex:   len(line),
+		})
+	}
+
+	return locations
 }
 
 // Parse implements the Parser interface for .csproj files
@@ -141,8 +165,8 @@ func (p *DotnetCsprojParser) Parse(manifestFile string) ([]models.Package, error
 					continue
 				}
 
-				// Compute indices for both single-line and multi-line formats
-				startCol, endCol, lineStart, lineEnd := computeIndices(lines, lineNum)
+				// Compute locations for both single-line and multi-line formats
+				locations := computeLocations(lines, lineNum)
 
 				// Determine the version
 				version := pkgRef.VersionAttr
@@ -156,10 +180,7 @@ func (p *DotnetCsprojParser) Parse(manifestFile string) ([]models.Package, error
 					PackageName:    pkgRef.Include,
 					Version:        parseVersion(version),
 					FilePath:       manifestFile,
-					LineStart:      lineStart,
-					LineEnd:        lineEnd,
-					StartIndex:     startCol,
-					EndIndex:       endCol,
+					Locations:      locations,
 				})
 			}
 		}

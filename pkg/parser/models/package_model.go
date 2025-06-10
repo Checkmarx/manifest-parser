@@ -1,12 +1,15 @@
 package models
 
+type Location struct {
+	Line       int
+	StartIndex int
+	EndIndex   int
+}
+
 type Package struct {
 	PackageManager string
 	PackageName    string
 	Version        string
 	FilePath       string
-	LineStart      int
-	LineEnd        int
-	StartIndex     int
-	EndIndex       int
+	Locations      []Location
 }

@@ -41,32 +41,60 @@ type lockFile struct {
 type NpmPackageJsonParser struct{}
 
 // Extract line and character positions for a key in JSON
-func findPositions(fileContent string, key string) (lineStart, lineEnd, startIndex, endIndex int) {
+func findPositions(fileContent string, key string) (lineStart, startIndex, endIndex int) {
 	lines := strings.Split(fileContent, "\n")
 
 	keyPattern := fmt.Sprintf("\"%s\"", key)
 	for i, line := range lines {
 		if strings.Contains(line, keyPattern) {
-			// Find the start of the line (after indentation)
-			startPos := 0
-			for j, char := range line {
-				if char != ' ' && char != '\t' {
-					startPos = j
-					break
+			// Find the start of the key (after indentation)
+			startPos := strings.Index(line, keyPattern)
+			if startPos < 0 {
+				continue
+			}
+
+			// Find the end of the value (including quotes and comma)
+			endPos := startPos
+			valueStart := strings.Index(line[startPos:], ":")
+			if valueStart < 0 {
+				continue
+			}
+			valueStart += startPos + 1
+
+			// Skip whitespace after colon
+			for valueStart < len(line) && (line[valueStart] == ' ' || line[valueStart] == '\t') {
+				valueStart++
+			}
+
+			// Find the end of the value
+			if valueStart < len(line) {
+				if line[valueStart] == '"' {
+					// String value
+					endPos = strings.Index(line[valueStart+1:], "\"")
+					if endPos >= 0 {
+						endPos += valueStart + 2 // +2 for both quotes
+					}
+				} else {
+					// Non-string value (number, boolean, etc.)
+					endPos = strings.IndexAny(line[valueStart:], ",}\n")
+					if endPos >= 0 {
+						endPos += valueStart
+					}
 				}
 			}
 
-			// Find the end of the line (including all spaces and comma)
-			endPos := len(line)
+			// If we found a comma, include it
+			if endPos < len(line) && line[endPos] == ',' {
+				endPos++
+			}
 
 			lineStart = i
-			lineEnd = i
 			startIndex = startPos
 			endIndex = endPos
 			return
 		}
 	}
-	return 0, 0, 0, 0
+	return 0, 0, 0
 }
 
 func (p *NpmPackageJsonParser) Parse(manifestFile string) ([]models.Package, error) {
@@ -99,17 +127,18 @@ func (p *NpmPackageJsonParser) Parse(manifestFile string) ([]models.Package, err
 	processDeps := func(depMap map[string]string, depType string) {
 		for name, version := range depMap {
 			resolvedVersion := getResolvedVersion(name, version, lock)
-			lineStart, lineEnd, startIndex, endIndex := findPositions(string(fileContent), name)
+			lineStart, startIndex, endIndex := findPositions(string(fileContent), name)
 
 			results = append(results, models.Package{
 				PackageManager: "npm",
 				PackageName:    name,
 				Version:        resolvedVersion,
 				FilePath:       manifestFile,
-				LineStart:      lineStart,
-				LineEnd:        lineEnd,
-				StartIndex:     startIndex,
-				EndIndex:       endIndex,
+				Locations: []models.Location{{
+					Line:       lineStart,
+					StartIndex: startIndex,
+					EndIndex:   endIndex,
+				}},
 			})
 		}
 	}
@@ -121,7 +150,7 @@ func (p *NpmPackageJsonParser) Parse(manifestFile string) ([]models.Package, err
 
 	// Sort packages by line number
 	sort.Slice(results, func(i, j int) bool {
-		return results[i].LineStart < results[j].LineStart
+		return results[i].Locations[0].Line < results[j].Locations[0].Line
 	})
 
 	return results, nil

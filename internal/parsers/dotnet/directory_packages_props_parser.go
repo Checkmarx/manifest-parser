@@ -17,13 +17,14 @@ type DotnetDirectoryPackagesPropsParser struct{}
 
 // PackageVersion represents a <PackageVersion> element in Directory.Packages.props
 type PackageVersion struct {
-	Include string `xml:"Include,attr"`
-	Version string `xml:"Version,attr"`
+	Include       string `xml:"Include,attr"`
+	VersionAttr   string `xml:"Version,attr"`
+	VersionNested string `xml:"Version"`
 }
 
 const PackageVersionTag = "PackageVersion"
 
-// parseVersion handles version resolution for Directory.Packages.props
+// parseVersionProps handles version resolution for Directory.Packages.props
 // Returns:
 // - Exact version if specified
 // - "latest" for version ranges or special version specifiers
@@ -47,21 +48,67 @@ func parseVersionProps(version string) string {
 	return version
 }
 
-// findPackageVersionPosition finds the position of a package version element in the file content
-// Returns line number, start column, and end column (all 1-based) for the package name in the element
-func findPackageVersionPosition(content string, packageName string) (lineNum, startCol, endCol int) {
-	escapedName := regexp.QuoteMeta(packageName)
-	pattern := fmt.Sprintf(`<PackageVersion\s+Include="%s"`, escapedName)
-	re := regexp.MustCompile(pattern)
-	lines := strings.Split(content, "\n")
-	for i, line := range lines {
-		loc := re.FindStringIndex(line)
-		if loc != nil {
-			// endCol = length of the line (till the last character)
-			return i, loc[0], len(line)
+// computePackageVersionLocations calculates all locations for a PackageVersion element
+func computePackageVersionLocations(lines []string, startLine int) []models.Location {
+	// Handle empty lines or invalid start line
+	if len(lines) == 0 || startLine < 0 || startLine >= len(lines) {
+		return nil
+	}
+
+	var locations []models.Location
+	currentLine := lines[startLine]
+
+	// Find the position of the PackageVersion tag start in the line
+	startIdx := strings.Index(currentLine, "<PackageVersion")
+	if startIdx < 0 {
+		return nil
+	}
+
+	// Check if it's a single-line format
+	if strings.Contains(currentLine, "/>") {
+		// Single-line format
+		endIdx := strings.LastIndex(currentLine, "/>") + 2 // Include the "/>" itself
+		return []models.Location{{
+			Line:       startLine,
+			StartIndex: startIdx,
+			EndIndex:   endIdx,
+		}}
+	}
+
+	// Multi-line format
+	// Add the first line - only include the opening tag
+	endIdx := strings.Index(currentLine, ">") + 1 // Include the ">" itself
+	locations = append(locations, models.Location{
+		Line:       startLine,
+		StartIndex: startIdx,
+		EndIndex:   endIdx,
+	})
+
+	// Add all lines until the closing tag
+	for i := startLine + 1; i < len(lines) && i < startLine+10; i++ { // Limit search to 10 lines
+		line := lines[i]
+		if strings.Contains(line, "</PackageVersion>") {
+			startIdxInLineEnd := strings.Index(line, "</PackageVersion>")
+			endIdx := strings.Index(line, "</PackageVersion>") + len("</PackageVersion>")
+			locations = append(locations, models.Location{
+				Line:       i,
+				StartIndex: startIdxInLineEnd,
+				EndIndex:   endIdx,
+			})
+			break
+		}
+		startIdxInLine := strings.Index(line, "<Version>")
+		if startIdxInLine >= 0 {
+			// Add intermediate lines
+			locations = append(locations, models.Location{
+				Line:       i,
+				StartIndex: startIdxInLine,
+				EndIndex:   len(line),
+			})
 		}
 	}
-	return 0, 0, 0 // Not found
+
+	return locations
 }
 
 // Parse implements the Parser interface for Directory.Packages.props files
@@ -77,9 +124,11 @@ func (p *DotnetDirectoryPackagesPropsParser) Parse(manifestFile string) ([]model
 		return nil, fmt.Errorf("empty file")
 	}
 
-	// Create XML decoder
+	// Split content into lines for index computation
 	strContent := string(content)
+	lines := strings.Split(strContent, "\n")
 
+	// Create XML decoder
 	decoder := xml.NewDecoder(strings.NewReader(strContent))
 	var packages []models.Package
 
@@ -107,24 +156,39 @@ func (p *DotnetDirectoryPackagesPropsParser) Parse(manifestFile string) ([]model
 					continue
 				}
 
-				// Get line number from decoder and convert from 1-based to 0-based indexing
-				// since our models.Package struct expects 0-based line numbers
-				line, _ := decoder.InputPos()
-				line--
+				// Find line number
+				lineNum := 0
+				packagePattern := fmt.Sprintf(`PackageVersion.*Include="%s"`, pkgVer.Include)
+				re := regexp.MustCompile(packagePattern)
 
-				// Find package version position in file
-				_, startCol, endCol := findPackageVersionPosition(strContent, pkgVer.Include)
+				for i, line := range lines {
+					if re.MatchString(line) {
+						lineNum = i
+						break
+					}
+				}
+
+				// Skip if line not found
+				if lineNum == 0 {
+					continue
+				}
+
+				// Compute locations for both single-line and multi-line formats
+				locations := computePackageVersionLocations(lines, lineNum)
+
+				// Determine the version
+				version := pkgVer.VersionAttr
+				if version == "" {
+					version = pkgVer.VersionNested
+				}
 
 				// Create package entry
 				packages = append(packages, models.Package{
 					PackageManager: "nuget",
 					PackageName:    pkgVer.Include,
-					Version:        parseVersionProps(pkgVer.Version),
+					Version:        parseVersionProps(version),
 					FilePath:       manifestFile,
-					LineStart:      line,
-					LineEnd:        line,
-					StartIndex:     startCol,
-					EndIndex:       endCol,
+					Locations:      locations,
 				})
 			}
 		}

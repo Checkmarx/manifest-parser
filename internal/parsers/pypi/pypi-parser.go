@@ -41,15 +41,30 @@ func extractVersion(line string) string {
 }
 
 func computeIndices(raw, pkgName string) (int, int) {
-	idx := strings.Index(raw, pkgName)
-	if idx < 0 {
-		idx = strings.Index(raw, strings.TrimLeft(raw, " \t"))
+	// Find the start index of the package name
+	startIdx := strings.Index(raw, pkgName)
+	if startIdx < 0 {
+		// If package name not found, try to find the first non-whitespace character
+		startIdx = strings.IndexFunc(raw, func(r rune) bool {
+			return r != ' ' && r != '\t'
+		})
 	}
-	startCol := idx
-	withoutComment := strings.SplitN(raw, "#", 2)[0]
-	trimmedLine := strings.TrimRight(withoutComment, " ")
-	endCol := len(trimmedLine)
-	return startCol, endCol
+
+	// Find the end index by looking for the first comment or end of line
+	endIdx := len(raw)
+	if commentIdx := strings.Index(raw, "#"); commentIdx >= 0 {
+		endIdx = commentIdx
+	}
+	if semicolonIdx := strings.Index(raw, ";"); semicolonIdx >= 0 && semicolonIdx < endIdx {
+		endIdx = semicolonIdx
+	}
+
+	// Trim trailing whitespace
+	endIdx = strings.LastIndexFunc(raw[:endIdx], func(r rune) bool {
+		return r != ' ' && r != '\t'
+	}) + 1
+
+	return startIdx, endIdx
 }
 
 func (p *PypiParser) Parse(manifestFile string) ([]models.Package, error) {
@@ -66,11 +81,10 @@ func (p *PypiParser) Parse(manifestFile string) ([]models.Package, error) {
 	re := regexp.MustCompile(`^([a-zA-Z0-9_\-\.]+)(?:\[.*\])?(?:[>=<!~,\s].*)?$`)
 
 	for scanner.Scan() {
-		lineNum++
 		raw := scanner.Text()
 		line := strings.TrimSpace(raw)
-
 		if line == "" || strings.HasPrefix(line, "#") {
+			lineNum++
 			continue
 		}
 		if strings.Contains(line, "#") {
@@ -84,6 +98,7 @@ func (p *PypiParser) Parse(manifestFile string) ([]models.Package, error) {
 
 		pkgName, ok := extractPackageName(line, re, lineNum, manifestFile)
 		if !ok {
+			lineNum++
 			continue
 		}
 		version := extractVersion(line)
@@ -94,11 +109,13 @@ func (p *PypiParser) Parse(manifestFile string) ([]models.Package, error) {
 			PackageName:    pkgName,
 			Version:        version,
 			FilePath:       manifestFile,
-			LineStart:      lineNum,
-			LineEnd:        lineNum,
-			StartIndex:     startCol,
-			EndIndex:       endCol,
+			Locations: []models.Location{{
+				Line:       lineNum,
+				StartIndex: startCol,
+				EndIndex:   endCol,
+			}},
 		})
+		lineNum++
 	}
 
 	if err := scanner.Err(); err != nil {

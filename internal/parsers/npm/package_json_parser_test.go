@@ -81,7 +81,7 @@ func TestBasicPackageJsonParsing(t *testing.T) {
 		}
 
 		// Check that we have position information
-		if pkg.LineStart == 0 || pkg.StartIndex == 0 {
+		if len(pkg.Locations) == 0 || pkg.Locations[0].Line == 0 || pkg.Locations[0].StartIndex == 0 {
 			t.Errorf("package %s: missing position info", expected.name)
 		}
 	}
@@ -328,15 +328,15 @@ func TestPositionTracking(t *testing.T) {
 			continue
 		}
 
-		if pkg.LineStart != expected.lineStart || pkg.LineEnd != expected.lineEnd {
+		if pkg.Locations[0].Line != expected.lineStart || pkg.Locations[0].Line != expected.lineEnd {
 			t.Errorf("package %s: expected position line %d-%d, got %d-%d",
-				name, expected.lineStart, expected.lineEnd, pkg.LineStart, pkg.LineEnd)
+				name, expected.lineStart, expected.lineEnd, pkg.Locations[0].Line, pkg.Locations[0].Line)
 		}
 
 		// Check that column indices make sense
-		if pkg.StartIndex <= 0 || pkg.EndIndex <= 0 {
+		if pkg.Locations[0].StartIndex <= 0 || pkg.Locations[0].EndIndex <= 0 {
 			t.Errorf("package %s: invalid column indices: start=%d, end=%d",
-				name, pkg.StartIndex, pkg.EndIndex)
+				name, pkg.Locations[0].StartIndex, pkg.Locations[0].EndIndex)
 		}
 	}
 }
@@ -571,58 +571,63 @@ func TestParse_RealTestdataPackageJson(t *testing.T) {
 		t.Error("Error parsing manifest file: ", err)
 	}
 
-	expectedPackages := []models.Package{
+	expected := []models.Package{
 		{
 			PackageManager: "npm",
 			PackageName:    "@istanbuljs/nyc-config-typescript",
 			Version:        "1.0.2",
 			FilePath:       manifestFile,
-			LineStart:      8,
-			LineEnd:        8,
-			StartIndex:     4,
-			EndIndex:       49,
+			Locations: []models.Location{{
+				Line:       8,
+				StartIndex: 4,
+				EndIndex:   49,
+			}},
 		},
 		{
 			PackageManager: "npm",
 			PackageName:    "@checkmarxdev/ast-cli-javascript-wrapper",
 			Version:        "latest",
 			FilePath:       manifestFile,
-			LineStart:      9,
-			LineEnd:        9,
-			StartIndex:     4,
-			EndIndex:       74,
+			Locations: []models.Location{{
+				Line:       9,
+				StartIndex: 4,
+				EndIndex:   74,
+			}},
 		},
 		{
 			PackageManager: "npm",
 			PackageName:    "webpack-cli",
 			Version:        "latest",
 			FilePath:       manifestFile,
-			LineStart:      10,
-			LineEnd:        10,
-			StartIndex:     4,
-			EndIndex:       27,
+			Locations: []models.Location{{
+				Line:       10,
+				StartIndex: 4,
+				EndIndex:   27,
+			}},
 		},
 		{
 			PackageManager: "npm",
 			PackageName:    "validator",
 			Version:        "13.12.0",
 			FilePath:       manifestFile,
-			LineStart:      13,
-			LineEnd:        13,
-			StartIndex:     4,
-			EndIndex:       27,
+			Locations: []models.Location{{
+				Line:       13,
+				StartIndex: 4,
+				EndIndex:   27,
+			}},
 		},
 		{
 			PackageManager: "npm",
 			PackageName:    "@popperjs/core",
 			Version:        "latest",
 			FilePath:       manifestFile,
-			LineStart:      14,
-			LineEnd:        14,
-			StartIndex:     4,
-			EndIndex:       31,
+			Locations: []models.Location{{
+				Line:       14,
+				StartIndex: 4,
+				EndIndex:   31,
+			}},
 		},
 	}
 
-	testdata.ValidatePackages(t, packages, expectedPackages)
+	testdata.ValidatePackages(t, packages, expected)
 }
