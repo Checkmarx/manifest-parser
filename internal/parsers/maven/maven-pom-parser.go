@@ -195,7 +195,7 @@ func (p *MavenPomParser) Parse(manifestFile string) ([]models.Package, error) {
 
 		// Create package entry
 		packages = append(packages, models.Package{
-			PackageManager: "maven",
+			PackageManager: "mvn",
 			PackageName:    dep.GroupId + ":" + dep.ArtifactId,
 			Version:        resolveVersion(dep.Version, props, project.DependencyManagement.Dependencies, dep.GroupId, dep.ArtifactId),
 			FilePath:       manifestFile,
