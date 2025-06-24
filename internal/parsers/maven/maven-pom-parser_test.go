@@ -459,18 +459,6 @@ func TestMavenPomParser_ParseRealFile(t *testing.T) {
 		},
 		{
 			PackageManager: "mvn",
-			PackageName:    "org.apache.tomcat.embed:tomcat-embed-core",
-			Version:        "latest",
-			Locations: []models.Location{
-				{Line: 99, StartIndex: 8, EndIndex: 20},
-				{Line: 100, StartIndex: 12, EndIndex: 54},
-				{Line: 101, StartIndex: 12, EndIndex: 54},
-				{Line: 102, StartIndex: 8, EndIndex: 21},
-			},
-			FilePath: manifestFile,
-		},
-		{
-			PackageManager: "mvn",
 			PackageName:    "org.springframework.boot:spring-boot-starter-web",
 			Version:        "latest",
 			Locations: []models.Location{
