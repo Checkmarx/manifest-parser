@@ -78,83 +78,109 @@ func findDependencyLocations(lines []string, dep MavenDependency) []models.Locat
 		// Look for the beginning of a dependency block
 		if strings.Contains(line, "<dependency>") {
 			dependencyStartLine := i
+			var foundGroupId, foundArtifactId bool
+			var dependencyEndLine int
 
-			// Now search for the groupId in the following lines
+			// First, find the end of this dependency block
 			for j := i + 1; j < len(lines) && j < i+15; j++ { // Limit to 15 lines
 				innerLine := strings.TrimSpace(lines[j])
-
-				// Check if this is the end of the dependency
 				if strings.Contains(innerLine, "</dependency>") {
-					break
-				}
-
-				// Look for matching groupId
-				if strings.Contains(innerLine, "<groupId>") && strings.Contains(innerLine, dep.GroupId) {
-					// Now verify that the artifactId also matches in the same dependency block
-					for k := j + 1; k < len(lines) && k < i+15; k++ {
-						artifactLine := strings.TrimSpace(lines[k])
-
-						if strings.Contains(artifactLine, "</dependency>") {
-							break
-						}
-
-						if strings.Contains(artifactLine, "<artifactId>") && strings.Contains(artifactLine, dep.ArtifactId) {
-							// Found the matching dependency! Now collect all lines from start to end
-
-							// Add the opening <dependency> line
-							startIdx := strings.Index(lines[dependencyStartLine], "<dependency>")
-							if startIdx == -1 {
-								startIdx = 0
-							}
-							locations = append(locations, models.Location{
-								Line:       dependencyStartLine,
-								StartIndex: startIdx,
-								EndIndex:   len(lines[dependencyStartLine]),
-							})
-
-							// Add all intermediate lines (skip comments)
-							for m := dependencyStartLine + 1; m < len(lines) && m < dependencyStartLine+15; m++ {
-								currentLine := lines[m]
-								trimmedLine := strings.TrimSpace(currentLine)
-
-								// Check if this is the closing </dependency> line
-								if strings.Contains(currentLine, "</dependency>") {
-									closingStartIdx := strings.Index(currentLine, "</dependency>")
-									closingEndIdx := strings.Index(currentLine, "</dependency>") + len("</dependency>")
-									locations = append(locations, models.Location{
-										Line:       m,
-										StartIndex: closingStartIdx,
-										EndIndex:   closingEndIdx,
-									})
-									break
-								}
-
-								// Skip comment lines
-								if strings.HasPrefix(trimmedLine, "<!--") {
-									continue
-								}
-
-								// Add intermediate line (find meaningful content, not just whitespace)
-								if trimmedLine != "" {
-									// Find the start of actual content (skip leading whitespace)
-									contentStartIdx := strings.Index(currentLine, strings.TrimLeft(trimmedLine, " \t"))
-									if contentStartIdx == -1 {
-										contentStartIdx = 0
-									}
-									locations = append(locations, models.Location{
-										Line:       m,
-										StartIndex: contentStartIdx,
-										EndIndex:   len(currentLine),
-									})
-								}
-							}
-
-							return locations
-						}
-					}
+					dependencyEndLine = j
 					break
 				}
 			}
+
+			// If we didn't find the end, skip this block
+			if dependencyEndLine == 0 {
+				continue
+			}
+
+			// Now scan only within this dependency block to check if it matches our target dependency
+			for j := i + 1; j < dependencyEndLine; j++ {
+				innerLine := strings.TrimSpace(lines[j])
+
+				// Look for matching groupId within this block only
+				if strings.Contains(innerLine, "<groupId>") && strings.Contains(innerLine, "</groupId>") {
+					// Extract the actual groupId value
+					start := strings.Index(innerLine, "<groupId>") + len("<groupId>")
+					end := strings.Index(innerLine, "</groupId>")
+					if start < end {
+						actualGroupId := strings.TrimSpace(innerLine[start:end])
+						if actualGroupId == dep.GroupId {
+							foundGroupId = true
+						}
+					}
+				}
+
+				// Look for matching artifactId within this block only
+				if strings.Contains(innerLine, "<artifactId>") && strings.Contains(innerLine, "</artifactId>") {
+					// Extract the actual artifactId value
+					start := strings.Index(innerLine, "<artifactId>") + len("<artifactId>")
+					end := strings.Index(innerLine, "</artifactId>")
+					if start < end {
+						actualArtifactId := strings.TrimSpace(innerLine[start:end])
+						if actualArtifactId == dep.ArtifactId {
+							foundArtifactId = true
+						}
+					}
+				}
+			}
+
+			// If both groupId and artifactId match in this dependency block, collect all lines
+			if foundGroupId && foundArtifactId {
+				// Add the opening <dependency> line
+				startIdx := strings.Index(lines[dependencyStartLine], "<dependency>")
+				if startIdx == -1 {
+					startIdx = 0
+				}
+				locations = append(locations, models.Location{
+					Line:       dependencyStartLine,
+					StartIndex: startIdx,
+					EndIndex:   len(lines[dependencyStartLine]),
+				})
+
+				// Add all intermediate lines (skip comments)
+				for m := dependencyStartLine + 1; m <= dependencyEndLine; m++ {
+					currentLine := lines[m]
+					trimmedLine := strings.TrimSpace(currentLine)
+
+					// Check if this is the closing </dependency> line
+					if strings.Contains(currentLine, "</dependency>") {
+						closingStartIdx := strings.Index(currentLine, "</dependency>")
+						closingEndIdx := strings.Index(currentLine, "</dependency>") + len("</dependency>")
+						locations = append(locations, models.Location{
+							Line:       m,
+							StartIndex: closingStartIdx,
+							EndIndex:   closingEndIdx,
+						})
+						break
+					}
+
+					// Skip comment lines
+					if strings.HasPrefix(trimmedLine, "<!--") {
+						continue
+					}
+
+					// Add intermediate line (find meaningful content, not just whitespace)
+					if trimmedLine != "" {
+						// Find the start of actual content (skip leading whitespace)
+						contentStartIdx := strings.Index(currentLine, strings.TrimLeft(trimmedLine, " \t"))
+						if contentStartIdx == -1 {
+							contentStartIdx = 0
+						}
+						locations = append(locations, models.Location{
+							Line:       m,
+							StartIndex: contentStartIdx,
+							EndIndex:   len(currentLine),
+						})
+					}
+				}
+
+				return locations
+			}
+
+			// Move to the end of this dependency block to continue searching
+			i = dependencyEndLine
 		}
 	}
 

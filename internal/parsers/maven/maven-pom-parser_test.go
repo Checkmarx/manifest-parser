@@ -41,7 +41,7 @@ func TestMavenPomParser_Parse(t *testing.T) {
 </project>`,
 			expectedPkgs: []models.Package{
 				{
-					PackageManager: "maven",
+					PackageManager: "mvn",
 					PackageName:    "org.springframework:spring-core",
 					Version:        "5.3.0",
 					Locations: []models.Location{
@@ -53,7 +53,7 @@ func TestMavenPomParser_Parse(t *testing.T) {
 					},
 				},
 				{
-					PackageManager: "maven",
+					PackageManager: "mvn",
 					PackageName:    "junit:junit",
 					Version:        "4.13",
 					Locations: []models.Location{
@@ -82,7 +82,7 @@ func TestMavenPomParser_Parse(t *testing.T) {
 </project>`,
 			expectedPkgs: []models.Package{
 				{
-					PackageManager: "maven",
+					PackageManager: "mvn",
 					PackageName:    "org.example:test-lib",
 					Version:        "latest",
 					Locations: []models.Location{
@@ -119,7 +119,7 @@ func TestMavenPomParser_Parse(t *testing.T) {
 </project>`,
 			expectedPkgs: []models.Package{
 				{
-					PackageManager: "maven",
+					PackageManager: "mvn",
 					PackageName:    "org.springframework:spring-core",
 					Version:        "5.3.0",
 					Locations: []models.Location{
@@ -131,7 +131,7 @@ func TestMavenPomParser_Parse(t *testing.T) {
 					},
 				},
 				{
-					PackageManager: "maven",
+					PackageManager: "mvn",
 					PackageName:    "junit:junit",
 					Version:        "4.13",
 					Locations: []models.Location{
@@ -167,7 +167,7 @@ func TestMavenPomParser_Parse(t *testing.T) {
 </project>`,
 			expectedPkgs: []models.Package{
 				{
-					PackageManager: "maven",
+					PackageManager: "mvn",
 					PackageName:    "org.springframework:spring-core",
 					Version:        "5.3.0",
 					Locations: []models.Location{
@@ -200,7 +200,7 @@ func TestMavenPomParser_Parse(t *testing.T) {
 </project>`,
 			expectedPkgs: []models.Package{
 				{
-					PackageManager: "maven",
+					PackageManager: "mvn",
 					PackageName:    "org.springframework:spring-core",
 					Version:        "${spring.version}${version.suffix}",
 					Locations: []models.Location{
@@ -369,7 +369,7 @@ func TestMavenPomParser_ParseRealFile(t *testing.T) {
 
 	expectedPackages := []models.Package{
 		{
-			PackageManager: "maven",
+			PackageManager: "mvn",
 			PackageName:    "org.mockito:mockito-core",
 			Version:        "latest",
 			Locations: []models.Location{
@@ -382,7 +382,7 @@ func TestMavenPomParser_ParseRealFile(t *testing.T) {
 			FilePath: manifestFile,
 		},
 		{
-			PackageManager: "maven",
+			PackageManager: "mvn",
 			PackageName:    "com.checkmarx:cx-integrations-common",
 			Version:        "0.0.319",
 			Locations: []models.Location{
@@ -395,7 +395,7 @@ func TestMavenPomParser_ParseRealFile(t *testing.T) {
 			FilePath: manifestFile,
 		},
 		{
-			PackageManager: "maven",
+			PackageManager: "mvn",
 			PackageName:    "com.checkmarx:cx-interceptors-lib",
 			Version:        "0.1.58",
 			Locations: []models.Location{
@@ -408,7 +408,7 @@ func TestMavenPomParser_ParseRealFile(t *testing.T) {
 			FilePath: manifestFile,
 		},
 		{
-			PackageManager: "maven",
+			PackageManager: "mvn",
 			PackageName:    "org.apache.httpcomponents.client5:httpclient5",
 			Version:        "5.4.3",
 			Locations: []models.Location{
@@ -421,7 +421,7 @@ func TestMavenPomParser_ParseRealFile(t *testing.T) {
 			FilePath: manifestFile,
 		},
 		{
-			PackageManager: "maven",
+			PackageManager: "mvn",
 			PackageName:    "org.apache.httpcomponents.client5:httpclient5-fluent",
 			Version:        "5.4.3",
 			Locations: []models.Location{
@@ -434,7 +434,7 @@ func TestMavenPomParser_ParseRealFile(t *testing.T) {
 			FilePath: manifestFile,
 		},
 		{
-			PackageManager: "maven",
+			PackageManager: "mvn",
 			PackageName:    "org.projectlombok:lombok",
 			Version:        "latest",
 			Locations: []models.Location{
@@ -446,7 +446,7 @@ func TestMavenPomParser_ParseRealFile(t *testing.T) {
 			FilePath: manifestFile,
 		},
 		{
-			PackageManager: "maven",
+			PackageManager: "mvn",
 			PackageName:    "org.yaml:snakeyaml",
 			Version:        "latest",
 			Locations: []models.Location{
@@ -458,7 +458,7 @@ func TestMavenPomParser_ParseRealFile(t *testing.T) {
 			FilePath: manifestFile,
 		},
 		{
-			PackageManager: "maven",
+			PackageManager: "mvn",
 			PackageName:    "org.apache.tomcat.embed:tomcat-embed-core",
 			Version:        "latest",
 			Locations: []models.Location{
@@ -470,7 +470,7 @@ func TestMavenPomParser_ParseRealFile(t *testing.T) {
 			FilePath: manifestFile,
 		},
 		{
-			PackageManager: "maven",
+			PackageManager: "mvn",
 			PackageName:    "org.springframework.boot:spring-boot-starter-web",
 			Version:        "latest",
 			Locations: []models.Location{
@@ -492,7 +492,7 @@ func TestMavenPomParser_ParseRealFile(t *testing.T) {
 			FilePath: manifestFile,
 		},
 		{
-			PackageManager: "maven",
+			PackageManager: "mvn",
 			PackageName:    "com.fasterxml.jackson.dataformat:jackson-dataformat-smile",
 			Version:        "2.18.2",
 			Locations: []models.Location{
