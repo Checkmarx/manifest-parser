@@ -40,13 +40,38 @@ type lockFile struct {
 // NpmParser extracts packages with position information from package.json
 type NpmPackageJsonParser struct{}
 
-// Extract line and character positions for a key in JSON
-func findPositions(fileContent string, key string) (lineStart, startIndex, endIndex int) {
+// Extract line and character positions for a key in JSON within a specific section
+func findPositions(fileContent string, key string, sectionName string) (lineStart, startIndex, endIndex int) {
 	lines := strings.Split(fileContent, "\n")
+
+	// First, find the section
+	sectionPattern := fmt.Sprintf("\"%s\"", sectionName)
+	inSection := false
+	braceDepth := 0
+	baseBraceDepth := 0
 
 	keyPattern := fmt.Sprintf("\"%s\"", key)
 	for i, line := range lines {
-		if strings.Contains(line, keyPattern) {
+		// Count braces to track nesting
+		openBraces := strings.Count(line, "{")
+		closeBraces := strings.Count(line, "}")
+		braceDepth += openBraces - closeBraces
+
+		// Look for the section start
+		if !inSection && strings.Contains(line, sectionPattern) {
+			inSection = true
+			baseBraceDepth = braceDepth
+			continue
+		}
+
+		// If we're in the section, check if we've exited (brace depth decreased back to or below base)
+		if inSection && braceDepth <= baseBraceDepth-1 {
+			inSection = false
+			continue
+		}
+
+		// Only search for the key when we're inside the correct section
+		if inSection && strings.Contains(line, keyPattern) {
 			// Find the start of the key (after indentation)
 			startPos := strings.Index(line, keyPattern)
 			if startPos < 0 {
@@ -84,8 +109,13 @@ func findPositions(fileContent string, key string) (lineStart, startIndex, endIn
 			}
 
 			// If we found a comma, include it
-			if endPos < len(line) && line[endPos] == ',' {
+			if endPos >= 0 && endPos < len(line) && line[endPos] == ',' {
 				endPos++
+			}
+
+			// If we couldn't find the end position, fallback to end of line
+			if endPos < 0 {
+				endPos = len(line)
 			}
 
 			lineStart = i
@@ -127,7 +157,7 @@ func (p *NpmPackageJsonParser) Parse(manifestFile string) ([]models.Package, err
 	processDeps := func(depMap map[string]string, depType string) {
 		for name, version := range depMap {
 			resolvedVersion := getResolvedVersion(name, version, lock)
-			lineStart, startIndex, endIndex := findPositions(string(fileContent), name)
+			lineStart, startIndex, endIndex := findPositions(string(fileContent), name, depType)
 
 			results = append(results, models.Package{
 				PackageManager: "npm",
