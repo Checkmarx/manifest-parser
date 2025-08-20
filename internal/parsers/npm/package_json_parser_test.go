@@ -631,3 +631,73 @@ func TestParse_RealTestdataPackageJson(t *testing.T) {
 
 	testdata.ValidatePackages(t, packages, expected)
 }
+
+// TestSectionAwareParsing tests that packages are found in the correct dependency sections
+// when package names appear in multiple places in the JSON (e.g., as dependencies and configuration)
+func TestSectionAwareParsing(t *testing.T) {
+	// Package.json with "jest" appearing both as config and dependency
+	packageJSON := `{
+  "name": "test-project",
+  "version": "1.0.0",
+  "jest": {
+    "transform": {
+      "^.+\\.[tj]s$": [
+        "ts-jest",
+        {
+          "diagnostics": false
+        }
+      ]
+    }
+  },
+  "dependencies": {
+    "express": "4.17.1"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}`
+
+	// Create temporary file
+	tempDir := t.TempDir()
+	packageJSONPath := filepath.Join(tempDir, "package.json")
+
+	if err := os.WriteFile(packageJSONPath, []byte(packageJSON), 0644); err != nil {
+		t.Fatalf("failed to write package.json: %v", err)
+	}
+
+	// Run the parser
+	parser := &NpmPackageJsonParser{}
+	packages, err := parser.Parse(packageJSONPath)
+	if err != nil {
+		t.Fatalf("parsing failed: %v", err)
+	}
+
+	// Map packages by name
+	packageMap := make(map[string]models.Package)
+	for _, pkg := range packages {
+		packageMap[pkg.PackageName] = pkg
+	}
+
+	// Verify that jest is found in devDependencies section (line 16), not jest config section (line 3)
+	jestPkg, exists := packageMap["jest"]
+	if !exists {
+		t.Fatalf("jest package not found")
+	}
+
+	// The jest dependency should be found on line 16 (in devDependencies), not line 3 (in config)
+	if jestPkg.Locations[0].Line < 15 {
+		t.Errorf("jest found at wrong location: line %d, expected line >= 15 (devDependencies section)",
+			jestPkg.Locations[0].Line)
+	}
+
+	// Verify other packages are found correctly
+	if _, exists := packageMap["express"]; !exists {
+		t.Error("express package not found")
+	}
+
+	// Verify correct number of packages (should only find dependencies, not config keys)
+	expectedCount := 2 // express + jest
+	if len(packages) != expectedCount {
+		t.Errorf("expected %d packages, got %d", expectedCount, len(packages))
+	}
+}
