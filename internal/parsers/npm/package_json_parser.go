@@ -192,12 +192,8 @@ func (p *NpmPackageJsonParser) Parse(manifestFile string) ([]models.Package, err
 // - Falls back to sensible defaults if necessary
 func getResolvedVersion(name, specVersion string, lock lockFile) string {
 	// Check if version is already exact - if so, return it directly
-	if !strings.HasPrefix(specVersion, "^") &&
-		!strings.HasPrefix(specVersion, "~") &&
-		!strings.Contains(specVersion, "*") &&
-		!strings.Contains(specVersion, ">") &&
-		!strings.Contains(specVersion, "<") &&
-		!strings.Contains(specVersion, "latest") {
+
+	if !checkRangeSpecifiersPresent(specVersion) && !strings.Contains(specVersion, "latest") {
 		return specVersion
 	}
 
@@ -226,14 +222,10 @@ func getResolvedVersion(name, specVersion string, lock lockFile) string {
 	}
 
 	// For version specifiers, return "latest" as fallback
-	if strings.HasPrefix(specVersion, "^") ||
-		strings.HasPrefix(specVersion, "~") ||
-		strings.Contains(specVersion, "*") ||
-		strings.Contains(specVersion, ">") ||
-		strings.Contains(specVersion, "<") {
+
+	if checkRangeSpecifiersPresent(specVersion) {
 		return "latest"
 	}
-
 	// Otherwise return the specified version
 	return specVersion
 }
