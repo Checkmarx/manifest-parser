@@ -265,8 +265,8 @@ func isLockVersionGreater(specVersion, lockVersion string) bool {
 			return false
 		}
 	}
-	// In case if the lock version is same as the spec version, we consider it
-	// in case of range specifiers , lock file can also have same version if not greater
+	// In case if the lock version is same as the spec version, we consider it,
+	// as range specifiers indicate version greaterThan or equalTo
 	return true
 }
 
