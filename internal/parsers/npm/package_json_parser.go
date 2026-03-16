@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
@@ -191,18 +192,14 @@ func (p *NpmPackageJsonParser) Parse(manifestFile string) ([]models.Package, err
 // - Falls back to sensible defaults if necessary
 func getResolvedVersion(name, specVersion string, lock lockFile) string {
 	// Check if version is already exact - if so, return it directly
-	if !strings.HasPrefix(specVersion, "^") &&
-		!strings.HasPrefix(specVersion, "~") &&
-		!strings.Contains(specVersion, "*") &&
-		!strings.Contains(specVersion, ">") &&
-		!strings.Contains(specVersion, "<") &&
-		!strings.Contains(specVersion, "latest") {
+
+	if !checkRangeSpecifiersPresent(specVersion) && !strings.Contains(specVersion, "latest") {
 		return specVersion
 	}
 
 	// Try v1 format first
 	if deps := lock.Dependencies; deps != nil {
-		if entry, ok := deps[name]; ok && entry.Version != "" {
+		if entry, ok := deps[name]; ok && entry.Version != "" && isLockVersionGreater(specVersion, entry.Version) {
 			return entry.Version
 		}
 	}
@@ -215,25 +212,69 @@ func getResolvedVersion(name, specVersion string, lock lockFile) string {
 			"node_modules/" + name + "@" + specVersion,
 			"node_modules/" + name + "@" + strings.TrimPrefix(specVersion, "^"),
 			"node_modules/" + name + "@" + strings.TrimPrefix(specVersion, "~"),
-			"", // Root package
 		}
 
 		for _, path := range pathVariations {
-			if entry, ok := pkgs[path]; ok && entry.Version != "" {
+			if entry, ok := pkgs[path]; ok && entry.Version != "" && isLockVersionGreater(specVersion, entry.Version) {
 				return entry.Version
 			}
 		}
 	}
 
 	// For version specifiers, return "latest" as fallback
-	if strings.HasPrefix(specVersion, "^") ||
-		strings.HasPrefix(specVersion, "~") ||
-		strings.Contains(specVersion, "*") ||
-		strings.Contains(specVersion, ">") ||
-		strings.Contains(specVersion, "<") {
+
+	if checkRangeSpecifiersPresent(specVersion) {
 		return "latest"
 	}
-
 	// Otherwise return the specified version
 	return specVersion
+}
+func isLockVersionGreater(specVersion, lockVersion string) bool {
+	specVersion = stripRangeSpecifier(specVersion)
+	lockVersion = stripRangeSpecifier(lockVersion)
+
+	specParts := strings.Split(specVersion, ".")
+	lockParts := strings.Split(lockVersion, ".")
+
+	maxLen := len(specParts)
+	if len(lockParts) > maxLen {
+		maxLen = len(lockParts)
+	}
+	for i := 0; i < maxLen; i++ {
+		var specPart, lockPart int
+		if i < len(specParts) {
+			specPart, _ = strconv.Atoi(specParts[i])
+		}
+		if i < len(lockParts) {
+			lockPart, _ = strconv.Atoi(lockParts[i])
+		}
+		if lockPart == specPart {
+			continue
+		}
+		if lockPart > specPart {
+			return true
+		} else if lockPart < specPart {
+			return false
+		}
+	}
+	// In case if the lock version is same as the spec version, we consider it,
+	// as range specifiers indicate version greaterThan or equalTo
+	return true
+}
+
+func stripRangeSpecifier(version string) string {
+	if checkRangeSpecifiersPresent(version) {
+		return version[1:]
+	}
+	return version
+}
+func checkRangeSpecifiersPresent(version string) bool {
+	if strings.HasPrefix(version, "^") ||
+		strings.HasPrefix(version, "~") ||
+		strings.Contains(version, "*") ||
+		strings.Contains(version, ">") ||
+		strings.Contains(version, "<") {
+		return true
+	}
+	return false
 }

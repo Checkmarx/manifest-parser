@@ -701,3 +701,46 @@ func TestSectionAwareParsing(t *testing.T) {
 		t.Errorf("expected %d packages, got %d", expectedCount, len(packages))
 	}
 }
+
+// TestGetResolvedVersionComparisonWithLock tests comparison logic between package.json spec and package-lock.json
+func TestGetResolvedVersionComparisonWithLock(t *testing.T) {
+	// Create a lock file JSON with various scenarios:
+	// - foo: same version as spec (should return lock version)
+	// - bar: lock version smaller than spec (should return "latest")
+	// - baz: lock version greater than spec (should return lock version)
+	// - missing: not present in lock (should return "latest")
+	lockJSON := `{
+		"lockfileVersion": 2,
+		"packages": {
+			"node_modules/foo": { "version": "1.2.3" },
+			"node_modules/bar": { "version": "1.2.2" },
+			"node_modules/baz": { "version": "2.0.0" }
+		}
+	}`
+
+	var lock lockFile
+	if err := json.Unmarshal([]byte(lockJSON), &lock); err != nil {
+		t.Fatalf("failed to unmarshal lock JSON: %v", err)
+	}
+
+	tests := []struct {
+		name     string
+		pkg      string
+		spec     string
+		expected string
+	}{
+		{"lock equal to spec", "foo", "^1.2.3", "1.2.3"},
+		{"lock smaller than spec", "bar", "^1.2.3", "latest"},
+		{"lock greater than spec", "baz", "^1.2.0", "2.0.0"},
+		{"lock missing", "missing", "^3.0.0", "latest"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			res := getResolvedVersion(tc.pkg, tc.spec, lock)
+			if res != tc.expected {
+				t.Fatalf("expected %q for %s, got %q", tc.expected, tc.pkg, res)
+			}
+		})
+	}
+}
