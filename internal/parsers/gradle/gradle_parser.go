@@ -20,21 +20,19 @@ func (p *GradleParser) Parse(manifestFile string) ([]models.Package, error) {
 		return nil, fmt.Errorf("failed to read manifest file: %w", err)
 	}
 
-	lines := strings.Split(string(content), "\n")
+	manifestContent := string(content)
 
 	// Extract variables
-	variables := extractVariables(manifestFile, string(content))
+	variables := extractVariables(manifestFile, manifestContent)
 
 	var packages []models.Package
 
 	// Parse main dependencies
-	mainDeps := parseDependencies(string(content), lines, variables, false)
+	mainDeps := parseDependencies(manifestContent, variables)
 	for i := range mainDeps {
 		mainDeps[i].FilePath = manifestFile
 	}
 	packages = append(packages, mainDeps...)
-
-	// Note: Buildscript dependencies are also parsed as main for simplicity
 
 	return packages, nil
 }
@@ -99,71 +97,164 @@ func extractVariables(manifestFile, content string) map[string]string {
 	return vars
 }
 
+type dependencyStatement struct {
+	Line int
+	Text string
+}
+
 // parseDependencies parses dependencies from the content
-func parseDependencies(content string, lines []string, variables map[string]string, isBuildscript bool) []models.Package {
+func parseDependencies(content string, variables map[string]string) []models.Package {
 	var packages []models.Package
 
-	// Patterns for different dependency declarations
-	patterns := []*regexp.Regexp{
-		// String notation: implementation 'group:name:version'
-		regexp.MustCompile(`(?i)(implementation|api|compile|runtime|testImplementation|testCompile|androidTestImplementation|classpath)\s*['"]([^'"]+)['"]`),
-		regexp.MustCompile(`(?i)(implementation|api|compile|runtime|testImplementation|testCompile|androidTestImplementation|classpath)\s*\(\s*['"]([^'"]+)['"]\s*\)`),
-		// Map notation: implementation group: 'g', name: 'n', version: 'v'
-		regexp.MustCompile(`(?i)(implementation|api|compile|runtime|testImplementation|testCompile|androidTestImplementation|classpath)\s*group\s*:\s*['"]([^'"]+)['"]\s*,\s*name\s*:\s*['"]([^'"]+)['"]\s*,\s*version\s*:\s*['"]([^'"]+)['"]`),
-		regexp.MustCompile(`(?i)(implementation|api|compile|runtime|testImplementation|testCompile|androidTestImplementation|classpath)\s*\(\s*group\s*:\s*['"]([^'"]+)['"]\s*,\s*name\s*:\s*['"]([^'"]+)['"]\s*,\s*version\s*:\s*['"]([^'"]+)['"]\s*\)`),
-	}
-
-	depsLines := strings.Split(content, "\n")
-	for _, line := range depsLines {
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
-
-		for _, pattern := range patterns {
-			matches := pattern.FindStringSubmatch(line)
-			if len(matches) > 0 {
-				var group, name, version string
-				if len(matches) == 3 {
-					// String notation
-					depStr := resolveVariables(matches[2], variables)
-					parts := strings.Split(depStr, ":")
-					if len(parts) >= 2 {
-						group = parts[0]
-						name = parts[1]
-						if len(parts) > 2 {
-							version = parts[2]
-						}
-					}
-				} else if len(matches) == 5 {
-					// Map notation
-					group = resolveVariables(matches[2], variables)
-					name = resolveVariables(matches[3], variables)
-					version = resolveVariables(matches[4], variables)
-				}
-
-				if group != "" && name != "" {
-					// Handle version ranges and classifiers
-					cleanVersion := cleanVersion(version)
-
-					// Find line number
-					lineNum := findLineNumber(content, line)
-
-					packages = append(packages, models.Package{
-						PackageManager: "gradle",
-						PackageName:    group + ":" + name,
-						Version:        cleanVersion,
-						FilePath:       "", // Will be set later
-						Locations: []models.Location{
-							{Line: lineNum},
-						},
-					})
-				}
-			}
+	statements := extractDependencyStatements(content)
+	for _, stmt := range statements {
+		for _, pkg := range parseDependencyStatement(stmt.Text, variables) {
+			pkg.Locations = []models.Location{{Line: stmt.Line}}
+			packages = append(packages, pkg)
 		}
 	}
 
 	return packages
+}
+
+func extractDependencyStatements(content string) []dependencyStatement {
+	startPattern := regexp.MustCompile(`(?i)\b(implementation|api|compile|compileOnly|runtime|runtimeOnly|testImplementation|testCompile|testRuntimeOnly|androidTestImplementation|annotationProcessor|classpath|kapt)\b`)
+	var statements []dependencyStatement
+	var buffer strings.Builder
+	active := false
+	startLine := 0
+
+	lines := strings.Split(content, "\n")
+	for i, raw := range lines {
+		line := strings.TrimSpace(raw)
+		if line == "" || strings.HasPrefix(line, "//") || strings.HasPrefix(line, "/*") || strings.HasPrefix(line, "*") {
+			continue
+		}
+
+		if !active {
+			if startPattern.MatchString(line) {
+				active = true
+				startLine = i + 1
+				buffer.Reset()
+				buffer.WriteString(line)
+				if dependencyStatementComplete(buffer.String()) {
+					statements = append(statements, dependencyStatement{Line: startLine, Text: buffer.String()})
+					active = false
+				}
+			}
+			continue
+		}
+
+		buffer.WriteString(" ")
+		buffer.WriteString(line)
+		if dependencyStatementComplete(buffer.String()) {
+			statements = append(statements, dependencyStatement{Line: startLine, Text: buffer.String()})
+			active = false
+		}
+	}
+
+	return statements
+}
+
+func dependencyStatementComplete(statement string) bool {
+	patterns := []*regexp.Regexp{
+		regexp.MustCompile(`(?i)\b(implementation|api|compile|compileOnly|runtime|runtimeOnly|testImplementation|testCompile|testRuntimeOnly|androidTestImplementation|annotationProcessor|classpath|kapt)\s*['"]([^'"\)]+)['"]`),
+		regexp.MustCompile(`(?i)\b(implementation|api|compile|compileOnly|runtime|runtimeOnly|testImplementation|testCompile|testRuntimeOnly|androidTestImplementation|annotationProcessor|classpath|kapt)\s*\(\s*['"]([^'"\)]+)['"]\s*\)`),
+		regexp.MustCompile(`(?i)\b(implementation|api|compile|compileOnly|runtime|runtimeOnly|testImplementation|testCompile|testRuntimeOnly|androidTestImplementation|annotationProcessor|classpath|kapt)\s*group\s*[:=]\s*['"]([^'"]+)['"]\s*,\s*name\s*[:=]\s*['"]([^'"]+)['"]\s*,\s*version\s*[:=]\s*['"]([^'"]+)['"]`),
+		regexp.MustCompile(`(?i)\b(implementation|api|compile|compileOnly|runtime|runtimeOnly|testImplementation|testCompile|testRuntimeOnly|androidTestImplementation|annotationProcessor|classpath|kapt)\s*\(\s*group\s*[:=]\s*['"]([^'"]+)['"]\s*,\s*name\s*[:=]\s*['"]([^'"]+)['"]\s*,\s*version\s*[:=]\s*['"]([^'"]+)['"]\s*\)`),
+		regexp.MustCompile(`(?i)group\s*[:=]\s*['"]([^'"]+)['"].*name\s*[:=]\s*['"]([^'"]+)['"].*version\s*[:=]\s*['"]([^'"]+)['"]`),
+		regexp.MustCompile(`(?i)group\s*[:=]\s*[^,\s]+.*name\s*[:=]\s*[^,\s]+.*version\s*[:=]\s*[^,\s]+`),
+	}
+
+	for _, pattern := range patterns {
+		if pattern.MatchString(statement) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func parseDependencyStatement(statement string, variables map[string]string) []models.Package {
+	var packages []models.Package
+
+	patterns := []*regexp.Regexp{
+		regexp.MustCompile(`(?i)\b(implementation|api|compile|compileOnly|runtime|runtimeOnly|testImplementation|testCompile|testRuntimeOnly|androidTestImplementation|annotationProcessor|classpath|kapt)\s*['"]([^'"\)]+)['"]`),
+		regexp.MustCompile(`(?i)\b(implementation|api|compile|compileOnly|runtime|runtimeOnly|testImplementation|testCompile|testRuntimeOnly|androidTestImplementation|annotationProcessor|classpath|kapt)\s*\(\s*['"]([^'"\)]+)['"]\s*\)`),
+		regexp.MustCompile(`(?i)\b(implementation|api|compile|compileOnly|runtime|runtimeOnly|testImplementation|testCompile|testRuntimeOnly|androidTestImplementation|annotationProcessor|classpath|kapt)\s*group\s*[:=]\s*['"]([^'"]+)['"]\s*,\s*name\s*[:=]\s*['"]([^'"]+)['"]\s*,\s*version\s*[:=]\s*['"]([^'"]+)['"]`),
+		regexp.MustCompile(`(?i)\b(implementation|api|compile|compileOnly|runtime|runtimeOnly|testImplementation|testCompile|testRuntimeOnly|androidTestImplementation|annotationProcessor|classpath|kapt)\s*\(\s*group\s*[:=]\s*['"]([^'"]+)['"]\s*,\s*name\s*[:=]\s*['"]([^'"]+)['"]\s*,\s*version\s*[:=]\s*['"]([^'"]+)['"]\s*\)`),
+	}
+
+	for _, pattern := range patterns {
+		matches := pattern.FindStringSubmatch(statement)
+		if len(matches) > 0 {
+			var group, name, version string
+			if len(matches) == 3 {
+				depStr := resolveVariables(matches[2], variables)
+				parts := strings.Split(depStr, ":")
+				if len(parts) >= 2 {
+					group = parts[0]
+					name = parts[1]
+					if len(parts) > 2 {
+						version = strings.Join(parts[2:], ":")
+					}
+				}
+			} else if len(matches) == 5 {
+				group = resolveVariables(matches[2], variables)
+				name = resolveVariables(matches[3], variables)
+				version = resolveVariables(matches[4], variables)
+			}
+
+			if group != "" && name != "" {
+				packages = append(packages, models.Package{
+					PackageManager: "gradle",
+					PackageName:    group + ":" + name,
+					Version:        cleanVersion(version),
+					FilePath:       "",
+					Locations:      []models.Location{{}},
+				})
+			}
+		}
+	}
+
+	if len(packages) == 0 {
+		if pkg := parseDependencyKeyValue(statement, variables); pkg != nil {
+			packages = append(packages, *pkg)
+		}
+	}
+
+	return packages
+}
+
+func parseDependencyKeyValue(statement string, variables map[string]string) *models.Package {
+	fields := map[string]string{}
+
+	patterns := []*regexp.Regexp{
+		regexp.MustCompile(`(?i)(group|name|version)\s*[:=]\s*['"]([^'"]+)['"]`),
+		regexp.MustCompile(`(?i)(group|name|version)\s*[:=]\s*([A-Za-z_][A-Za-z0-9_]*)`),
+	}
+
+	for _, pattern := range patterns {
+		for _, match := range pattern.FindAllStringSubmatch(statement, -1) {
+			if len(match) > 2 {
+				key := strings.ToLower(match[1])
+				value := match[2]
+				fields[key] = resolveVariables(value, variables)
+			}
+		}
+	}
+
+	if fields["group"] == "" || fields["name"] == "" {
+		return nil
+	}
+
+	return &models.Package{
+		PackageManager: "gradle",
+		PackageName:    fields["group"] + ":" + fields["name"],
+		Version:        cleanVersion(fields["version"]),
+		FilePath:       "",
+		Locations:      []models.Location{{}},
+	}
 }
 
 // resolveVariables replaces ${var} or $var with values

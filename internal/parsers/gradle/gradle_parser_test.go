@@ -81,6 +81,114 @@ buildscript {
 			},
 			expectedError: false,
 		},
+		{
+			name: "kotlin dsl dependency syntax",
+			content: `val kotlinVersion = "1.4.32"
+
+dependencies {
+    implementation("org.springframework:spring-core:$kotlinVersion")
+    implementation(
+        "org.apache.commons:commons-lang3:3.12.0"
+    )
+    implementation(group = "com.google.guava", name = "guava", version = "30.1-jre")
+    if (project.hasProperty("feature")) {
+        testImplementation("junit:junit:$kotlinVersion")
+    }
+}`,
+			expectedPkgs: []models.Package{
+				{
+					PackageManager: "gradle",
+					PackageName:    "org.springframework:spring-core",
+					Version:        "1.4.32",
+					Locations: []models.Location{
+						{Line: 4},
+					},
+				},
+				{
+					PackageManager: "gradle",
+					PackageName:    "org.apache.commons:commons-lang3",
+					Version:        "3.12.0",
+					Locations: []models.Location{
+						{Line: 5},
+					},
+				},
+				{
+					PackageManager: "gradle",
+					PackageName:    "com.google.guava:guava",
+					Version:        "30.1-jre",
+					Locations: []models.Location{
+						{Line: 8},
+					},
+				},
+				{
+					PackageManager: "gradle",
+					PackageName:    "junit:junit",
+					Version:        "1.4.32",
+					Locations: []models.Location{
+						{Line: 10},
+					},
+				},
+			},
+			expectedError: false,
+		},
+		{
+			name: "multi-line and conditional dependencies",
+			content: `ext {
+    featureVersion = '1.0.0'
+}
+
+dependencies {
+    implementation(
+        'org.springframework:spring-core:5.3.0'
+    )
+    implementation group: 'org.apache.commons',
+        name: 'commons-lang3',
+        version: '3.12.0'
+    if (project.hasProperty('feature')) {
+        testImplementation 'junit:junit:$featureVersion'
+    }
+    if (useRedux) {
+        api group: 'com.google.guava',
+            name: 'guava',
+            version: '30.1-jre'
+    }
+}`,
+			expectedPkgs: []models.Package{
+				{
+					PackageManager: "gradle",
+					PackageName:    "org.springframework:spring-core",
+					Version:        "5.3.0",
+					Locations: []models.Location{
+						{Line: 6},
+					},
+				},
+				{
+					PackageManager: "gradle",
+					PackageName:    "org.apache.commons:commons-lang3",
+					Version:        "3.12.0",
+					Locations: []models.Location{
+						{Line: 9},
+					},
+				},
+				{
+					PackageManager: "gradle",
+					PackageName:    "junit:junit",
+					Version:        "1.0.0",
+					Locations: []models.Location{
+						{Line: 13},
+					},
+				},
+				{
+					PackageManager: "gradle",
+					PackageName:    "com.google.guava:guava",
+					Version:        "30.1-jre",
+					Locations: []models.Location{
+						{Line: 16},
+					},
+				},
+			},
+			expectedError: false,
+		},
 	}
 
 	for _, tt := range tests {
