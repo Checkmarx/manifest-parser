@@ -3,6 +3,7 @@ package parser
 import (
 	"github.com/Checkmarx/manifest-parser/internal/parsers/dotnet"
 	"github.com/Checkmarx/manifest-parser/internal/parsers/golang"
+	"github.com/Checkmarx/manifest-parser/internal/parsers/gradle"
 	"github.com/Checkmarx/manifest-parser/internal/parsers/maven"
 	"github.com/Checkmarx/manifest-parser/internal/parsers/npm"
 	"github.com/Checkmarx/manifest-parser/internal/parsers/pypi"
@@ -26,6 +27,8 @@ func ParsersFactory(manifest string) Parser {
 		return &dotnet.DotnetPackagesConfigParser{}
 	case GoMod:
 		return &golang.GoModParser{}
+	case GradleBuild:
+		return &gradle.GradleParser{}
 	default:
 		return nil
 	}
