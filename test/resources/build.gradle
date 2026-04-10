@@ -1,31 +1,122 @@
 plugins {
     id 'java'
+    id 'application'
+    id 'jacoco'
+    id 'checkstyle'
+    id 'org.springframework.boot' version '2.5.0' apply false
+    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
 }
 
-ext {
-    springVersion = '5.3.0'
-    guavaVersion = '30.1-jre'
-}
+group = 'com.example.securitytest'
+version = '1.0.0'
 
-group 'com.example'
-version '1.0-SNAPSHOT'
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(11)
+    }
+}
 
 repositories {
     mavenCentral()
 }
 
-buildscript {
+ext {
+    springBootVersion = '2.5.0'
+}
+
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'jacoco'
+
     repositories {
         mavenCentral()
     }
+
     dependencies {
-        classpath 'com.android.tools.build:gradle:7.0.0'
+
+        // =========================
+        // 🔴 CRITICAL vulnerabilities
+        // =========================
+        implementation 'org.apache.logging.log4j:log4j-core:2.14.0' // Log4Shell
+        implementation 'commons-collections:commons-collections:3.2.1' // deserialization vuln
+
+        // =========================
+        // 🔥 HIGH vulnerabilities
+        // =========================
+        implementation 'org.springframework:spring-web:5.2.0.RELEASE'
+        implementation 'com.fasterxml.jackson.core:jackson-databind:2.9.8'
+        implementation 'org.hibernate:hibernate-core:5.4.0.Final'
+
+        // =========================
+        // ⚠️ MEDIUM vulnerabilities
+        // =========================
+        implementation 'org.apache.httpcomponents:httpclient:4.5.5'
+        implementation 'com.google.guava:guava:23.0'
+        implementation 'org.apache.tomcat.embed:tomcat-embed-core:9.0.10'
+
+        // =========================
+        // 🟡 LOW vulnerabilities
+        // =========================
+        implementation 'junit:junit:4.12'
+        implementation 'org.slf4j:slf4j-api:1.7.25'
+        implementation 'ch.qos.logback:logback-classic:1.2.3'
+
+        // =========================
+        // Database
+        // =========================
+        implementation 'mysql:mysql-connector-java:5.1.40'
+
+        // =========================
+        // Testing
+        // =========================
+        testImplementation 'org.mockito:mockito-core:2.23.0'
+    }
+
+    tasks.withType(Test) {
+        useJUnitPlatform()
     }
 }
 
-dependencies {
-    implementation 'org.springframework:spring-core:5.3.0'
-    testImplementation 'junit:junit:4.13'
-    api 'com.google.guava:guava:30.1-jre'
-    implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
+// =========================
+// Application Module Example
+// =========================
+project(':app') {
+    apply plugin: 'org.springframework.boot'
+
+    dependencies {
+        implementation project(':core')
+        implementation "org.springframework.boot:spring-boot-starter-web:${springBootVersion}"
+    }
+}
+
+// =========================
+// Core Module
+// =========================
+project(':core') {
+    dependencies {
+        implementation 'org.apache.commons:commons-lang3:3.8'
+    }
+}
+
+// =========================
+// Security Module
+// =========================
+project(':security') {
+    dependencies {
+        implementation 'org.springframework.security:spring-security-core:5.4.0'
+    }
+}
+
+// =========================
+// Jacoco config
+// =========================
+jacoco {
+    toolVersion = "0.8.7"
+}
+
+tasks.jacocoTestReport {
+    reports {
+        xml.required = true
+        html.required = true
+    }
 }

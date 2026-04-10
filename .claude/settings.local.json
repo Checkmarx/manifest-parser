@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -lh c:/repository/manifest-parser/test/resources/*.gradle* c:/repository/manifest-parser/test/resources/gradle.properties c:/repository/manifest-parser/test/resources/gradle/)"
+    ]
+  }
+}

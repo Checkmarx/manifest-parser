@@ -262,7 +262,467 @@ func TestGradleParser_ParseFile(t *testing.T) {
 			t.Errorf("Package name is empty")
 		}
 		if pkg.Version == "" {
-			t.Errorf("Version is empty")
+			t.Errorf("Version is empty for %s", pkg.PackageName)
+		}
+	}
+}
+
+func TestGradleParser_ParseFile_NoProjectReferences(t *testing.T) {
+	parser := &GradleParser{}
+	pkgs, err := parser.Parse(filepath.Join("..", "..", "..", "test", "resources", "build.gradle"))
+	if err != nil {
+		t.Fatalf("Failed to parse build.gradle: %v", err)
+	}
+
+	for _, pkg := range pkgs {
+		if pkg.PackageName == ":core" || pkg.PackageName == ":app" || pkg.PackageName == ":security" {
+			t.Errorf("Project reference should not be extracted as a package: %s", pkg.PackageName)
+		}
+	}
+}
+
+func TestGradleParser_ParseFile_VariableResolution(t *testing.T) {
+	parser := &GradleParser{}
+	pkgs, err := parser.Parse(filepath.Join("..", "..", "..", "test", "resources", "build.gradle"))
+	if err != nil {
+		t.Fatalf("Failed to parse build.gradle: %v", err)
+	}
+
+	for _, pkg := range pkgs {
+		if pkg.PackageName == "org.springframework.boot:spring-boot-starter-web" {
+			if pkg.Version != "2.5.0" {
+				t.Errorf("Expected spring-boot-starter-web version '2.5.0', got '%s'", pkg.Version)
+			}
+			return
+		}
+	}
+	t.Errorf("Expected to find org.springframework.boot:spring-boot-starter-web in packages")
+}
+
+func TestGradleParser_ProjectReferencesSkipped(t *testing.T) {
+	content := `dependencies {
+    implementation project(':core')
+    implementation(project(':lib'))
+    implementation 'org.apache.commons:commons-lang3:3.8'
+    api project(":shared")
+}`
+	tmpFile, err := os.CreateTemp("", "build.gradle")
+	if err != nil {
+		t.Fatalf("Failed to create temp file: %v", err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	tmpFile.WriteString(content)
+	tmpFile.Close()
+
+	parser := &GradleParser{}
+	pkgs, err := parser.Parse(tmpFile.Name())
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	if len(pkgs) != 1 {
+		t.Fatalf("Expected 1 package, got %d: %+v", len(pkgs), pkgs)
+	}
+	if pkgs[0].PackageName != "org.apache.commons:commons-lang3" {
+		t.Errorf("Expected commons-lang3, got %s", pkgs[0].PackageName)
+	}
+}
+
+func TestGradleParser_PlatformDependencies(t *testing.T) {
+	content := `dependencies {
+    implementation platform('org.springframework.boot:spring-boot-dependencies:2.5.0')
+    implementation enforcedPlatform('com.google.cloud:libraries-bom:26.1.0')
+    implementation(platform("org.junit:junit-bom:5.9.0"))
+    implementation 'org.springframework:spring-core:5.3.0'
+}`
+	tmpFile, err := os.CreateTemp("", "build.gradle")
+	if err != nil {
+		t.Fatalf("Failed to create temp file: %v", err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	tmpFile.WriteString(content)
+	tmpFile.Close()
+
+	parser := &GradleParser{}
+	pkgs, err := parser.Parse(tmpFile.Name())
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	expectedPkgs := map[string]string{
+		"org.springframework.boot:spring-boot-dependencies": "2.5.0",
+		"com.google.cloud:libraries-bom":                    "26.1.0",
+		"org.junit:junit-bom":                               "5.9.0",
+		"org.springframework:spring-core":                    "5.3.0",
+	}
+
+	if len(pkgs) != len(expectedPkgs) {
+		t.Fatalf("Expected %d packages, got %d: %+v", len(expectedPkgs), len(pkgs), pkgs)
+	}
+
+	for _, pkg := range pkgs {
+		expectedVersion, ok := expectedPkgs[pkg.PackageName]
+		if !ok {
+			t.Errorf("Unexpected package: %s", pkg.PackageName)
+			continue
+		}
+		if pkg.Version != expectedVersion {
+			t.Errorf("Package %s: expected version %s, got %s", pkg.PackageName, expectedVersion, pkg.Version)
+		}
+	}
+}
+
+func TestGradleParser_FileReferencesSkipped(t *testing.T) {
+	content := `dependencies {
+    implementation files('libs/local.jar')
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'org.apache.commons:commons-lang3:3.8'
+}`
+	tmpFile, err := os.CreateTemp("", "build.gradle")
+	if err != nil {
+		t.Fatalf("Failed to create temp file: %v", err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	tmpFile.WriteString(content)
+	tmpFile.Close()
+
+	parser := &GradleParser{}
+	pkgs, err := parser.Parse(tmpFile.Name())
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	if len(pkgs) != 1 {
+		t.Fatalf("Expected 1 package, got %d: %+v", len(pkgs), pkgs)
+	}
+	if pkgs[0].PackageName != "org.apache.commons:commons-lang3" {
+		t.Errorf("Expected commons-lang3, got %s", pkgs[0].PackageName)
+	}
+}
+
+func TestGradleParser_ExtendedConfigurations(t *testing.T) {
+	content := `dependencies {
+    debugImplementation 'com.facebook.stetho:stetho:1.6.0'
+    releaseImplementation 'com.google.firebase:firebase-crashlytics:18.0.0'
+    ksp 'com.google.dagger:dagger-compiler:2.44'
+    compileOnlyApi 'org.projectlombok:lombok:1.18.24'
+    testCompileOnly 'org.mockito:mockito-core:4.0.0'
+    lintChecks 'com.android.tools.lint:lint-checks:30.0.0'
+}`
+	tmpFile, err := os.CreateTemp("", "build.gradle")
+	if err != nil {
+		t.Fatalf("Failed to create temp file: %v", err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	tmpFile.WriteString(content)
+	tmpFile.Close()
+
+	parser := &GradleParser{}
+	pkgs, err := parser.Parse(tmpFile.Name())
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	expectedNames := []string{
+		"com.facebook.stetho:stetho",
+		"com.google.firebase:firebase-crashlytics",
+		"com.google.dagger:dagger-compiler",
+		"org.projectlombok:lombok",
+		"org.mockito:mockito-core",
+		"com.android.tools.lint:lint-checks",
+	}
+
+	if len(pkgs) != len(expectedNames) {
+		t.Fatalf("Expected %d packages, got %d: %+v", len(expectedNames), len(pkgs), pkgs)
+	}
+
+	for i, pkg := range pkgs {
+		if pkg.PackageName != expectedNames[i] {
+			t.Errorf("Package %d: expected %s, got %s", i, expectedNames[i], pkg.PackageName)
+		}
+	}
+}
+
+func TestGradleParser_CommentedExtBlocksIgnored(t *testing.T) {
+	content := `
+// ext {
+//     badVar = '0.0.0'
+// }
+
+ext {
+    goodVar = '1.0.0'
+}
+
+dependencies {
+    implementation "org.example:lib:$goodVar"
+}`
+	tmpFile, err := os.CreateTemp("", "build.gradle")
+	if err != nil {
+		t.Fatalf("Failed to create temp file: %v", err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	tmpFile.WriteString(content)
+	tmpFile.Close()
+
+	parser := &GradleParser{}
+	pkgs, err := parser.Parse(tmpFile.Name())
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	if len(pkgs) != 1 {
+		t.Fatalf("Expected 1 package, got %d: %+v", len(pkgs), pkgs)
+	}
+	if pkgs[0].Version != "1.0.0" {
+		t.Errorf("Expected version '1.0.0' from non-commented ext block, got '%s'", pkgs[0].Version)
+	}
+}
+
+func TestGradleParser_ParentGradleProperties(t *testing.T) {
+	// Create a directory structure: parent/child/
+	parentDir, err := os.MkdirTemp("", "gradle-parent")
+	if err != nil {
+		t.Fatalf("Failed to create parent dir: %v", err)
+	}
+	defer os.RemoveAll(parentDir)
+
+	childDir := filepath.Join(parentDir, "child")
+	os.Mkdir(childDir, 0755)
+
+	// Create settings.gradle in parent to mark it as project root
+	os.WriteFile(filepath.Join(parentDir, "settings.gradle"), []byte("include ':child'"), 0644)
+
+	// Create parent gradle.properties
+	os.WriteFile(filepath.Join(parentDir, "gradle.properties"), []byte("parentVersion=3.0.0\nsharedVersion=1.0.0"), 0644)
+
+	// Create child gradle.properties (overrides sharedVersion)
+	os.WriteFile(filepath.Join(childDir, "gradle.properties"), []byte("sharedVersion=2.0.0"), 0644)
+
+	// Create child build.gradle
+	buildContent := `dependencies {
+    implementation "org.example:parent-lib:$parentVersion"
+    implementation "org.example:shared-lib:$sharedVersion"
+}`
+	buildFile := filepath.Join(childDir, "build.gradle")
+	os.WriteFile(buildFile, []byte(buildContent), 0644)
+
+	parser := &GradleParser{}
+	pkgs, err := parser.Parse(buildFile)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	if len(pkgs) != 2 {
+		t.Fatalf("Expected 2 packages, got %d: %+v", len(pkgs), pkgs)
+	}
+
+	// Parent property should be resolved
+	if pkgs[0].Version != "3.0.0" {
+		t.Errorf("Expected parent-lib version '3.0.0', got '%s'", pkgs[0].Version)
+	}
+	// Child property should take precedence over parent
+	if pkgs[1].Version != "2.0.0" {
+		t.Errorf("Expected shared-lib version '2.0.0' (child overrides parent), got '%s'", pkgs[1].Version)
+	}
+}
+
+func TestVersionCatalog_Parse(t *testing.T) {
+	catalogContent := `[versions]
+spring = "5.3.0"
+guava = "30.1-jre"
+
+[libraries]
+spring-core = { module = "org.springframework:spring-core", version.ref = "spring" }
+spring-web = { module = "org.springframework:spring-web", version = "5.2.0" }
+guava = "com.google.guava:guava:30.1-jre"
+commons = { group = "org.apache.commons", name = "commons-lang3", version.ref = "spring" }
+`
+	tmpFile, err := os.CreateTemp("", "libs.versions.toml")
+	if err != nil {
+		t.Fatalf("Failed to create temp file: %v", err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	tmpFile.WriteString(catalogContent)
+	tmpFile.Close()
+
+	catalog := parseVersionCatalog(tmpFile.Name())
+	if catalog == nil {
+		t.Fatalf("Failed to parse version catalog")
+	}
+
+	// Check versions
+	if catalog.Versions["spring"] != "5.3.0" {
+		t.Errorf("Expected spring version '5.3.0', got '%s'", catalog.Versions["spring"])
+	}
+	if catalog.Versions["guava"] != "30.1-jre" {
+		t.Errorf("Expected guava version '30.1-jre', got '%s'", catalog.Versions["guava"])
+	}
+
+	// Check libraries
+	tests := []struct {
+		key     string
+		group   string
+		name    string
+		version string
+	}{
+		{"spring-core", "org.springframework", "spring-core", "5.3.0"},
+		{"spring-web", "org.springframework", "spring-web", "5.2.0"},
+		{"guava", "com.google.guava", "guava", "30.1-jre"},
+		{"commons", "org.apache.commons", "commons-lang3", "5.3.0"},
+	}
+
+	for _, tt := range tests {
+		lib, ok := catalog.Libraries[tt.key]
+		if !ok {
+			t.Errorf("Library '%s' not found in catalog", tt.key)
+			continue
+		}
+		if lib.Group != tt.group {
+			t.Errorf("Library '%s': expected group '%s', got '%s'", tt.key, tt.group, lib.Group)
+		}
+		if lib.Name != tt.name {
+			t.Errorf("Library '%s': expected name '%s', got '%s'", tt.key, tt.name, lib.Name)
+		}
+		if lib.Version != tt.version {
+			t.Errorf("Library '%s': expected version '%s', got '%s'", tt.key, tt.version, lib.Version)
+		}
+	}
+}
+
+func TestVersionCatalog_DependencyResolution(t *testing.T) {
+	// Create directory structure with version catalog
+	projectDir, err := os.MkdirTemp("", "gradle-catalog")
+	if err != nil {
+		t.Fatalf("Failed to create project dir: %v", err)
+	}
+	defer os.RemoveAll(projectDir)
+
+	gradleDir := filepath.Join(projectDir, "gradle")
+	os.Mkdir(gradleDir, 0755)
+
+	// Create settings.gradle to mark project root
+	os.WriteFile(filepath.Join(projectDir, "settings.gradle"), []byte(""), 0644)
+
+	// Create version catalog
+	catalogContent := `[versions]
+spring = "5.3.0"
+
+[libraries]
+spring-core = { module = "org.springframework:spring-core", version.ref = "spring" }
+guava = "com.google.guava:guava:30.1-jre"
+`
+	os.WriteFile(filepath.Join(gradleDir, "libs.versions.toml"), []byte(catalogContent), 0644)
+
+	// Create build.gradle with catalog references
+	buildContent := `dependencies {
+    implementation libs.spring.core
+    implementation(libs.guava)
+    implementation 'org.direct:dependency:1.0.0'
+}`
+	buildFile := filepath.Join(projectDir, "build.gradle")
+	os.WriteFile(buildFile, []byte(buildContent), 0644)
+
+	parser := &GradleParser{}
+	pkgs, err := parser.Parse(buildFile)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	expectedPkgs := map[string]string{
+		"org.direct:dependency":        "1.0.0",
+		"org.springframework:spring-core": "5.3.0",
+		"com.google.guava:guava":          "30.1-jre",
+	}
+
+	if len(pkgs) != len(expectedPkgs) {
+		t.Fatalf("Expected %d packages, got %d: %+v", len(expectedPkgs), len(pkgs), pkgs)
+	}
+
+	for _, pkg := range pkgs {
+		expectedVersion, ok := expectedPkgs[pkg.PackageName]
+		if !ok {
+			t.Errorf("Unexpected package: %s", pkg.PackageName)
+			continue
+		}
+		if pkg.Version != expectedVersion {
+			t.Errorf("Package %s: expected version %s, got %s", pkg.PackageName, expectedVersion, pkg.Version)
+		}
+	}
+}
+
+func TestIsProjectReference(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected bool
+	}{
+		{"implementation project(':core')", true},
+		{"implementation(project(':core'))", true},
+		{`implementation project(":core")`, true},
+		{"api project(':shared')", true},
+		{"implementation 'org.example:lib:1.0'", false},
+		{`implementation("org.example:lib:1.0")`, false},
+	}
+
+	for _, tt := range tests {
+		result := isProjectReference(tt.input)
+		if result != tt.expected {
+			t.Errorf("isProjectReference(%q) = %v, want %v", tt.input, result, tt.expected)
+		}
+	}
+}
+
+func TestIsFileReference(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected bool
+	}{
+		{"implementation files('libs/local.jar')", true},
+		{"implementation fileTree(dir: 'libs', include: ['*.jar'])", true},
+		{"implementation(files('libs/local.jar'))", true},
+		{"implementation 'org.example:lib:1.0'", false},
+	}
+
+	for _, tt := range tests {
+		result := isFileReference(tt.input)
+		if result != tt.expected {
+			t.Errorf("isFileReference(%q) = %v, want %v", tt.input, result, tt.expected)
+		}
+	}
+}
+
+func TestNormalizePlatformDependency(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{
+			"implementation platform('org.springframework.boot:spring-boot-dependencies:2.5.0')",
+			"implementation 'org.springframework.boot:spring-boot-dependencies:2.5.0'",
+		},
+		{
+			"implementation enforcedPlatform('com.google.cloud:libraries-bom:26.1.0')",
+			"implementation 'com.google.cloud:libraries-bom:26.1.0'",
+		},
+		{
+			`implementation(platform("org.junit:junit-bom:5.9.0"))`,
+			`implementation("org.junit:junit-bom:5.9.0")`,
+		},
+		{
+			"implementation 'org.example:lib:1.0'",
+			"implementation 'org.example:lib:1.0'",
+		},
+	}
+
+	for _, tt := range tests {
+		result := normalizePlatformDependency(tt.input)
+		if result != tt.expected {
+			t.Errorf("normalizePlatformDependency(%q) = %q, want %q", tt.input, result, tt.expected)
 		}
 	}
 }

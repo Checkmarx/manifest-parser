@@ -10,6 +10,13 @@ import (
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
 
+// configKeywords defines all supported Gradle dependency configuration keywords
+var configKeywords = `implementation|api|compile|compileOnly|runtime|runtimeOnly|` +
+	`testImplementation|testCompile|testCompileOnly|testRuntimeOnly|` +
+	`androidTestImplementation|debugImplementation|releaseImplementation|` +
+	`annotationProcessor|classpath|kapt|ksp|compileOnlyApi|` +
+	`testFixturesImplementation|testFixturesApi|lintChecks`
+
 // GradleParser implements parsing of Gradle build files
 type GradleParser struct{}
 
@@ -25,6 +32,12 @@ func (p *GradleParser) Parse(manifestFile string) ([]models.Package, error) {
 	// Extract variables
 	variables := extractVariables(manifestFile, manifestContent)
 
+	// Load version catalog if available
+	var catalog *VersionCatalog
+	if catalogPath := findVersionCatalog(manifestFile); catalogPath != "" {
+		catalog = parseVersionCatalog(catalogPath)
+	}
+
 	var packages []models.Package
 
 	// Parse main dependencies
@@ -33,6 +46,15 @@ func (p *GradleParser) Parse(manifestFile string) ([]models.Package, error) {
 		mainDeps[i].FilePath = manifestFile
 	}
 	packages = append(packages, mainDeps...)
+
+	// Parse version catalog dependencies (libs.xxx references)
+	if catalog != nil {
+		catalogDeps := parseVersionCatalogDependencies(manifestContent, catalog)
+		for i := range catalogDeps {
+			catalogDeps[i].FilePath = manifestFile
+		}
+		packages = append(packages, catalogDeps...)
+	}
 
 	return packages, nil
 }
@@ -44,30 +66,41 @@ func extractVariables(manifestFile, content string) map[string]string {
 	// Read gradle.properties if exists
 	gradlePropsPath := filepath.Join(filepath.Dir(manifestFile), "gradle.properties")
 	if propsContent, err := os.ReadFile(gradlePropsPath); err == nil {
-		for _, line := range strings.Split(string(propsContent), "\n") {
-			line = strings.TrimSpace(line)
-			if strings.Contains(line, "=") && !strings.HasPrefix(line, "#") {
-				parts := strings.SplitN(line, "=", 2)
-				if len(parts) == 2 {
-					vars[strings.TrimSpace(parts[0])] = strings.TrimSpace(parts[1])
-				}
-			}
+		parsePropertiesInto(string(propsContent), vars)
+	}
+
+	// Walk up to project root for parent gradle.properties
+	projectRoot := findProjectRoot(filepath.Dir(manifestFile))
+	if projectRoot != filepath.Dir(manifestFile) {
+		rootPropsPath := filepath.Join(projectRoot, "gradle.properties")
+		if propsContent, err := os.ReadFile(rootPropsPath); err == nil {
+			parsePropertiesInto(string(propsContent), vars)
 		}
 	}
 
-	// Extract from ext blocks (Groovy)
+	// Extract from ext blocks (Groovy) — handle all ext blocks, filter commented lines
 	extPattern := regexp.MustCompile(`(?s)ext\s*\{([^}]+)\}`)
-	if matches := extPattern.FindStringSubmatch(content); len(matches) > 1 {
-		extContent := matches[1]
-		// Simple key = 'value' or key: 'value'
-		varPatterns := []*regexp.Regexp{
-			regexp.MustCompile(`(\w+)\s*=\s*['"]([^'"]+)['"]`),
-			regexp.MustCompile(`(\w+)\s*:\s*['"]([^'"]+)['"]`),
-		}
-		for _, pattern := range varPatterns {
-			for _, match := range pattern.FindAllStringSubmatch(extContent, -1) {
-				if len(match) > 2 {
-					vars[match[1]] = match[2]
+	for _, matches := range extPattern.FindAllStringSubmatch(content, -1) {
+		if len(matches) > 1 {
+			// Filter commented lines from ext block content
+			var filteredLines []string
+			for _, line := range strings.Split(matches[1], "\n") {
+				trimmed := strings.TrimSpace(line)
+				if !strings.HasPrefix(trimmed, "//") && !strings.HasPrefix(trimmed, "*") {
+					filteredLines = append(filteredLines, line)
+				}
+			}
+			extContent := strings.Join(filteredLines, "\n")
+			// Simple key = 'value' or key: 'value'
+			varPatterns := []*regexp.Regexp{
+				regexp.MustCompile(`(\w+)\s*=\s*['"]([^'"]+)['"]`),
+				regexp.MustCompile(`(\w+)\s*:\s*['"]([^'"]+)['"]`),
+			}
+			for _, pattern := range varPatterns {
+				for _, match := range pattern.FindAllStringSubmatch(extContent, -1) {
+					if len(match) > 2 {
+						vars[match[1]] = match[2]
+					}
 				}
 			}
 		}
@@ -118,7 +151,7 @@ func parseDependencies(content string, variables map[string]string) []models.Pac
 }
 
 func extractDependencyStatements(content string) []dependencyStatement {
-	startPattern := regexp.MustCompile(`(?i)\b(implementation|api|compile|compileOnly|runtime|runtimeOnly|testImplementation|testCompile|testRuntimeOnly|androidTestImplementation|annotationProcessor|classpath|kapt)\b`)
+	startPattern := regexp.MustCompile(`(?i)\b(` + configKeywords + `)\b`)
 	var statements []dependencyStatement
 	var buffer strings.Builder
 	active := false
@@ -133,12 +166,17 @@ func extractDependencyStatements(content string) []dependencyStatement {
 
 		if !active {
 			if startPattern.MatchString(line) {
+				// Skip non-Maven dependency references
+				if isProjectReference(line) || isFileReference(line) || isVersionCatalogReference(line) {
+					continue
+				}
 				active = true
 				startLine = i + 1
 				buffer.Reset()
 				buffer.WriteString(line)
-				if dependencyStatementComplete(buffer.String()) {
-					statements = append(statements, dependencyStatement{Line: startLine, Text: buffer.String()})
+				normalized := normalizePlatformDependency(buffer.String())
+				if dependencyStatementComplete(normalized) {
+					statements = append(statements, dependencyStatement{Line: startLine, Text: normalized})
 					active = false
 				}
 			}
@@ -147,8 +185,9 @@ func extractDependencyStatements(content string) []dependencyStatement {
 
 		buffer.WriteString(" ")
 		buffer.WriteString(line)
-		if dependencyStatementComplete(buffer.String()) {
-			statements = append(statements, dependencyStatement{Line: startLine, Text: buffer.String()})
+		normalized := normalizePlatformDependency(buffer.String())
+		if dependencyStatementComplete(normalized) {
+			statements = append(statements, dependencyStatement{Line: startLine, Text: normalized})
 			active = false
 		}
 	}
@@ -157,11 +196,12 @@ func extractDependencyStatements(content string) []dependencyStatement {
 }
 
 func dependencyStatementComplete(statement string) bool {
+	kw := configKeywords
 	patterns := []*regexp.Regexp{
-		regexp.MustCompile(`(?i)\b(implementation|api|compile|compileOnly|runtime|runtimeOnly|testImplementation|testCompile|testRuntimeOnly|androidTestImplementation|annotationProcessor|classpath|kapt)\s*['"]([^'"\)]+)['"]`),
-		regexp.MustCompile(`(?i)\b(implementation|api|compile|compileOnly|runtime|runtimeOnly|testImplementation|testCompile|testRuntimeOnly|androidTestImplementation|annotationProcessor|classpath|kapt)\s*\(\s*['"]([^'"\)]+)['"]\s*\)`),
-		regexp.MustCompile(`(?i)\b(implementation|api|compile|compileOnly|runtime|runtimeOnly|testImplementation|testCompile|testRuntimeOnly|androidTestImplementation|annotationProcessor|classpath|kapt)\s*group\s*[:=]\s*['"]([^'"]+)['"]\s*,\s*name\s*[:=]\s*['"]([^'"]+)['"]\s*,\s*version\s*[:=]\s*['"]([^'"]+)['"]`),
-		regexp.MustCompile(`(?i)\b(implementation|api|compile|compileOnly|runtime|runtimeOnly|testImplementation|testCompile|testRuntimeOnly|androidTestImplementation|annotationProcessor|classpath|kapt)\s*\(\s*group\s*[:=]\s*['"]([^'"]+)['"]\s*,\s*name\s*[:=]\s*['"]([^'"]+)['"]\s*,\s*version\s*[:=]\s*['"]([^'"]+)['"]\s*\)`),
+		regexp.MustCompile(`(?i)\b(` + kw + `)\s*['"]([^'"\)]+)['"]`),
+		regexp.MustCompile(`(?i)\b(` + kw + `)\s*\(\s*['"]([^'"\)]+)['"]\s*\)`),
+		regexp.MustCompile(`(?i)\b(` + kw + `)\s*group\s*[:=]\s*['"]([^'"]+)['"]\s*,\s*name\s*[:=]\s*['"]([^'"]+)['"]\s*,\s*version\s*[:=]\s*['"]([^'"]+)['"]`),
+		regexp.MustCompile(`(?i)\b(` + kw + `)\s*\(\s*group\s*[:=]\s*['"]([^'"]+)['"]\s*,\s*name\s*[:=]\s*['"]([^'"]+)['"]\s*,\s*version\s*[:=]\s*['"]([^'"]+)['"]\s*\)`),
 		regexp.MustCompile(`(?i)group\s*[:=]\s*['"]([^'"]+)['"].*name\s*[:=]\s*['"]([^'"]+)['"].*version\s*[:=]\s*['"]([^'"]+)['"]`),
 		regexp.MustCompile(`(?i)group\s*[:=]\s*[^,\s]+.*name\s*[:=]\s*[^,\s]+.*version\s*[:=]\s*[^,\s]+`),
 	}
@@ -178,11 +218,12 @@ func dependencyStatementComplete(statement string) bool {
 func parseDependencyStatement(statement string, variables map[string]string) []models.Package {
 	var packages []models.Package
 
+	kw := configKeywords
 	patterns := []*regexp.Regexp{
-		regexp.MustCompile(`(?i)\b(implementation|api|compile|compileOnly|runtime|runtimeOnly|testImplementation|testCompile|testRuntimeOnly|androidTestImplementation|annotationProcessor|classpath|kapt)\s*['"]([^'"\)]+)['"]`),
-		regexp.MustCompile(`(?i)\b(implementation|api|compile|compileOnly|runtime|runtimeOnly|testImplementation|testCompile|testRuntimeOnly|androidTestImplementation|annotationProcessor|classpath|kapt)\s*\(\s*['"]([^'"\)]+)['"]\s*\)`),
-		regexp.MustCompile(`(?i)\b(implementation|api|compile|compileOnly|runtime|runtimeOnly|testImplementation|testCompile|testRuntimeOnly|androidTestImplementation|annotationProcessor|classpath|kapt)\s*group\s*[:=]\s*['"]([^'"]+)['"]\s*,\s*name\s*[:=]\s*['"]([^'"]+)['"]\s*,\s*version\s*[:=]\s*['"]([^'"]+)['"]`),
-		regexp.MustCompile(`(?i)\b(implementation|api|compile|compileOnly|runtime|runtimeOnly|testImplementation|testCompile|testRuntimeOnly|androidTestImplementation|annotationProcessor|classpath|kapt)\s*\(\s*group\s*[:=]\s*['"]([^'"]+)['"]\s*,\s*name\s*[:=]\s*['"]([^'"]+)['"]\s*,\s*version\s*[:=]\s*['"]([^'"]+)['"]\s*\)`),
+		regexp.MustCompile(`(?i)\b(` + kw + `)\s*['"]([^'"\)]+)['"]`),
+		regexp.MustCompile(`(?i)\b(` + kw + `)\s*\(\s*['"]([^'"\)]+)['"]\s*\)`),
+		regexp.MustCompile(`(?i)\b(` + kw + `)\s*group\s*[:=]\s*['"]([^'"]+)['"]\s*,\s*name\s*[:=]\s*['"]([^'"]+)['"]\s*,\s*version\s*[:=]\s*['"]([^'"]+)['"]`),
+		regexp.MustCompile(`(?i)\b(` + kw + `)\s*\(\s*group\s*[:=]\s*['"]([^'"]+)['"]\s*,\s*name\s*[:=]\s*['"]([^'"]+)['"]\s*,\s*version\s*[:=]\s*['"]([^'"]+)['"]\s*\)`),
 	}
 
 	for _, pattern := range patterns {
@@ -310,4 +351,63 @@ func findLineNumber(content, substr string) int {
 		return 0
 	}
 	return strings.Count(content[:index], "\n") + 1
+}
+
+// parsePropertiesInto parses key=value properties into the given map (does not overwrite existing keys)
+func parsePropertiesInto(content string, vars map[string]string) {
+	for _, line := range strings.Split(content, "\n") {
+		line = strings.TrimSpace(line)
+		if strings.Contains(line, "=") && !strings.HasPrefix(line, "#") {
+			parts := strings.SplitN(line, "=", 2)
+			if len(parts) == 2 {
+				key := strings.TrimSpace(parts[0])
+				if _, exists := vars[key]; !exists {
+					vars[key] = strings.TrimSpace(parts[1])
+				}
+			}
+		}
+	}
+}
+
+// findProjectRoot walks up from dir looking for settings.gradle or settings.gradle.kts
+func findProjectRoot(dir string) string {
+	current := dir
+	for {
+		if _, err := os.Stat(filepath.Join(current, "settings.gradle")); err == nil {
+			return current
+		}
+		if _, err := os.Stat(filepath.Join(current, "settings.gradle.kts")); err == nil {
+			return current
+		}
+		parent := filepath.Dir(current)
+		if parent == current {
+			break
+		}
+		current = parent
+	}
+	return dir
+}
+
+// isProjectReference checks if a dependency statement is a project reference
+func isProjectReference(statement string) bool {
+	pattern := regexp.MustCompile(`(?i)\b(?:` + configKeywords + `)\s*(?:\(\s*)?project\s*\(`)
+	return pattern.MatchString(statement)
+}
+
+// isFileReference checks if a dependency statement is a file reference (files/fileTree)
+func isFileReference(statement string) bool {
+	pattern := regexp.MustCompile(`(?i)\b(?:` + configKeywords + `)\s*(?:\(\s*)?(?:files|fileTree)\s*\(`)
+	return pattern.MatchString(statement)
+}
+
+// isVersionCatalogReference checks if a dependency uses version catalog syntax (libs.xxx)
+func isVersionCatalogReference(statement string) bool {
+	pattern := regexp.MustCompile(`(?i)\b(?:` + configKeywords + `)\s*(?:\(\s*)?libs\.`)
+	return pattern.MatchString(statement)
+}
+
+// normalizePlatformDependency strips platform() and enforcedPlatform() wrappers
+func normalizePlatformDependency(statement string) string {
+	pattern := regexp.MustCompile(`\b(?:platform|enforcedPlatform)\s*\(\s*(['"][^'"]+['"])\s*\)`)
+	return pattern.ReplaceAllString(statement, "$1")
 }
