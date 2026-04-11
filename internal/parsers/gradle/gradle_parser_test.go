@@ -726,3 +726,43 @@ func TestNormalizePlatformDependency(t *testing.T) {
 		}
 	}
 }
+
+func TestVersionCatalogParser_ParseFile(t *testing.T) {
+	// Test parsing libs.versions.toml directly
+	parser := &VersionCatalogParser{}
+	pkgs, err := parser.Parse(filepath.Join("..", "..", "..", "test", "resources", "gradle", "libs.versions.toml"))
+	if err != nil {
+		t.Fatalf("Failed to parse libs.versions.toml: %v", err)
+	}
+
+	if len(pkgs) == 0 {
+		t.Errorf("Expected packages from version catalog, got none")
+	}
+
+	// Verify expected packages are present
+	expectedPackages := map[string]string{
+		"org.springframework:spring-core":        "5.3.20",
+		"org.springframework.boot:spring-boot-starter-web": "2.7.0",
+		"com.google.guava:guava":                 "31.1-jre",
+		"org.apache.logging.log4j:log4j-core":   "2.17.1",
+	}
+
+	found := make(map[string]bool)
+	for _, pkg := range pkgs {
+		if expectedVersion, ok := expectedPackages[pkg.PackageName]; ok {
+			found[pkg.PackageName] = true
+			if pkg.Version != expectedVersion {
+				t.Errorf("Package %s: expected version %s, got %s", pkg.PackageName, expectedVersion, pkg.Version)
+			}
+			if pkg.PackageManager != "gradle" {
+				t.Errorf("Expected package manager 'gradle', got '%s'", pkg.PackageManager)
+			}
+		}
+	}
+
+	for pkgName := range expectedPackages {
+		if !found[pkgName] {
+			t.Errorf("Expected package not found: %s", pkgName)
+		}
+	}
+}

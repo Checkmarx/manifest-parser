@@ -16,6 +16,7 @@ const (
 	MavenPom
 	GoMod
 	GradleBuild
+	GradleVersionCatalog
 )
 
 // selectManifestFile a method to select a manifest file type by its name
@@ -58,6 +59,10 @@ func selectManifestFile(manifest string) Manifest {
 
 	if manifestFileName == "build.gradle" || manifestFileName == "build.gradle.kts" {
 		return GradleBuild
+	}
+
+	if manifestFileName == "libs.versions.toml" {
+		return GradleVersionCatalog
 	}
 
 	return -1

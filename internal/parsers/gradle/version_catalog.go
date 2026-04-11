@@ -1,6 +1,7 @@
 package gradle
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -8,6 +9,36 @@ import (
 
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
+
+// VersionCatalogParser implements parsing of Gradle version catalogs (libs.versions.toml)
+type VersionCatalogParser struct{}
+
+// Parse implements the Parser interface for version catalog files
+func (p *VersionCatalogParser) Parse(manifestFile string) ([]models.Package, error) {
+	catalog := parseVersionCatalog(manifestFile)
+	if catalog == nil {
+		return nil, fmt.Errorf("failed to parse version catalog: %w", fmt.Errorf("invalid TOML format"))
+	}
+
+	var packages []models.Package
+
+	// Convert catalog libraries to packages
+	lineNum := 1
+	for _, lib := range catalog.Libraries {
+		if lib.Group != "" && lib.Name != "" {
+			packages = append(packages, models.Package{
+				PackageManager: "gradle",
+				PackageName:    lib.Group + ":" + lib.Name,
+				Version:        lib.Version,
+				FilePath:       manifestFile,
+				Locations:      []models.Location{{Line: lineNum}},
+			})
+			lineNum++
+		}
+	}
+
+	return packages, nil
+}
 
 // VersionCatalog represents a parsed Gradle version catalog (libs.versions.toml)
 type VersionCatalog struct {

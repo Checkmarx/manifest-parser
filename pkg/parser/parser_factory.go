@@ -29,6 +29,8 @@ func ParsersFactory(manifest string) Parser {
 		return &golang.GoModParser{}
 	case GradleBuild:
 		return &gradle.GradleParser{}
+	case GradleVersionCatalog:
+		return &gradle.VersionCatalogParser{}
 	default:
 		return nil
 	}

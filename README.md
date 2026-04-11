@@ -15,7 +15,7 @@ This parser extracts software dependencies from project manifest files and provi
 
 | Manager | Format | Status | Features |
 |---------|--------|--------|----------|
-| **Gradle** | `build.gradle`, `build.gradle.kts` | ✅ Production | Latest DSL + catalogs |
+| **Gradle** | `build.gradle`, `build.gradle.kts`, `libs.versions.toml` | ✅ Production | Latest DSL + catalogs + direct TOML parsing |
 | **Maven** | `pom.xml` | ✅ Production | Properties, BOMs, ranges |
 | **npm/Node.js** | `package.json` | ✅ Production | Dependencies, dev, peer, optional |
 | **Go** | `go.mod` | ✅ Production | Direct imports, indirect |
@@ -83,7 +83,7 @@ go run cmd/main.go project/go.mod
 
 ### 1. Gradle Parser
 
-**Files:** `build.gradle`, `build.gradle.kts`
+**Files:** `build.gradle`, `build.gradle.kts`, `gradle/libs.versions.toml`
 
 #### Features
 
@@ -170,6 +170,15 @@ project(":api-module") {
 
 #### Version Catalog Support
 
+**Direct Parsing:** You can now parse `libs.versions.toml` directly!
+
+```bash
+# Parse version catalog directly
+go run cmd/main.go gradle/libs.versions.toml
+```
+
+**Catalog Format:**
+
 ```toml
 # gradle/libs.versions.toml
 [versions]
@@ -182,8 +191,11 @@ spring-core = { module = "org.springframework:spring-core", version.ref = "sprin
 spring = ["spring-core", "spring-context"]
 ```
 
+**Automatic Discovery:** When parsing `build.gradle` or `build.gradle.kts`, the parser automatically discovers and parses `gradle/libs.versions.toml` in the same directory.
+
 #### Parser Capabilities
 
+**Build File Parsing:**
 - ✅ Parses Groovy and Kotlin DSL
 - ✅ Resolves variables from gradle.properties
 - ✅ Discovers and parses version catalogs
@@ -193,6 +205,15 @@ spring = ["spring-core", "spring-context"]
 - ✅ Skips file references (local JARs)
 - ✅ Handles multi-line declarations
 - ✅ Parses conditional if blocks
+
+**Version Catalog Parsing:**
+- ✅ Direct parsing of `libs.versions.toml` files
+- ✅ Extracts all 80+ library definitions
+- ✅ Resolves version references
+- ✅ Supports all catalog formats (simple, module, key-value)
+- ✅ Works standalone or auto-discovered by build files
+
+**General:**
 - ❌ Does not evaluate dynamic Gradle code
 
 #### Test Resources
