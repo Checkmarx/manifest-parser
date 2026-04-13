@@ -66,3 +66,75 @@ func TestManifestFileSelector_ExpectGoMod(t *testing.T) {
 		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
 	}
 }
+
+func TestManifestFileSelector_ExpectPypiRequirementsTxt(t *testing.T) {
+	manifest := "requirements.txt"
+	got := selectManifestFile(manifest)
+	want := PypiRequirements
+	if got != want {
+		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+	}
+}
+
+func TestManifestFileSelector_ExpectPypiRequirementsDev(t *testing.T) {
+	manifest := "requirements-dev.txt"
+	got := selectManifestFile(manifest)
+	want := PypiRequirements
+	if got != want {
+		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+	}
+}
+
+func TestManifestFileSelector_ExpectPypiRequirementSingular(t *testing.T) {
+	manifest := "requirement.txt"
+	got := selectManifestFile(manifest)
+	want := PypiRequirements
+	if got != want {
+		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+	}
+}
+
+func TestManifestFileSelector_ExpectPypiRequirementSingularDev(t *testing.T) {
+	manifest := "requirement-dev.txt"
+	got := selectManifestFile(manifest)
+	want := PypiRequirements
+	if got != want {
+		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+	}
+}
+
+func TestManifestFileSelector_ExpectPypiRequirementsWithPath(t *testing.T) {
+	manifest := "/some/path/to/requirements-prod.txt"
+	got := selectManifestFile(manifest)
+	want := PypiRequirements
+	if got != want {
+		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+	}
+}
+
+func TestManifestFileSelector_ExpectPypiConstraints(t *testing.T) {
+	manifest := "constraints.txt"
+	got := selectManifestFile(manifest)
+	want := PypiRequirements
+	if got != want {
+		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+	}
+}
+
+func TestManifestFileSelector_ExpectPypiConstraintsDev(t *testing.T) {
+	manifest := "constraints-dev.txt"
+	got := selectManifestFile(manifest)
+	want := PypiRequirements
+	if got != want {
+		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+	}
+}
+
+func TestManifestFileSelector_ExpectPypiConstraintsWithPath(t *testing.T) {
+	manifest := "/some/path/to/constraints-prod.txt"
+	got := selectManifestFile(manifest)
+	want := PypiRequirements
+	if got != want {
+		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+	}
+}
