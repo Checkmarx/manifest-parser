@@ -66,3 +66,30 @@ func TestManifestFileSelector_ExpectGoMod(t *testing.T) {
 		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
 	}
 }
+
+func TestManifestFileSelector_ExpectSbtBuild(t *testing.T) {
+	manifest := "build.sbt"
+	got := selectManifestFile(manifest)
+	want := SbtBuild
+	if got != want {
+		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+	}
+}
+
+func TestManifestFileSelector_ExpectSbtPlugins(t *testing.T) {
+	manifest := "plugins.sbt"
+	got := selectManifestFile(manifest)
+	want := SbtBuild
+	if got != want {
+		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+	}
+}
+
+func TestManifestFileSelector_ExpectSbtCustom(t *testing.T) {
+	manifest := "dependencies.sbt"
+	got := selectManifestFile(manifest)
+	want := SbtBuild
+	if got != want {
+		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+	}
+}

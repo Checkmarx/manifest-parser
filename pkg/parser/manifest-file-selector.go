@@ -17,6 +17,7 @@ const (
 	GoMod
 	GradleBuild
 	GradleVersionCatalog
+	SbtBuild
 )
 
 // selectManifestFile a method to select a manifest file type by its name
@@ -35,6 +36,10 @@ func selectManifestFile(manifest string) Manifest {
 			strings.HasPrefix(manifestFileName, "packages") {
 			return PypiRequirements
 		}
+	}
+
+	if manifestFileExtension == ".sbt" {
+		return SbtBuild
 	}
 
 	if manifestFileName == "pom.xml" {
