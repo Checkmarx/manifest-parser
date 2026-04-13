@@ -15,6 +15,7 @@ const (
 	DotnetPackagesConfig
 	MavenPom
 	GoMod
+	SbtBuild
 )
 
 // selectManifestFile a method to select a manifest file type by its name
@@ -53,6 +54,10 @@ func selectManifestFile(manifest string) Manifest {
 
 	if manifestFileName == "go.mod" {
 		return GoMod
+	}
+
+	if manifestFileExtension == ".sbt" {
+		return SbtBuild
 	}
 
 	return -1
