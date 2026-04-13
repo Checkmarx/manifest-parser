@@ -4,11 +4,11 @@
 #
 #    pip-compile requirements.in
 #
-asgiref==3.7.2
+asgiref==3.8.1
     # via django
-django==4.2.4
+django==5.1.7
     # via -r requirements.in
-sqlparse==0.4.4
+sqlparse==0.5.3
     # via django
 tzdata==2025.3
     # via django

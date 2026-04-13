@@ -164,7 +164,7 @@ func TestPypiParser_Parse_RealFile(t *testing.T) {
 }
 
 func TestParseLineContinuationWithHashes(t *testing.T) {
-	content := "asgiref==3.7.2 \\\n    --hash=sha256:89b2ef22 \\\n    --hash=sha256:9e0ce3aa\n"
+	content := "asgiref==3.8.1 \\\n    --hash=sha256:89b2ef22 \\\n    --hash=sha256:9e0ce3aa\n"
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "requirements.txt")
 	os.WriteFile(filePath, []byte(content), 0644)
@@ -182,7 +182,7 @@ func TestParseLineContinuationWithHashes(t *testing.T) {
 	want := models.Package{
 		PackageManager: "pypi",
 		PackageName:    "asgiref",
-		Version:        "3.7.2",
+		Version:        "3.8.1",
 		FilePath:       filePath,
 		Locations: []models.Location{{
 			Line:       0,
@@ -194,7 +194,7 @@ func TestParseLineContinuationWithHashes(t *testing.T) {
 }
 
 func TestParsePipOptionLinesSkipped(t *testing.T) {
-	content := "--index-url https://pypi.org/simple\n-r base-requirements.txt\nflask==2.0.1\n-e git+https://github.com/foo/bar.git#egg=bar\nrequests==2.28.0\n"
+	content := "--index-url https://pypi.org/simple\n-r base-requirements.txt\nflask==3.1.0\n-e git+https://github.com/foo/bar.git#egg=bar\nrequests==2.32.3\n"
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "requirements.txt")
 	os.WriteFile(filePath, []byte(content), 0644)
@@ -212,7 +212,7 @@ func TestParsePipOptionLinesSkipped(t *testing.T) {
 		{
 			PackageManager: "pypi",
 			PackageName:    "flask",
-			Version:        "2.0.1",
+			Version:        "3.1.0",
 			FilePath:       filePath,
 			Locations: []models.Location{{
 				Line:       2,
@@ -223,7 +223,7 @@ func TestParsePipOptionLinesSkipped(t *testing.T) {
 		{
 			PackageManager: "pypi",
 			PackageName:    "requests",
-			Version:        "2.28.0",
+			Version:        "2.32.3",
 			FilePath:       filePath,
 			Locations: []models.Location{{
 				Line:       4,
@@ -266,7 +266,7 @@ func TestParseEnvMarkerWithContinuation(t *testing.T) {
 }
 
 func TestParseViaCommentsIgnored(t *testing.T) {
-	content := "asgiref==3.7.2\n    # via django\ndjango==4.2.4\n    # via insecure-bank-corp\n"
+	content := "asgiref==3.8.1\n    # via django\ndjango==5.1.7\n    # via sample-app\n"
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "requirements.txt")
 	os.WriteFile(filePath, []byte(content), 0644)
@@ -284,7 +284,7 @@ func TestParseViaCommentsIgnored(t *testing.T) {
 		{
 			PackageManager: "pypi",
 			PackageName:    "asgiref",
-			Version:        "3.7.2",
+			Version:        "3.8.1",
 			FilePath:       filePath,
 			Locations: []models.Location{{
 				Line:       0,
@@ -295,7 +295,7 @@ func TestParseViaCommentsIgnored(t *testing.T) {
 		{
 			PackageManager: "pypi",
 			PackageName:    "django",
-			Version:        "4.2.4",
+			Version:        "5.1.7",
 			FilePath:       filePath,
 			Locations: []models.Location{{
 				Line:       2,
@@ -308,7 +308,7 @@ func TestParseViaCommentsIgnored(t *testing.T) {
 }
 
 func TestParseLineContinuationLocationTracking(t *testing.T) {
-	content := "# comment\nasgiref==3.7.2 \\\n    --hash=sha256:abc123 \\\n    --hash=sha256:def456\ndjango==4.2.4\n"
+	content := "# comment\nasgiref==3.8.1 \\\n    --hash=sha256:abc123 \\\n    --hash=sha256:def456\ndjango==5.1.7\n"
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "requirements.txt")
 	os.WriteFile(filePath, []byte(content), 0644)
@@ -344,7 +344,7 @@ func TestPypiParser_Parse_UvExportFile(t *testing.T) {
 		{
 			PackageManager: "pypi",
 			PackageName:    "asgiref",
-			Version:        "3.7.2",
+			Version:        "3.8.1",
 			FilePath:       filePath,
 			Locations: []models.Location{{
 				Line:       2,
@@ -355,7 +355,7 @@ func TestPypiParser_Parse_UvExportFile(t *testing.T) {
 		{
 			PackageManager: "pypi",
 			PackageName:    "django",
-			Version:        "4.2.4",
+			Version:        "5.1.7",
 			FilePath:       filePath,
 			Locations: []models.Location{{
 				Line:       8,
@@ -366,7 +366,7 @@ func TestPypiParser_Parse_UvExportFile(t *testing.T) {
 		{
 			PackageManager: "pypi",
 			PackageName:    "pycryptodome",
-			Version:        "3.18.0",
+			Version:        "3.21.0",
 			FilePath:       filePath,
 			Locations: []models.Location{{
 				Line:       12,
@@ -377,7 +377,7 @@ func TestPypiParser_Parse_UvExportFile(t *testing.T) {
 		{
 			PackageManager: "pypi",
 			PackageName:    "sqlparse",
-			Version:        "0.4.2",
+			Version:        "0.5.3",
 			FilePath:       filePath,
 			Locations: []models.Location{{
 				Line:       17,
@@ -388,12 +388,12 @@ func TestPypiParser_Parse_UvExportFile(t *testing.T) {
 		{
 			PackageManager: "pypi",
 			PackageName:    "typing-extensions",
-			Version:        "4.7.1",
+			Version:        "4.12.2",
 			FilePath:       filePath,
 			Locations: []models.Location{{
 				Line:       23,
 				StartIndex: 0,
-				EndIndex:   24,
+				EndIndex:   25,
 			}},
 		},
 		{
@@ -424,7 +424,7 @@ func TestPypiParser_Parse_PipFreezeFile(t *testing.T) {
 		{
 			PackageManager: "pypi",
 			PackageName:    "asgiref",
-			Version:        "3.7.2",
+			Version:        "3.8.1",
 			FilePath:       filePath,
 			Locations: []models.Location{{
 				Line:       0,
@@ -435,7 +435,7 @@ func TestPypiParser_Parse_PipFreezeFile(t *testing.T) {
 		{
 			PackageManager: "pypi",
 			PackageName:    "Django",
-			Version:        "4.2.4",
+			Version:        "5.1.7",
 			FilePath:       filePath,
 			Locations: []models.Location{{
 				Line:       1,
@@ -446,7 +446,7 @@ func TestPypiParser_Parse_PipFreezeFile(t *testing.T) {
 		{
 			PackageManager: "pypi",
 			PackageName:    "sqlparse",
-			Version:        "0.4.4",
+			Version:        "0.5.3",
 			FilePath:       filePath,
 			Locations: []models.Location{{
 				Line:       2,
@@ -482,7 +482,7 @@ func TestPypiParser_Parse_PipCompileFile(t *testing.T) {
 		{
 			PackageManager: "pypi",
 			PackageName:    "asgiref",
-			Version:        "3.7.2",
+			Version:        "3.8.1",
 			FilePath:       filePath,
 			Locations: []models.Location{{
 				Line:       6,
@@ -493,7 +493,7 @@ func TestPypiParser_Parse_PipCompileFile(t *testing.T) {
 		{
 			PackageManager: "pypi",
 			PackageName:    "django",
-			Version:        "4.2.4",
+			Version:        "5.1.7",
 			FilePath:       filePath,
 			Locations: []models.Location{{
 				Line:       8,
@@ -504,7 +504,7 @@ func TestPypiParser_Parse_PipCompileFile(t *testing.T) {
 		{
 			PackageManager: "pypi",
 			PackageName:    "sqlparse",
-			Version:        "0.4.4",
+			Version:        "0.5.3",
 			FilePath:       filePath,
 			Locations: []models.Location{{
 				Line:       10,
@@ -529,7 +529,7 @@ func TestPypiParser_Parse_PipCompileFile(t *testing.T) {
 }
 
 func TestParseArbitraryEquality(t *testing.T) {
-	content := "mypackage===1.0.dev1\nflask==2.0.1\n"
+	content := "mypackage===1.0.dev1\nflask==3.1.0\n"
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "requirements.txt")
 	os.WriteFile(filePath, []byte(content), 0644)
@@ -558,7 +558,7 @@ func TestParseArbitraryEquality(t *testing.T) {
 		{
 			PackageManager: "pypi",
 			PackageName:    "flask",
-			Version:        "2.0.1",
+			Version:        "3.1.0",
 			FilePath:       filePath,
 			Locations: []models.Location{{
 				Line:       1,
@@ -571,7 +571,7 @@ func TestParseArbitraryEquality(t *testing.T) {
 }
 
 func TestParseURLRequirement(t *testing.T) {
-	content := "requests @ https://example.com/requests-2.28.0.tar.gz\nflask==2.0.1\n"
+	content := "requests @ https://example.com/requests-2.32.3.tar.gz\nflask==3.1.0\n"
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "requirements.txt")
 	os.WriteFile(filePath, []byte(content), 0644)
@@ -600,7 +600,7 @@ func TestParseURLRequirement(t *testing.T) {
 		{
 			PackageManager: "pypi",
 			PackageName:    "flask",
-			Version:        "2.0.1",
+			Version:        "3.1.0",
 			FilePath:       filePath,
 			Locations: []models.Location{{
 				Line:       1,
@@ -613,7 +613,7 @@ func TestParseURLRequirement(t *testing.T) {
 }
 
 func TestParseURLRequirementWithExtras(t *testing.T) {
-	content := "requests[security] @ https://example.com/requests-2.28.0.tar.gz\n"
+	content := "requests[security] @ https://example.com/requests-2.32.3.tar.gz\n"
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "requirements.txt")
 	os.WriteFile(filePath, []byte(content), 0644)
@@ -636,7 +636,7 @@ func TestParseURLRequirementWithExtras(t *testing.T) {
 }
 
 func TestParseVCSRequirement(t *testing.T) {
-	content := "git+https://github.com/user/repo.git@v1.0#egg=mypackage\nflask==2.0.1\n"
+	content := "git+https://github.com/user/repo.git@v1.0#egg=mypackage\nflask==3.1.0\n"
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "requirements.txt")
 	os.WriteFile(filePath, []byte(content), 0644)
@@ -659,13 +659,13 @@ func TestParseVCSRequirement(t *testing.T) {
 	if pkgs[1].PackageName != "flask" {
 		t.Errorf("expected package name 'flask', got %q", pkgs[1].PackageName)
 	}
-	if pkgs[1].Version != "2.0.1" {
-		t.Errorf("expected version '2.0.1', got %q", pkgs[1].Version)
+	if pkgs[1].Version != "3.1.0" {
+		t.Errorf("expected version '3.1.0', got %q", pkgs[1].Version)
 	}
 }
 
 func TestParseVCSRequirementNoEgg(t *testing.T) {
-	content := "git+https://github.com/user/repo.git@v1.0\nflask==2.0.1\n"
+	content := "git+https://github.com/user/repo.git@v1.0\nflask==3.1.0\n"
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "requirements.txt")
 	os.WriteFile(filePath, []byte(content), 0644)
@@ -711,7 +711,7 @@ func TestParseVCSSchemes(t *testing.T) {
 }
 
 func TestParseMixedFormats(t *testing.T) {
-	content := "# Mixed format requirements file\nflask==2.0.1\nrequests @ https://example.com/requests-2.28.0.tar.gz\ngit+https://github.com/user/repo.git@main#egg=custom-pkg\ndjango>=3.2,<4.0\nmylib===1.0.dev5\n-r other-requirements.txt\n--index-url https://pypi.org/simple\n"
+	content := "# Mixed format requirements file\nflask==3.1.0\nrequests @ https://example.com/requests-2.32.3.tar.gz\ngit+https://github.com/user/repo.git@main#egg=custom-pkg\ndjango>=4.2,<6.0\nmylib===1.0.dev5\n-r other-requirements.txt\n--index-url https://pypi.org/simple\n"
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "requirements.txt")
 	os.WriteFile(filePath, []byte(content), 0644)
@@ -725,9 +725,9 @@ func TestParseMixedFormats(t *testing.T) {
 		t.Fatalf("expected 5 packages, got %d", len(pkgs))
 	}
 
-	// flask==2.0.1
-	if pkgs[0].PackageName != "flask" || pkgs[0].Version != "2.0.1" {
-		t.Errorf("pkg 0: got %q==%q, want flask==2.0.1", pkgs[0].PackageName, pkgs[0].Version)
+	// flask==3.1.0
+	if pkgs[0].PackageName != "flask" || pkgs[0].Version != "3.1.0" {
+		t.Errorf("pkg 0: got %q==%q, want flask==3.1.0", pkgs[0].PackageName, pkgs[0].Version)
 	}
 	// requests @ URL
 	if pkgs[1].PackageName != "requests" || pkgs[1].Version != "latest" {
