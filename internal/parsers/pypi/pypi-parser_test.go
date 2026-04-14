@@ -266,7 +266,7 @@ func TestParseEnvMarkerWithContinuation(t *testing.T) {
 }
 
 func TestParseViaCommentsIgnored(t *testing.T) {
-	content := "asgiref==3.8.1\n    # via django\ndjango==5.1.7\n    # via sample-app\n"
+	content := "asgiref==3.8.1\n    # via django\ndjango==5.2.13\n    # via sample-app\n"
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "requirements.txt")
 	os.WriteFile(filePath, []byte(content), 0644)
@@ -295,12 +295,12 @@ func TestParseViaCommentsIgnored(t *testing.T) {
 		{
 			PackageManager: "pypi",
 			PackageName:    "django",
-			Version:        "5.1.7",
+			Version:        "5.2.13",
 			FilePath:       filePath,
 			Locations: []models.Location{{
 				Line:       2,
 				StartIndex: 0,
-				EndIndex:   13,
+				EndIndex:   14,
 			}},
 		},
 	}
@@ -308,7 +308,7 @@ func TestParseViaCommentsIgnored(t *testing.T) {
 }
 
 func TestParseLineContinuationLocationTracking(t *testing.T) {
-	content := "# comment\nasgiref==3.8.1 \\\n    --hash=sha256:abc123 \\\n    --hash=sha256:def456\ndjango==5.1.7\n"
+	content := "# comment\nasgiref==3.8.1 \\\n    --hash=sha256:abc123 \\\n    --hash=sha256:def456\ndjango==5.2.13\n"
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "requirements.txt")
 	os.WriteFile(filePath, []byte(content), 0644)
@@ -355,12 +355,12 @@ func TestPypiParser_Parse_UvExportFile(t *testing.T) {
 		{
 			PackageManager: "pypi",
 			PackageName:    "django",
-			Version:        "5.1.7",
+			Version:        "5.2.13",
 			FilePath:       filePath,
 			Locations: []models.Location{{
 				Line:       8,
 				StartIndex: 0,
-				EndIndex:   13,
+				EndIndex:   14,
 			}},
 		},
 		{
@@ -377,7 +377,7 @@ func TestPypiParser_Parse_UvExportFile(t *testing.T) {
 		{
 			PackageManager: "pypi",
 			PackageName:    "sqlparse",
-			Version:        "0.5.3",
+			Version:        "0.5.5",
 			FilePath:       filePath,
 			Locations: []models.Location{{
 				Line:       17,
@@ -435,18 +435,18 @@ func TestPypiParser_Parse_PipFreezeFile(t *testing.T) {
 		{
 			PackageManager: "pypi",
 			PackageName:    "Django",
-			Version:        "5.1.7",
+			Version:        "5.2.13",
 			FilePath:       filePath,
 			Locations: []models.Location{{
 				Line:       1,
 				StartIndex: 0,
-				EndIndex:   13,
+				EndIndex:   14,
 			}},
 		},
 		{
 			PackageManager: "pypi",
 			PackageName:    "sqlparse",
-			Version:        "0.5.3",
+			Version:        "0.5.5",
 			FilePath:       filePath,
 			Locations: []models.Location{{
 				Line:       2,
@@ -493,18 +493,18 @@ func TestPypiParser_Parse_PipCompileFile(t *testing.T) {
 		{
 			PackageManager: "pypi",
 			PackageName:    "django",
-			Version:        "5.1.7",
+			Version:        "5.2.13",
 			FilePath:       filePath,
 			Locations: []models.Location{{
 				Line:       8,
 				StartIndex: 0,
-				EndIndex:   13,
+				EndIndex:   14,
 			}},
 		},
 		{
 			PackageManager: "pypi",
 			PackageName:    "sqlparse",
-			Version:        "0.5.3",
+			Version:        "0.5.5",
 			FilePath:       filePath,
 			Locations: []models.Location{{
 				Line:       10,

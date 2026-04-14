@@ -6,7 +6,7 @@ asgiref==3.8.1 \
     # via
     #   django
     #   sample-app
-django==5.1.7 \
+django==5.2.13 \
     --hash=sha256:a5cc92645b8eb50e38cdd2f9e6a12db171c61e3e6172a1a51b85e8ebc2291b42 \
     --hash=sha256:b5bb1d13cfe3b22e8a31d7a0bae2777a9c019a81d59ef4f72c8581f0d3e35f0e
     # via sample-app
@@ -15,7 +15,7 @@ pycryptodome==3.21.0 \
     --hash=sha256:4d2cd4a5c4b939f2b5e2f8611a8b5c7f8c5a2de1f75c3e7c5e1c8f5a3c2b1e0a \
     --hash=sha256:7e3c5c2f1a4b8d9e0f1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a
     # via sample-app
-sqlparse==0.5.3 \
+sqlparse==0.5.5 \
     --hash=sha256:cf2196ed3418f3ba5de6af7e82c694a9fbdbfecccdfc72e281548517081f16ca \
     --hash=sha256:d446183e84b8349fa3061f0fe7f06ca94ba65b426946e4a7cf1a8b6e26cdc4b4
     # via
