@@ -73,6 +73,7 @@ type Location struct {
 }
 ```
 
+
 `Locations` points to the exact position of the dependency declaration in the source manifest, which downstream tools use for inline annotations and remediation.
 
 ## CLI
