@@ -800,6 +800,24 @@ func TestSbtParser_Parse_PluginsFile(t *testing.T) {
 			Version:        "1.9.16",
 			FilePath:       manifestFile,
 		},
+		{
+			PackageManager: "sbt",
+			PackageName:    "org.apache.log4j:log4j-core",
+			Version:        "2.14.1",
+			FilePath:       manifestFile,
+		},
+		{
+			PackageManager: "sbt",
+			PackageName:    "org.apache.commons:commons-compress",
+			Version:        "1.20",
+			FilePath:       manifestFile,
+		},
+		{
+			PackageManager: "sbt",
+			PackageName:    "commons-io:commons-io",
+			Version:        "2.4",
+			FilePath:       manifestFile,
+		},
 	}
 
 	if len(packages) != len(expectedPackages) {

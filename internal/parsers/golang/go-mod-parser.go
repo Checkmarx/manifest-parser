@@ -25,8 +25,11 @@ func (p *GoModParser) Parse(manifest string) ([]models.Package, error) {
 		return nil, err
 	}
 
-	// Split file into lines for position calculation
+	// Split file into lines for position calculation (strip \r for CRLF files)
 	lines := strings.Split(string(data), "\n")
+	for i := range lines {
+		lines[i] = strings.TrimRight(lines[i], "\r")
+	}
 
 	var packages []models.Package
 	for _, req := range mf.Require {

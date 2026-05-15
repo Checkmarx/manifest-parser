@@ -131,8 +131,16 @@ func extractVariables(manifestFile, content string) map[string]string {
 }
 
 type dependencyStatement struct {
-	Line int
-	Text string
+	Line     int
+	Text     string
+	RawLines []rawLineInfo
+}
+
+// rawLineInfo records a single source line that contributes to a dependency statement.
+// Content is the raw line with \r stripped (no other trimming) so byte offsets stay accurate.
+type rawLineInfo struct {
+	LineNum int
+	Content string
 }
 
 // parseDependencies parses dependencies from the content
@@ -141,8 +149,9 @@ func parseDependencies(content string, variables map[string]string) []models.Pac
 
 	statements := extractDependencyStatements(content)
 	for _, stmt := range statements {
+		locations := computeGradleLocations(stmt.RawLines)
 		for _, pkg := range parseDependencyStatement(stmt.Text, variables) {
-			pkg.Locations = []models.Location{{Line: stmt.Line}}
+			pkg.Locations = locations
 			packages = append(packages, pkg)
 		}
 	}
@@ -154,10 +163,16 @@ func extractDependencyStatements(content string) []dependencyStatement {
 	startPattern := regexp.MustCompile(`(?i)\b(` + configKeywords + `)\b`)
 	var statements []dependencyStatement
 	var buffer strings.Builder
+	var rawLines []rawLineInfo
 	active := false
 	startLine := 0
 
 	lines := strings.Split(content, "\n")
+	// Strip trailing \r so byte offsets are consistent on CRLF files
+	for i := range lines {
+		lines[i] = strings.TrimRight(lines[i], "\r")
+	}
+
 	for i, raw := range lines {
 		line := strings.TrimSpace(raw)
 		if line == "" || strings.HasPrefix(line, "//") || strings.HasPrefix(line, "/*") || strings.HasPrefix(line, "*") {
@@ -171,12 +186,13 @@ func extractDependencyStatements(content string) []dependencyStatement {
 					continue
 				}
 				active = true
-				startLine = i + 1
+				startLine = i
 				buffer.Reset()
 				buffer.WriteString(line)
+				rawLines = []rawLineInfo{{LineNum: i, Content: raw}}
 				normalized := normalizePlatformDependency(buffer.String())
 				if dependencyStatementComplete(normalized) {
-					statements = append(statements, dependencyStatement{Line: startLine, Text: normalized})
+					statements = append(statements, dependencyStatement{Line: startLine, Text: normalized, RawLines: rawLines})
 					active = false
 				}
 			}
@@ -185,14 +201,60 @@ func extractDependencyStatements(content string) []dependencyStatement {
 
 		buffer.WriteString(" ")
 		buffer.WriteString(line)
+		rawLines = append(rawLines, rawLineInfo{LineNum: i, Content: raw})
 		normalized := normalizePlatformDependency(buffer.String())
 		if dependencyStatementComplete(normalized) {
-			statements = append(statements, dependencyStatement{Line: startLine, Text: normalized})
+			statements = append(statements, dependencyStatement{Line: startLine, Text: normalized, RawLines: rawLines})
 			active = false
 		}
 	}
 
 	return statements
+}
+
+// computeGradleLocations emits one Location per contributing source line (Maven-style).
+// For each line: StartIndex = offset of first non-whitespace character; EndIndex = end
+// of code on the line, with any trailing // ... comment and trailing whitespace stripped.
+func computeGradleLocations(rawLines []rawLineInfo) []models.Location {
+	locations := make([]models.Location, 0, len(rawLines))
+	for _, rl := range rawLines {
+		code := stripInlineComment(rl.Content)
+		code = strings.TrimRight(code, " \t")
+		if strings.TrimSpace(code) == "" {
+			continue
+		}
+		startIdx := len(rl.Content) - len(strings.TrimLeft(rl.Content, " \t"))
+		locations = append(locations, models.Location{
+			Line:       rl.LineNum,
+			StartIndex: startIdx,
+			EndIndex:   len(code),
+		})
+	}
+	if len(locations) == 0 {
+		return nil
+	}
+	return locations
+}
+
+// stripInlineComment removes a trailing `// ...` from a Gradle source line,
+// taking quote state into account so // inside a quoted string is preserved.
+func stripInlineComment(line string) string {
+	inSingle := false
+	inDouble := false
+	for i := 0; i < len(line)-1; i++ {
+		ch := line[i]
+		switch {
+		case ch == '\\' && (inSingle || inDouble):
+			i++ // skip escaped char
+		case ch == '\'' && !inDouble:
+			inSingle = !inSingle
+		case ch == '"' && !inSingle:
+			inDouble = !inDouble
+		case !inSingle && !inDouble && ch == '/' && line[i+1] == '/':
+			return line[:i]
+		}
+	}
+	return line
 }
 
 func dependencyStatementComplete(statement string) bool {
@@ -325,6 +387,9 @@ func resolveVariables(str string, variables map[string]string) string {
 
 // cleanVersion handles version ranges and classifiers
 func cleanVersion(version string) string {
+	if version == "" {
+		return "latest"
+	}
 	// Remove brackets for ranges, take the lower bound
 	if strings.HasPrefix(version, "[") && strings.HasSuffix(version, "]") {
 		version = strings.Trim(version, "[]")

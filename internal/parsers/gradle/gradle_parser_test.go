@@ -43,7 +43,7 @@ buildscript {
 					PackageName:    "org.springframework:spring-core",
 					Version:        "5.3.0",
 					Locations: []models.Location{
-						{Line: 10},
+						{Line: 9},
 					},
 				},
 				{
@@ -51,7 +51,7 @@ buildscript {
 					PackageName:    "junit:junit",
 					Version:        "4.13",
 					Locations: []models.Location{
-						{Line: 11},
+						{Line: 10},
 					},
 				},
 				{
@@ -59,7 +59,7 @@ buildscript {
 					PackageName:    "com.google.guava:guava",
 					Version:        "30.1-jre",
 					Locations: []models.Location{
-						{Line: 12},
+						{Line: 11},
 					},
 				},
 				{
@@ -67,7 +67,7 @@ buildscript {
 					PackageName:    "org.apache.commons:commons-lang3",
 					Version:        "3.12.0",
 					Locations: []models.Location{
-						{Line: 13},
+						{Line: 12},
 					},
 				},
 				{
@@ -75,7 +75,7 @@ buildscript {
 					PackageName:    "com.android.tools.build:gradle",
 					Version:        "7.0.0",
 					Locations: []models.Location{
-						{Line: 18},
+						{Line: 17},
 					},
 				},
 			},
@@ -101,7 +101,7 @@ dependencies {
 					PackageName:    "org.springframework:spring-core",
 					Version:        "1.4.32",
 					Locations: []models.Location{
-						{Line: 4},
+						{Line: 3},
 					},
 				},
 				{
@@ -109,7 +109,7 @@ dependencies {
 					PackageName:    "org.apache.commons:commons-lang3",
 					Version:        "3.12.0",
 					Locations: []models.Location{
-						{Line: 5},
+						{Line: 4},
 					},
 				},
 				{
@@ -117,7 +117,7 @@ dependencies {
 					PackageName:    "com.google.guava:guava",
 					Version:        "30.1-jre",
 					Locations: []models.Location{
-						{Line: 8},
+						{Line: 7},
 					},
 				},
 				{
@@ -125,7 +125,7 @@ dependencies {
 					PackageName:    "junit:junit",
 					Version:        "1.4.32",
 					Locations: []models.Location{
-						{Line: 10},
+						{Line: 9},
 					},
 				},
 			},
@@ -159,7 +159,7 @@ dependencies {
 					PackageName:    "org.springframework:spring-core",
 					Version:        "5.3.0",
 					Locations: []models.Location{
-						{Line: 6},
+						{Line: 5},
 					},
 				},
 				{
@@ -167,7 +167,7 @@ dependencies {
 					PackageName:    "org.apache.commons:commons-lang3",
 					Version:        "3.12.0",
 					Locations: []models.Location{
-						{Line: 9},
+						{Line: 8},
 					},
 				},
 				{
@@ -175,7 +175,7 @@ dependencies {
 					PackageName:    "junit:junit",
 					Version:        "1.0.0",
 					Locations: []models.Location{
-						{Line: 13},
+						{Line: 12},
 					},
 				},
 				{
@@ -183,7 +183,7 @@ dependencies {
 					PackageName:    "com.google.guava:guava",
 					Version:        "30.1-jre",
 					Locations: []models.Location{
-						{Line: 16},
+						{Line: 15},
 					},
 				},
 			},
@@ -763,6 +763,83 @@ func TestVersionCatalogParser_ParseFile(t *testing.T) {
 	for pkgName := range expectedPackages {
 		if !found[pkgName] {
 			t.Errorf("Expected package not found: %s", pkgName)
+		}
+	}
+}
+
+// TestGradleParser_LocationIndices asserts that the Gradle parser populates
+// StartIndex and EndIndex on each Location, not just Line.
+func TestGradleParser_LocationIndices(t *testing.T) {
+	parser := &GradleParser{}
+	pkgs, err := parser.Parse(filepath.Join("..", "..", "..", "test", "resources", "build.gradle"))
+	if err != nil {
+		t.Fatalf("Failed to parse build.gradle: %v", err)
+	}
+
+	// build.gradle line 40 (1-based):
+	//         implementation 'org.apache.logging.log4j:log4j-core:2.14.0' // Log4Shell
+	// 8 spaces + "implementation 'org.apache.logging.log4j:log4j-core:2.14.0'" (= 8 + 59 = 67)
+	cases := map[string]struct {
+		line, startIdx, endIdx int
+	}{
+		"org.apache.logging.log4j:log4j-core":             {39, 8, 67},
+		"commons-collections:commons-collections":        {40, 8, 70},
+		"org.springframework:spring-web":                 {45, 8, 69},
+	}
+
+	for _, pkg := range pkgs {
+		want, ok := cases[pkg.PackageName]
+		if !ok {
+			continue
+		}
+		if len(pkg.Locations) == 0 {
+			t.Errorf("%s: no Locations", pkg.PackageName)
+			continue
+		}
+		got := pkg.Locations[0]
+		if got.Line != want.line || got.StartIndex != want.startIdx || got.EndIndex != want.endIdx {
+			t.Errorf("%s: got Location{Line=%d, Start=%d, End=%d}, want {Line=%d, Start=%d, End=%d}",
+				pkg.PackageName, got.Line, got.StartIndex, got.EndIndex, want.line, want.startIdx, want.endIdx)
+		}
+	}
+}
+
+// TestComputeGradleLocations_MultiLine asserts that a dependency spanning multiple
+// source lines produces one Location per non-empty contributing line (Maven-style).
+func TestComputeGradleLocations_MultiLine(t *testing.T) {
+	raws := []rawLineInfo{
+		{LineNum: 5, Content: "    implementation("},
+		{LineNum: 6, Content: "        \"org.springframework:spring-core:5.3.0\""},
+		{LineNum: 7, Content: "    )"},
+	}
+	locs := computeGradleLocations(raws)
+	if len(locs) != 3 {
+		t.Fatalf("expected 3 Locations, got %d", len(locs))
+	}
+	want := []models.Location{
+		{Line: 5, StartIndex: 4, EndIndex: 19}, // "    implementation(" length 19
+		{Line: 6, StartIndex: 8, EndIndex: 47}, // 8 spaces + "\"org.springframework:spring-core:5.3.0\"" (39) = 47
+		{Line: 7, StartIndex: 4, EndIndex: 5},  // "    )" length 5
+	}
+	for i, w := range want {
+		if locs[i] != w {
+			t.Errorf("loc[%d]: got %+v, want %+v", i, locs[i], w)
+		}
+	}
+}
+
+// TestStripInlineComment verifies trailing // comments are removed but // inside
+// strings is preserved.
+func TestStripInlineComment(t *testing.T) {
+	cases := []struct{ in, out string }{
+		{"implementation 'foo:bar:1.0' // comment", "implementation 'foo:bar:1.0' "},
+		{`implementation "https://example.com"`, `implementation "https://example.com"`},
+		{"no comment here", "no comment here"},
+		{"// whole line is a comment", ""},
+	}
+	for _, c := range cases {
+		if got := stripInlineComment(c.in); got != c.out {
+			t.Errorf("stripInlineComment(%q) = %q, want %q", c.in, got, c.out)
 		}
 	}
 }

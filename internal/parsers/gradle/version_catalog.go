@@ -23,17 +23,23 @@ func (p *VersionCatalogParser) Parse(manifestFile string) ([]models.Package, err
 	var packages []models.Package
 
 	// Convert catalog libraries to packages
-	lineNum := 1
 	for _, lib := range catalog.Libraries {
 		if lib.Group != "" && lib.Name != "" {
+			version := lib.Version
+			if version == "" {
+				version = "latest"
+			}
 			packages = append(packages, models.Package{
 				PackageManager: "gradle",
 				PackageName:    lib.Group + ":" + lib.Name,
-				Version:        lib.Version,
+				Version:        version,
 				FilePath:       manifestFile,
-				Locations:      []models.Location{{Line: lineNum}},
+				Locations: []models.Location{{
+					Line:       lib.Line,
+					StartIndex: lib.StartIndex,
+					EndIndex:   lib.EndIndex,
+				}},
 			})
-			lineNum++
 		}
 	}
 
@@ -48,9 +54,12 @@ type VersionCatalog struct {
 
 // CatalogLibrary represents a library entry in the version catalog
 type CatalogLibrary struct {
-	Group   string
-	Name    string
-	Version string
+	Group      string
+	Name       string
+	Version    string
+	Line       int // 0-based line number in the TOML file
+	StartIndex int // offset of first non-whitespace character on the line
+	EndIndex   int // offset just past the last non-whitespace character on the line
 }
 
 // findVersionCatalog locates gradle/libs.versions.toml relative to the project root
@@ -76,29 +85,33 @@ func parseVersionCatalog(path string) *VersionCatalog {
 	}
 
 	lines := strings.Split(string(content), "\n")
+	// Strip trailing \r so byte offsets are consistent on CRLF files
+	for i := range lines {
+		lines[i] = strings.TrimRight(lines[i], "\r")
+	}
 	currentSection := ""
 
 	sectionPattern := regexp.MustCompile(`^\s*\[(\w+)\]\s*$`)
 	simpleKV := regexp.MustCompile(`^\s*([^\s=]+)\s*=\s*"([^"]+)"\s*$`)
 
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if line == "" || strings.HasPrefix(line, "#") {
+	for lineIdx, raw := range lines {
+		trimmed := strings.TrimSpace(raw)
+		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
 			continue
 		}
 
-		if match := sectionPattern.FindStringSubmatch(line); len(match) > 1 {
+		if match := sectionPattern.FindStringSubmatch(trimmed); len(match) > 1 {
 			currentSection = match[1]
 			continue
 		}
 
 		switch currentSection {
 		case "versions":
-			if match := simpleKV.FindStringSubmatch(line); len(match) > 2 {
+			if match := simpleKV.FindStringSubmatch(trimmed); len(match) > 2 {
 				catalog.Versions[match[1]] = match[2]
 			}
 		case "libraries":
-			parseCatalogLibraryEntry(line, catalog)
+			parseCatalogLibraryEntry(trimmed, raw, lineIdx, catalog)
 		}
 	}
 
@@ -116,16 +129,23 @@ func parseVersionCatalog(path string) *VersionCatalog {
 	return catalog
 }
 
-// parseCatalogLibraryEntry parses a single library line from the version catalog
-func parseCatalogLibraryEntry(line string, catalog *VersionCatalog) {
+// parseCatalogLibraryEntry parses a single library line from the version catalog.
+// trimmed is the whitespace-stripped line content used for regex matching;
+// raw is the original line used to compute byte offsets for Location indices.
+func parseCatalogLibraryEntry(trimmed, raw string, lineIdx int, catalog *VersionCatalog) {
+	startIdx, endIdx := lineExtent(raw)
+
 	// Pattern: key = "group:name:version"
 	simplePattern := regexp.MustCompile(`^\s*([^\s=]+)\s*=\s*"([^"]+)"\s*$`)
-	if match := simplePattern.FindStringSubmatch(line); len(match) > 2 {
+	if match := simplePattern.FindStringSubmatch(trimmed); len(match) > 2 {
 		parts := strings.Split(match[2], ":")
 		if len(parts) >= 2 {
 			lib := CatalogLibrary{
-				Group: parts[0],
-				Name:  parts[1],
+				Group:      parts[0],
+				Name:       parts[1],
+				Line:       lineIdx,
+				StartIndex: startIdx,
+				EndIndex:   endIdx,
 			}
 			if len(parts) >= 3 {
 				lib.Version = parts[2]
@@ -140,7 +160,7 @@ func parseCatalogLibraryEntry(line string, catalog *VersionCatalog) {
 	// Pattern: key = { group = "g", name = "n", version.ref = "xxx" }
 	// Pattern: key = { group = "g", name = "n", version = "xxx" }
 	kvPattern := regexp.MustCompile(`^\s*([^\s=]+)\s*=\s*\{(.+)\}\s*$`)
-	if match := kvPattern.FindStringSubmatch(line); len(match) > 2 {
+	if match := kvPattern.FindStringSubmatch(trimmed); len(match) > 2 {
 		key := match[1]
 		body := match[2]
 
@@ -176,9 +196,20 @@ func parseCatalogLibraryEntry(line string, catalog *VersionCatalog) {
 		}
 
 		if lib.Group != "" && lib.Name != "" {
+			lib.Line = lineIdx
+			lib.StartIndex = startIdx
+			lib.EndIndex = endIdx
 			catalog.Libraries[key] = lib
 		}
 	}
+}
+
+// lineExtent returns the offset of the first non-whitespace char and the offset
+// just past the last non-whitespace char on the line.
+func lineExtent(line string) (int, int) {
+	startIdx := len(line) - len(strings.TrimLeft(line, " \t"))
+	endIdx := len(strings.TrimRight(line, " \t"))
+	return startIdx, endIdx
 }
 
 // catalogKeyToDependency resolves a version catalog accessor (e.g., "spring.core")
@@ -214,23 +245,36 @@ func parseVersionCatalogDependencies(content string, catalog *VersionCatalog) []
 	pattern := regexp.MustCompile(configPattern)
 
 	lines := strings.Split(content, "\n")
+	// Strip trailing \r so byte offsets are consistent on CRLF files
+	for i := range lines {
+		lines[i] = strings.TrimRight(lines[i], "\r")
+	}
 	for i, raw := range lines {
-		line := strings.TrimSpace(raw)
-		if line == "" || strings.HasPrefix(line, "//") {
+		trimmed := strings.TrimSpace(raw)
+		if trimmed == "" || strings.HasPrefix(trimmed, "//") {
 			continue
 		}
 
-		matches := pattern.FindAllStringSubmatch(line, -1)
+		matches := pattern.FindAllStringSubmatch(trimmed, -1)
 		for _, match := range matches {
 			if len(match) > 2 {
 				ref := match[2]
 				lib := catalogKeyToDependency(ref, catalog)
 				if lib != nil && lib.Group != "" && lib.Name != "" {
+					startIdx, endIdx := lineExtent(stripInlineComment(raw))
+					version := lib.Version
+					if version == "" {
+						version = "latest"
+					}
 					packages = append(packages, models.Package{
 						PackageManager: "gradle",
 						PackageName:    lib.Group + ":" + lib.Name,
-						Version:        lib.Version,
-						Locations:      []models.Location{{Line: i + 1}},
+						Version:        version,
+						Locations: []models.Location{{
+							Line:       i,
+							StartIndex: startIdx,
+							EndIndex:   endIdx,
+						}},
 					})
 				}
 			}

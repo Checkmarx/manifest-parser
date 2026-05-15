@@ -98,7 +98,7 @@ type Package struct {
 }
 
 type Location struct {
-    Line       int  // 0-based in most parsers (see Project Rules below)
+    Line       int  // 0-based (all parsers)
     StartIndex int  // 0-based byte offset from start of line
     EndIndex   int  // 0-based byte offset from start of line
 }
@@ -122,15 +122,17 @@ Per-ecosystem parsers live under [internal/parsers/](internal/parsers/):
 - `pypi/` — line-oriented scan of `requirements*.txt` / `packages*.txt`. **Only `package==version` is supported.** Comments (`#`) and environment markers (`;`) are stripped. `PackageManager` = `"pypi"`.
 - `golang/` — uses `golang.org/x/mod/modfile` to parse `go.mod`, then uses the parser's line metadata to compute character offsets. `PackageManager` = `"go"`.
 - `dotnet/` — three parsers: `csproj_parser.go` (`.csproj`), `directory_packages_props_parser.go` (central package management), `packages_config_parser.go` (legacy). Bracketed version ranges become `"latest"`. `PackageManager` = `"nuget"` for all three.
+- `sbt/` — parses any `.sbt` file (`build.sbt`, `project/plugins.sbt`, `version.sbt`, etc.) using line-oriented scanning. Supports Scala build dependencies in `"group" % "name" % "version"` format. `PackageManager` = `"sbt"`.
 
 ## Project Rules (Invariants)
 
-- **`Location.Line` is 0-based** in most parsers (Maven, Go, npm, pypi use `lineNum - 1` or a 0-based counter). Downstream AST-CLI depends on this; don't "fix" it to 1-based without coordinating.
+- **`Location.Line` MUST be 0-based for ALL parsers.** When iterating `for i, line := range lines`, emit `Line: i` — never `i + 1`. Editors display 1-based line numbers; downstream consumers add `+1` for display. If parser output matches the editor's line number, it's off-by-one.
 - **`Location.StartIndex` / `EndIndex` are 0-based byte offsets** from the start of the line. They are byte offsets, not rune/character offsets — relevant for non-ASCII manifests.
 - **Unresolvable or ranged versions resolve to the literal string `"latest"`**, never an empty string. Callers branch on this value.
-- **`PackageManager` strings are part of the contract**: `"gradle"`, `"mvn"`, `"npm"`, `"pypi"`, `"go"`, `"nuget"`. Don't rename them.
+- **`PackageManager` strings are part of the contract**: `"gradle"`, `"mvn"`, `"npm"`, `"pypi"`, `"go"`, `"nuget"`, `"sbt"`. Don't rename them.
 - Maven emits one `Location` per **non-comment line** of the `<dependency>` block (open tag, each child element, close tag). Single-line `Locations` for Maven would be a regression.
 - Do not add `ParsersFactory` overloads or alternative entry points without coordinating with AST-CLI.
+- **Do not modify or rename existing `PackageManager` strings**. AST-CLI and Checkmarx One SCA branch on these values — a silent rename breaks downstream parsing with no compile-time error. If a rename is genuinely required, stop and confirm with the user.
 
 ## Testing Strategy
 
@@ -214,7 +216,7 @@ N/A — this is a Go library consumed via `go get github.com/Checkmarx/manifest-
    go test -v ./internal/parsers/maven/...
    ```
 
-3. **Location off-by-one:** check the 0-based invariant — the parser should use `lineNum - 1` or a 0-based counter. Grep for `Line:` assignments in the affected parser and verify against the fixture.
+3. **Location off-by-one:** Parser violated 0-based contract. Grep for `i + 1` patterns near `Line:` / `LineNum:` assignments — emit `Line: i`, not `i + 1`.
 
 4. **Version resolves to `"latest"` unexpectedly:** check whether the version string matches a range specifier (`^`, `~`, `[`, `*`) or whether a lock file / properties file is present in the same directory as the fixture.
 
