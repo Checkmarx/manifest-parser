@@ -13,12 +13,17 @@ on:
         default: 'false'
         type: boolean
 
+permissions:
+  contents: read
+
 jobs:
   tag-and-release:
-    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # for Git to git push
+    runs-on: cx-public-ubuntu-x64
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           fetch-depth: 0   # need full history for tags
 
@@ -59,7 +64,7 @@ jobs:
           git push origin "${{ env.new_version }}"
 
       - name: Create GitHub Release
-        uses: actions/create-release@v1
+        uses: actions/create-release@0cb9c9b65d5d1901c1f53e5e66eaf4afd303e70e # v1.1.4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
