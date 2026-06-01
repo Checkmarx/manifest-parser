@@ -6,8 +6,10 @@ import (
 	"github.com/Checkmarx/manifest-parser/internal/parsers/gradle"
 	"github.com/Checkmarx/manifest-parser/internal/parsers/maven"
 	"github.com/Checkmarx/manifest-parser/internal/parsers/npm"
+	"github.com/Checkmarx/manifest-parser/internal/parsers/poetry"
 	"github.com/Checkmarx/manifest-parser/internal/parsers/pypi"
 	"github.com/Checkmarx/manifest-parser/internal/parsers/sbt"
+	"github.com/Checkmarx/manifest-parser/internal/parsers/setuptools"
 )
 
 func ParsersFactory(manifest string) Parser {
@@ -34,6 +36,12 @@ func ParsersFactory(manifest string) Parser {
 		return &gradle.VersionCatalogParser{}
 	case SbtBuild:
 		return &sbt.SbtParser{}
+	case SetuptoolsSetupCfg:
+		return &setuptools.SetupCfgParser{}
+	case SetuptoolsSetupPy:
+		return &setuptools.SetupPyParser{}
+	case PoetryPyproject:
+		return &poetry.PoetryPyprojectParser{}
 	default:
 		return nil
 	}
