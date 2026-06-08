@@ -263,8 +263,8 @@ func stripInlineComment(line string) string {
 func dependencyStatementComplete(statement string) bool {
 	kw := configKeywords
 	patterns := []*regexp.Regexp{
-		regexp.MustCompile(`(?i)\b(` + kw + `)\s*['"]([^'"\)]+)['"]`),
-		regexp.MustCompile(`(?i)\b(` + kw + `)\s*\(\s*['"]([^'"\)]+)['"]\s*\)`),
+		regexp.MustCompile(`(?i)\b(` + kw + `)\s*['"]([^'"]+)['"]`),
+		regexp.MustCompile(`(?i)\b(` + kw + `)\s*\(\s*['"]([^'"]+)['"]\s*\)`),
 		regexp.MustCompile(`(?i)\b(` + kw + `)\s*group\s*[:=]\s*['"]([^'"]+)['"]\s*,\s*name\s*[:=]\s*['"]([^'"]+)['"]\s*,\s*version\s*[:=]\s*['"]([^'"]+)['"]`),
 		regexp.MustCompile(`(?i)\b(` + kw + `)\s*\(\s*group\s*[:=]\s*['"]([^'"]+)['"]\s*,\s*name\s*[:=]\s*['"]([^'"]+)['"]\s*,\s*version\s*[:=]\s*['"]([^'"]+)['"]\s*\)`),
 		regexp.MustCompile(`(?i)group\s*[:=]\s*['"]([^'"]+)['"].*name\s*[:=]\s*['"]([^'"]+)['"].*version\s*[:=]\s*['"]([^'"]+)['"]`),
@@ -285,8 +285,8 @@ func parseDependencyStatement(statement string, variables map[string]string) []m
 
 	kw := configKeywords
 	patterns := []*regexp.Regexp{
-		regexp.MustCompile(`(?i)\b(` + kw + `)\s*['"]([^'"\)]+)['"]`),
-		regexp.MustCompile(`(?i)\b(` + kw + `)\s*\(\s*['"]([^'"\)]+)['"]\s*\)`),
+		regexp.MustCompile(`(?i)\b(` + kw + `)\s*['"]([^'"]+)['"]`),
+		regexp.MustCompile(`(?i)\b(` + kw + `)\s*\(\s*['"]([^'"]+)['"]\s*\)`),
 		regexp.MustCompile(`(?i)\b(` + kw + `)\s*group\s*[:=]\s*['"]([^'"]+)['"]\s*,\s*name\s*[:=]\s*['"]([^'"]+)['"]\s*,\s*version\s*[:=]\s*['"]([^'"]+)['"]`),
 		regexp.MustCompile(`(?i)\b(` + kw + `)\s*\(\s*group\s*[:=]\s*['"]([^'"]+)['"]\s*,\s*name\s*[:=]\s*['"]([^'"]+)['"]\s*,\s*version\s*[:=]\s*['"]([^'"]+)['"]\s*\)`),
 	}
@@ -393,20 +393,9 @@ func cleanVersion(version string) string {
 	if version == "" {
 		return "latest"
 	}
-	// Remove brackets for ranges, take the lower bound
-	if strings.HasPrefix(version, "[") && strings.HasSuffix(version, "]") {
-		version = strings.Trim(version, "[]")
-		parts := strings.Split(version, ",")
-		if len(parts) > 0 {
-			version = strings.TrimSpace(parts[0])
-		}
-	}
-	if strings.HasPrefix(version, "(") && strings.HasSuffix(version, ")") {
-		version = strings.Trim(version, "()")
-		parts := strings.Split(version, ",")
-		if len(parts) > 0 {
-			version = strings.TrimSpace(parts[0])
-		}
+	// Check for any range or wildcard patterns
+	if strings.ContainsAny(version, "[]()^~*><") || strings.Contains(version, "+") {
+		return "latest"
 	}
 	// For now, keep classifiers as is
 	return version
