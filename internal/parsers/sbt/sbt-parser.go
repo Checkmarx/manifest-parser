@@ -51,6 +51,10 @@ func resolveVersion(version string, vars map[string]string) string {
 	if version == "" {
 		return "latest"
 	}
+	// Check for any range or wildcard patterns
+	if strings.ContainsAny(version, "[]()^~*><") || strings.Contains(version, "+") {
+		return "latest"
+	}
 	// If it looks like a literal version (starts with digit or contains dots/hyphens typical of versions), return as-is
 	if len(version) > 0 && (version[0] >= '0' && version[0] <= '9') {
 		return version
@@ -214,7 +218,7 @@ func (p *SbtParser) Parse(manifestFile string) ([]models.Package, error) {
 
 		var version string
 		if quotedVersion != "" {
-			version = quotedVersion
+			version = resolveVersion(quotedVersion, vars)
 		} else if bareVersion != "" {
 			version = resolveVersion(bareVersion, vars)
 		} else {

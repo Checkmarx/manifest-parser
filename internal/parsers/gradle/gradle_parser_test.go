@@ -189,6 +189,58 @@ dependencies {
 			},
 			expectedError: false,
 		},
+		{
+			name: "gradle with version ranges",
+			content: `dependencies {
+    implementation 'org.springframework:spring-core:[1.0.0,2.0.0)'
+    implementation 'org.junit:junit:(1.0,2.0]'
+}`,
+			expectedPkgs: []models.Package{
+				{
+					PackageManager: "gradle",
+					PackageName:    "org.springframework:spring-core",
+					Version:        "latest",
+					Locations: []models.Location{
+						{Line: 1},
+					},
+				},
+				{
+					PackageManager: "gradle",
+					PackageName:    "org.junit:junit",
+					Version:        "latest",
+					Locations: []models.Location{
+						{Line: 2},
+					},
+				},
+			},
+			expectedError: false,
+		},
+		{
+			name: "gradle with prefix wildcards",
+			content: `dependencies {
+    implementation 'org.springframework:spring-core:1.0.+'
+    implementation 'org.junit:junit:4.12.*'
+}`,
+			expectedPkgs: []models.Package{
+				{
+					PackageManager: "gradle",
+					PackageName:    "org.springframework:spring-core",
+					Version:        "latest",
+					Locations: []models.Location{
+						{Line: 1},
+					},
+				},
+				{
+					PackageManager: "gradle",
+					PackageName:    "org.junit:junit",
+					Version:        "latest",
+					Locations: []models.Location{
+						{Line: 2},
+					},
+				},
+			},
+			expectedError: false,
+		},
 	}
 
 	for _, tt := range tests {

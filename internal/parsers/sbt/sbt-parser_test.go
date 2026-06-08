@@ -417,6 +417,60 @@ func TestResolveVersion(t *testing.T) {
 	}
 }
 
+func TestParseWithVersionRanges(t *testing.T) {
+	content := `libraryDependencies ++= Seq(
+  "org.springframework" % "spring-core" % "[1.0.0,2.0.0)",
+  "org.junit" % "junit" % "(1.0,2.0]"
+)
+`
+	tmpDir := t.TempDir()
+	filePath := filepath.Join(tmpDir, "build.sbt")
+	os.WriteFile(filePath, []byte(content), 0644)
+
+	parser := &SbtParser{}
+	pkgs, err := parser.Parse(filePath)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(pkgs) != 2 {
+		t.Fatalf("expected 2 packages, got %d", len(pkgs))
+	}
+
+	if pkgs[0].Version != "latest" {
+		t.Errorf("expected version 'latest' for range, got %q", pkgs[0].Version)
+	}
+	if pkgs[1].Version != "latest" {
+		t.Errorf("expected version 'latest' for range, got %q", pkgs[1].Version)
+	}
+}
+
+func TestParseWithPrefixWildcards(t *testing.T) {
+	content := `libraryDependencies ++= Seq(
+  "org.springframework" % "spring-core" % "1.0.+",
+  "org.junit" % "junit" % "4.12.*"
+)
+`
+	tmpDir := t.TempDir()
+	filePath := filepath.Join(tmpDir, "build.sbt")
+	os.WriteFile(filePath, []byte(content), 0644)
+
+	parser := &SbtParser{}
+	pkgs, err := parser.Parse(filePath)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(pkgs) != 2 {
+		t.Fatalf("expected 2 packages, got %d", len(pkgs))
+	}
+
+	if pkgs[0].Version != "latest" {
+		t.Errorf("expected version 'latest' for wildcard, got %q", pkgs[0].Version)
+	}
+	if pkgs[1].Version != "latest" {
+		t.Errorf("expected version 'latest' for wildcard, got %q", pkgs[1].Version)
+	}
+}
+
 func TestStripComments(t *testing.T) {
 	tests := []struct {
 		name           string
