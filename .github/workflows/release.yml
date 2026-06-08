@@ -16,9 +16,11 @@ on:
 jobs:
   tag-and-release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@a5ac7e51b41094c7bf3b3610b3f7ca9a3f1aead5  # v4
         with:
           fetch-depth: 0   # need full history for tags
 
@@ -59,7 +61,7 @@ jobs:
           git push origin "${{ env.new_version }}"
 
       - name: Create GitHub Release
-        uses: actions/create-release@v1
+        uses: actions/create-release@e1c7b3e6cb9a8b5a88d8b756ade9127e60a26433
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
