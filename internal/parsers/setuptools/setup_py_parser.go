@@ -1,7 +1,6 @@
 package setuptools
 
 import (
-	"log"
 	"os"
 	"regexp"
 	"strings"
@@ -49,7 +48,6 @@ func extractPackageNamePy(line string, re *regexp.Regexp) (string, bool) {
 func findPositionInFile(fullText string, depString string, searchStartPos int) (lineNum, startIndex, endIndex int) {
 	searchPos := strings.Index(fullText[searchStartPos:], depString)
 	if searchPos == -1 {
-		log.Printf("Warning: Could not locate '%s' in file after position %d", depString, searchStartPos)
 		return 0, 0, 0
 	}
 
@@ -101,7 +99,6 @@ func extractDepsFromListContent(content string, fullText string, searchStartPos 
 					afterQuote++
 				}
 				if afterQuote < len(content) && content[afterQuote] == ':' {
-					log.Printf("Skipping dict key: %s", dep)
 					continue
 				}
 			}
@@ -126,7 +123,6 @@ func extractDepsFromListContent(content string, fullText string, searchStartPos 
 					afterQuote++
 				}
 				if afterQuote < len(content) && content[afterQuote] == ':' {
-					log.Printf("Skipping dict key: %s", dep)
 					continue
 				}
 			}
@@ -149,7 +145,6 @@ func extractDepsFromListContent(content string, fullText string, searchStartPos 
 
 		pkgName, ok := extractPackageNamePy(depLine, pkgNameRe)
 		if !ok {
-			log.Printf("Warning: Could not extract package name from: %s", depLine)
 			continue
 		}
 
@@ -241,11 +236,8 @@ func extractDependencies(setupText string, key string, fullText string, searchSt
 	keyPattern := key + "="
 	keyIndex := strings.Index(setupText, keyPattern)
 	if keyIndex == -1 {
-		log.Printf("Debug: Key '%s' not found in setup() call", key)
 		return deps
 	}
-
-	log.Printf("Debug: Found %s at position %d", key, keyIndex)
 
 	startPos := keyIndex + len(keyPattern)
 	for startPos < len(setupText) && (setupText[startPos] == ' ' || setupText[startPos] == '\t') {
@@ -253,58 +245,42 @@ func extractDependencies(setupText string, key string, fullText string, searchSt
 	}
 
 	if startPos >= len(setupText) {
-		log.Printf("Warning: No bracket found after %s", key)
 		return deps
 	}
 
 	content := extractListContent(setupText, startPos)
 	if content == "" {
-		log.Printf("Warning: Could not extract list content for %s", key)
 		return deps
 	}
 
-	log.Printf("Debug: Extracted %d characters from %s content", len(content), key)
-
 	deps = extractDepsFromListContent(content, fullText, searchStartPos)
-	log.Printf("Debug: Found %d dependencies in %s", len(deps), key)
 	return deps
 }
 
 func (p *SetupPyParser) Parse(manifestFile string) ([]models.Package, error) {
 	data, err := os.ReadFile(manifestFile)
 	if err != nil {
-		log.Printf("Error: Failed to read %s: %v", manifestFile, err)
 		return nil, err
 	}
-
-	log.Printf("Debug: Parsing setup.py file: %s (%d bytes)", manifestFile, len(data))
 
 	text := string(data)
 	var packages []models.Package
 
 	setupStart := strings.Index(text, "setup(")
 	if setupStart == -1 {
-		log.Printf("Warning: setup() call not found in %s", manifestFile)
 		setupStart = 0
 	} else {
-		log.Printf("Debug: Found setup() call at position %d", setupStart)
 		setupStart += len("setup")
 	}
 
 	setupContent := extractListContent(text, setupStart)
 	if setupContent == "" && setupStart > 0 {
-		log.Printf("Warning: Could not extract setup() content from %s", manifestFile)
 		setupContent = text[setupStart:]
-	} else if setupContent != "" {
-		log.Printf("Debug: Extracted setup() content, %d bytes", len(setupContent))
 	}
 
 	for _, key := range []string{"install_requires", "setup_requires", "tests_require"} {
 		keyPosInText := strings.Index(text, key+"=")
 		deps := extractDependencies(setupContent, key, text, keyPosInText)
-		if len(deps) == 0 {
-			log.Printf("Debug: No %s found in setup.py", key)
-		}
 		for _, dep := range deps {
 			packages = append(packages, models.Package{
 				PackageManager: "pypi",
@@ -317,13 +293,11 @@ func (p *SetupPyParser) Parse(manifestFile string) ([]models.Package, error) {
 					EndIndex:   dep.endIndex,
 				}},
 			})
-			log.Printf("Debug: Found dependency %s@%s at line %d in %s", dep.name, dep.version, dep.lineNum, key)
 		}
 	}
 
 	extrasStart := strings.Index(setupContent, "extras_require")
 	if extrasStart != -1 {
-		log.Printf("Debug: Found extras_require at position %d", extrasStart)
 		eqIndex := strings.Index(setupContent[extrasStart:], "=")
 		if eqIndex != -1 {
 			dictStartPos := extrasStart + eqIndex + 1
@@ -333,10 +307,8 @@ func (p *SetupPyParser) Parse(manifestFile string) ([]models.Package, error) {
 			if dictStartPos < len(setupContent) {
 				dictContent := extractListContent(setupContent, dictStartPos)
 				if dictContent != "" {
-					log.Printf("Debug: Extracted %d characters from extras_require", len(dictContent))
 					extrasStartInText := strings.Index(text, "extras_require")
 					deps := extractDepsFromListContent(dictContent, text, extrasStartInText)
-					log.Printf("Debug: Found %d dependencies in extras_require", len(deps))
 					for _, dep := range deps {
 						packages = append(packages, models.Package{
 							PackageManager: "pypi",
@@ -349,21 +321,10 @@ func (p *SetupPyParser) Parse(manifestFile string) ([]models.Package, error) {
 								EndIndex:   dep.endIndex,
 							}},
 						})
-						log.Printf("Debug: Found dependency %s@%s at line %d in extras_require", dep.name, dep.version, dep.lineNum)
 					}
-				} else {
-					log.Printf("Warning: Could not extract dict content for extras_require")
 				}
-			} else {
-				log.Printf("Warning: No opening bracket found for extras_require")
 			}
-		} else {
-			log.Printf("Warning: No equals sign found after extras_require")
 		}
-	} else {
-		log.Printf("Debug: extras_require not found in setup() call")
 	}
-
-	log.Printf("Debug: Successfully parsed %s, found %d dependencies", manifestFile, len(packages))
 	return packages, nil
 }

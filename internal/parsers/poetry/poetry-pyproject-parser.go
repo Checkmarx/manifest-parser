@@ -115,6 +115,7 @@ func parseLockFile(manifestDir string) map[string]string {
 		if strings.HasPrefix(trimmed, "name = ") {
 			currentPackageName = strings.TrimSpace(strings.TrimPrefix(trimmed, "name = "))
 			currentPackageName = strings.Trim(currentPackageName, "\"")
+			currentPackageName = strings.ToLower(currentPackageName)
 			continue
 		}
 
@@ -140,7 +141,7 @@ func resolveVersionWithLock(pkgName, version string, lockVersions map[string]str
 		return strings.TrimSpace(version[2:])
 	}
 
-	if lockVersion, found := lockVersions[pkgName]; found {
+	if lockVersion, found := lockVersions[strings.ToLower(pkgName)]; found {
 		return lockVersion
 	}
 

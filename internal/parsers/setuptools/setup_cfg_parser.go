@@ -2,7 +2,6 @@ package setuptools
 
 import (
 	"bufio"
-	"log"
 	"os"
 	"regexp"
 	"strings"
@@ -61,12 +60,9 @@ func computeIndices(raw, pkgName string) (int, int) {
 func (p *SetupCfgParser) Parse(manifestFile string) ([]models.Package, error) {
 	file, err := os.Open(manifestFile)
 	if err != nil {
-		log.Printf("Error: Failed to open %s: %v", manifestFile, err)
 		return nil, err
 	}
 	defer file.Close()
-
-	log.Printf("Debug: Parsing setup.cfg file: %s", manifestFile)
 
 	var packages []models.Package
 	scanner := bufio.NewScanner(file)
@@ -90,7 +86,6 @@ func (p *SetupCfgParser) Parse(manifestFile string) ([]models.Package, error) {
 		if strings.HasPrefix(line, "[") && strings.HasSuffix(line, "]") {
 			currentSection = line[1 : len(line)-1]
 			currentKey = ""
-			log.Printf("Debug: Found section [%s] at line %d", currentSection, lineNum)
 			lineNum++
 			continue
 		}
@@ -114,7 +109,6 @@ func (p *SetupCfgParser) Parse(manifestFile string) ([]models.Package, error) {
 				if ok {
 					version := extractVersion(depLine)
 					startCol, endCol := computeIndices(raw, pkgName)
-					log.Printf("Debug: Found dependency %s@%s at line %d in section [%s]", pkgName, version, lineNum, currentSection)
 					packages = append(packages, models.Package{
 						PackageManager: "pypi",
 						PackageName:    pkgName,
@@ -126,8 +120,6 @@ func (p *SetupCfgParser) Parse(manifestFile string) ([]models.Package, error) {
 							EndIndex:   endCol,
 						}},
 					})
-				} else {
-					log.Printf("Warning: Could not parse package name from line %d: %s", lineNum, depLine)
 				}
 			}
 			lineNum++
@@ -174,10 +166,8 @@ func (p *SetupCfgParser) Parse(manifestFile string) ([]models.Package, error) {
 	}
 
 	if err := scanner.Err(); err != nil {
-		log.Printf("Error: Scanner error while reading %s: %v", manifestFile, err)
 		return nil, err
 	}
 
-	log.Printf("Debug: Successfully parsed %s, found %d dependencies", manifestFile, len(packages))
 	return packages, nil
 }
