@@ -9,13 +9,6 @@ import (
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
 
-// resolvedFile mirrors both v1 and v2 of the Package.resolved format.
-//
-// v1: { "object": { "pins": [ {"package": "...", "repositoryURL": "...", "state": {...}} ] }, "version": 1 }
-// v2: { "pins": [ {"identity": "...", "location": "...", "state": {...}} ], "version": 2 }
-//
-// Field overlap lets us decode both with a single struct: v1 fields populate Object.Pins,
-// v2 fields populate top-level Pins. State is shared.
 type resolvedFile struct {
 	Object  *resolvedObject `json:"object,omitempty"`
 	Pins    []resolvedPin   `json:"pins,omitempty"`
@@ -27,15 +20,12 @@ type resolvedObject struct {
 }
 
 type resolvedPin struct {
-	// v1
 	Package       string `json:"package,omitempty"`
 	RepositoryURL string `json:"repositoryURL,omitempty"`
-	// v2
-	Identity string `json:"identity,omitempty"`
-	Kind     string `json:"kind,omitempty"`
-	Location string `json:"location,omitempty"`
-	// shared
-	State resolvedState `json:"state"`
+	Identity      string `json:"identity,omitempty"`
+	Kind          string `json:"kind,omitempty"`
+	Location      string `json:"location,omitempty"`
+	State         resolvedState `json:"state"`
 }
 
 type resolvedState struct {

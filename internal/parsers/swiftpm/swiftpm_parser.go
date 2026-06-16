@@ -1,8 +1,4 @@
 // Package swiftpm parses Swift Package Manager manifests.
-//
-// Two file formats are supported:
-//   - Package.swift / Package@swift-X.Y.swift — Swift DSL manifest
-//   - Package.resolved                        — JSON lock file (v1 and v2)
 package swiftpm
 
 import (

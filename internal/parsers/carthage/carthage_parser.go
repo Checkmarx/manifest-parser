@@ -1,22 +1,4 @@
-// Package carthage parses Carthage Cartfile / Cartfile.private / Cartfile.resolved.
-//
-// All three files share the same grammar — only the meaning differs:
-//   - Cartfile          : production dependency specifiers (may be ranged)
-//   - Cartfile.private  : private / test dependency specifiers
-//   - Cartfile.resolved : lock file with concrete resolved versions
-//
-// Three origin keywords are supported per the official Carthage README:
-//   github "owner/repo" <version-spec>
-//   git    "url"        <version-spec>
-//   binary "url"        <version-spec>
-//
-// The version spec is optional. When present it can be one of:
-//   "1.2.3"           — exact tag (resolves concretely)
-//   == 1.2.3          — exact equal
-//   ~> 1.2.3          — semver-compatible range  -> "latest"
-//   >= 1.2.3          — minimum                  -> "latest"
-//   "branch-name"     — branch                   -> "latest"
-//   "abc1234"         — commit SHA               -> "latest"
+// Package carthage parses Carthage manifest files (Cartfile, Cartfile.private, Cartfile.resolved).
 package carthage
 
 import (
@@ -30,18 +12,10 @@ import (
 
 const packageManagerName = "carthage"
 
-// CarthageParser handles all three Cartfile variants — they share the same grammar.
+// CarthageParser parses Carthage manifest files.
 type CarthageParser struct{}
 
-// originLine matches one Carthage dependency declaration:
-//   <origin-keyword> "<source>" [<version-spec>]
-//
-// Group 1: origin keyword (github | git | binary)
-// Group 2: source string inside quotes (owner/repo for github, URL otherwise)
-// Group 3: optional version specifier — everything after the source, comments already stripped
-var originLine = regexp.MustCompile(
-	`^\s*(github|git|binary)\s+"([^"]+)"\s*(.*)$`,
-)
+var originLine = regexp.MustCompile(`^\s*(github|git|binary)\s+"([^"]+)"\s*(.*)$`)
 
 // Parse implements the Parser interface.
 func (p *CarthageParser) Parse(manifestFile string) ([]models.Package, error) {
@@ -91,15 +65,6 @@ func (p *CarthageParser) Parse(manifestFile string) ([]models.Package, error) {
 	return packages, nil
 }
 
-// packageNameFromSource turns the quoted source string into a package name.
-//
-//   github "Alamofire/Alamofire"            -> "Alamofire/Alamofire"
-//   git    "https://gitserver.com/foo.git"  -> "foo"
-//   binary "https://example.com/foo.json"   -> "foo"
-//
-// For github origin we keep the "owner/repo" form so downstream consumers can
-// build a canonical identity. For git / binary origins we use the last path
-// segment minus any trailing .git / .json suffix.
 func packageNameFromSource(origin, source string) string {
 	if origin == "github" {
 		return source
@@ -113,15 +78,12 @@ func packageNameFromSource(origin, source string) string {
 	return trimmed
 }
 
-// resolveVersion returns the concrete version if the spec is a quoted exact
-// tag or `== X.Y.Z`, otherwise "latest" (per parser contract).
 func resolveVersion(spec string) string {
 	spec = strings.TrimSpace(spec)
 	if spec == "" {
 		return "latest"
 	}
 
-	// "1.2.3" or "branch-name" — quoted form
 	if strings.HasPrefix(spec, `"`) && strings.HasSuffix(spec, `"`) && len(spec) >= 2 {
 		inner := spec[1 : len(spec)-1]
 		if looksLikeSemver(inner) {
@@ -130,7 +92,6 @@ func resolveVersion(spec string) string {
 		return "latest"
 	}
 
-	// == 1.2.3 — explicit-equality operator (concrete)
 	if strings.HasPrefix(spec, "==") {
 		v := strings.TrimSpace(strings.TrimPrefix(spec, "=="))
 		if looksLikeSemver(v) {
@@ -139,24 +100,15 @@ func resolveVersion(spec string) string {
 		return "latest"
 	}
 
-	// Anything else (~> X, >= X, branch refs, etc.) is non-concrete.
 	return "latest"
 }
 
-// looksLikeSemver is a very loose check: digits, dots, and optional pre-release
-// suffix. Good enough to distinguish "1.2.3" from "main" / "abc123def".
-//
-// Commit SHAs are all-hex (no dots) so they fail this check and resolve to "latest".
-// Branch names that happen to look like versions are rare and would resolve to
-// the version literal — acceptable behaviour.
 var semverLike = regexp.MustCompile(`^v?\d+(\.\d+)*([.-][A-Za-z0-9.+-]+)?$`)
 
 func looksLikeSemver(s string) bool {
 	return semverLike.MatchString(s)
 }
 
-// stripInlineComment removes a trailing `# ...` from a Cartfile line, respecting
-// double-quoted strings so `#` inside quotes is preserved.
 func stripInlineComment(line string) string {
 	inDouble := false
 	for i := 0; i < len(line); i++ {

@@ -1,10 +1,4 @@
-// Package cocoapods parses CocoaPods manifest, lock, and spec files.
-//
-// Four file formats are supported:
-//   - Podfile        — Ruby DSL app manifest (Checkmarx SCA core list)
-//   - Podfile.lock   — YAML lock file        (Checkmarx SCA core list)
-//   - *.podspec      — Ruby DSL pod spec     (pragmatic addition for pod authors)
-//   - *.podspec.json — JSON pod spec         (pragmatic addition for pod authors)
+// Package cocoapods parses CocoaPods manifest and spec files.
 package cocoapods
 
 import (
@@ -36,13 +30,10 @@ func (p *CocoaPodsParser) Parse(manifestFile string) ([]models.Package, error) {
 	return nil, fmt.Errorf("unsupported CocoaPods file: %s", name)
 }
 
-// errReadFile wraps file-read errors with a consistent prefix.
 func errReadFile(err error) error {
 	return fmt.Errorf("failed to read manifest file: %w", err)
 }
 
-// splitLinesCRLF splits on \n and strips trailing \r so byte offsets stay correct
-// on Windows CRLF files.
 func splitLinesCRLF(s string) []string {
 	lines := strings.Split(s, "\n")
 	for i := range lines {
@@ -51,15 +42,13 @@ func splitLinesCRLF(s string) []string {
 	return lines
 }
 
-// stripInlineComment removes a trailing `# ...` from a Ruby source line, respecting
-// quotes so `#` inside a string literal is preserved.
 func stripInlineComment(line string) string {
 	inSingle, inDouble := false, false
 	for i := 0; i < len(line); i++ {
 		ch := line[i]
 		switch {
 		case ch == '\\' && (inSingle || inDouble) && i+1 < len(line):
-			i++ // skip escaped char
+			i++
 		case ch == '\'' && !inDouble:
 			inSingle = !inSingle
 		case ch == '"' && !inSingle:
@@ -71,22 +60,17 @@ func stripInlineComment(line string) string {
 	return line
 }
 
-// lineExtent returns the offset of the first non-whitespace char and the offset
-// just past the last non-whitespace char on the (already comment-stripped) line.
 func lineExtent(raw, codeOnly string) (int, int) {
 	start := len(raw) - len(strings.TrimLeft(raw, " \t"))
 	end := len(strings.TrimRight(codeOnly, " \t"))
 	return start, end
 }
 
-// resolveVersion takes a raw Podfile/podspec version-specifier and returns the
-// concrete version, or "latest" for ranges, git refs, or omitted versions.
 func resolveVersion(raw string) string {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
 		return "latest"
 	}
-	// Reject anything that starts with an operator like ~>, >=, <, <=, !=, =
 	for _, op := range []string{"~>", ">=", "<=", "!=", ">", "<", "="} {
 		if strings.HasPrefix(raw, op) {
 			return "latest"

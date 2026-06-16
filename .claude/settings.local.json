@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(ls -lh c:/repository/manifest-parser/test/resources/*.gradle* c:/repository/manifest-parser/test/resources/gradle.properties c:/repository/manifest-parser/test/resources/gradle/)"
+      "Bash(ls -lh c:/repository/manifest-parser/test/resources/*.gradle* c:/repository/manifest-parser/test/resources/gradle.properties c:/repository/manifest-parser/test/resources/gradle/)",
+      "mcp__claude_ai_Atlassian__getAccessibleAtlassianResources",
+      "mcp__claude_ai_Atlassian__createJiraIssue",
+      "Bash(grep -n \"^func Test\\\\|^\t{$\" internal/parsers/gradle/gradle_parser_test.go)"
     ]
   }
 }
