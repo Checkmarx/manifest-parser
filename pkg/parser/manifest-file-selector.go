@@ -18,6 +18,15 @@ const (
 	GradleBuild
 	GradleVersionCatalog
 	SbtBuild
+	SwiftPackage
+	SwiftPackageResolved
+	CocoaPodsPodfile
+	CocoaPodsPodfileLock
+	CocoaPodsPodspec
+	CocoaPodsPodspecJSON
+	CarthageCartfile
+	CarthageCartfilePrivate
+	CarthageCartfileResolved
 )
 
 // selectManifestFile a method to select a manifest file type by its name
@@ -68,6 +77,53 @@ func selectManifestFile(manifest string) Manifest {
 
 	if manifestFileName == "libs.versions.toml" {
 		return GradleVersionCatalog
+	}
+
+	// SwiftPM:
+	//   Package.swift            - Swift DSL manifest (Checkmarx SCA)
+	//   Package.resolved         - JSON lock file (Checkmarx SCA)
+	//   Package@swift-X.Y.swift  - Swift-version-tooled manifest. Real Apple feature;
+	//                              libraries supporting multiple Swift toolchains ship these.
+	//                              Not on Checkmarx's core list but common in the wild.
+	if manifestFileName == "Package.resolved" {
+		return SwiftPackageResolved
+	}
+	if manifestFileName == "Package.swift" ||
+		(strings.HasPrefix(manifestFileName, "Package@swift-") && strings.HasSuffix(manifestFileName, ".swift")) {
+		return SwiftPackage
+	}
+
+	// CocoaPods:
+	//   Podfile           - Ruby DSL app manifest (Checkmarx SCA)
+	//   Podfile.lock      - YAML lock file        (Checkmarx SCA)
+	//   *.podspec         - Ruby DSL pod author spec      (pragmatic)
+	//   *.podspec.json    - JSON pod author spec          (pragmatic)
+	if manifestFileName == "Podfile" {
+		return CocoaPodsPodfile
+	}
+	if manifestFileName == "Podfile.lock" {
+		return CocoaPodsPodfileLock
+	}
+	if strings.HasSuffix(manifestFileName, ".podspec.json") {
+		return CocoaPodsPodspecJSON
+	}
+	if strings.HasSuffix(manifestFileName, ".podspec") {
+		return CocoaPodsPodspec
+	}
+
+	// Carthage (all three share the same syntax; routing differs only to
+	// distinguish resolved-vs-spec semantics downstream):
+	//   Cartfile          - production dependencies     (Checkmarx SCA, required)
+	//   Cartfile.private  - private/test dependencies   (Checkmarx SCA)
+	//   Cartfile.resolved - lock file with resolved vers (Checkmarx SCA)
+	if manifestFileName == "Cartfile" {
+		return CarthageCartfile
+	}
+	if manifestFileName == "Cartfile.private" {
+		return CarthageCartfilePrivate
+	}
+	if manifestFileName == "Cartfile.resolved" {
+		return CarthageCartfileResolved
 	}
 
 	return -1

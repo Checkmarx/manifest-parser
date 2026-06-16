@@ -93,3 +93,33 @@ func TestManifestFileSelector_ExpectSbtCustom(t *testing.T) {
 		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
 	}
 }
+
+func TestManifestFileSelector_ExpectSwiftPackage(t *testing.T) {
+	manifest := "Package.swift"
+	got := selectManifestFile(manifest)
+	want := SwiftPackage
+	if got != want {
+		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+	}
+}
+
+func TestManifestFileSelector_ExpectSwiftPackageResolved(t *testing.T) {
+	manifest := "Package.resolved"
+	got := selectManifestFile(manifest)
+	want := SwiftPackageResolved
+	if got != want {
+		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+	}
+}
+
+func TestManifestFileSelector_ExpectSwiftPackageToolchainVariant(t *testing.T) {
+	// Apple-documented multi-toolchain manifest. Real projects ship these even though
+	// Checkmarx's core SCA list only mentions Package.swift.
+	for _, manifest := range []string{"Package@swift-5.5.swift", "Package@swift-6.swift"} {
+		got := selectManifestFile(manifest)
+		want := SwiftPackage
+		if got != want {
+			t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+		}
+	}
+}

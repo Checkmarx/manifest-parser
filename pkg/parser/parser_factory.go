@@ -7,7 +7,10 @@ import (
 	"github.com/Checkmarx/manifest-parser/internal/parsers/maven"
 	"github.com/Checkmarx/manifest-parser/internal/parsers/npm"
 	"github.com/Checkmarx/manifest-parser/internal/parsers/pypi"
+	"github.com/Checkmarx/manifest-parser/internal/parsers/carthage"
+	"github.com/Checkmarx/manifest-parser/internal/parsers/cocoapods"
 	"github.com/Checkmarx/manifest-parser/internal/parsers/sbt"
+	"github.com/Checkmarx/manifest-parser/internal/parsers/swiftpm"
 )
 
 func ParsersFactory(manifest string) Parser {
@@ -34,6 +37,12 @@ func ParsersFactory(manifest string) Parser {
 		return &gradle.VersionCatalogParser{}
 	case SbtBuild:
 		return &sbt.SbtParser{}
+	case SwiftPackage, SwiftPackageResolved:
+		return &swiftpm.SwiftPmParser{}
+	case CocoaPodsPodfile, CocoaPodsPodfileLock, CocoaPodsPodspec, CocoaPodsPodspecJSON:
+		return &cocoapods.CocoaPodsParser{}
+	case CarthageCartfile, CarthageCartfilePrivate, CarthageCartfileResolved:
+		return &carthage.CarthageParser{}
 	default:
 		return nil
 	}

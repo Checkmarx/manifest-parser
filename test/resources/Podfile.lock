@@ -1,0 +1,36 @@
+PODS:
+  - Alamofire (5.2.0)
+  - Firebase/Core (7.0.0):
+    - FirebaseAnalytics (~> 7.0.0)
+  - FirebaseAnalytics (7.0.0)
+  - Kingfisher (7.6.2)
+  - Nimble (9.2.0)
+  - Quick (4.0.0)
+  - Realm (10.20.0):
+    - Realm/Headers (= 10.20.0)
+  - SDWebImage (5.12.0)
+  - SwiftyJSON (4.3.0)
+
+DEPENDENCIES:
+  - Alamofire (= 5.2.0)
+  - Firebase/Core (= 7.0.0)
+  - Kingfisher (from `https://github.com/onevcat/Kingfisher.git`, branch `main`)
+  - Nimble (= 9.2.0)
+  - Quick
+  - Realm (~> 10.20)
+  - SDWebImage (from `https://github.com/SDWebImage/SDWebImage.git`, tag `5.12.0`)
+  - SwiftyJSON (>= 4.0)
+
+SPEC REPOS:
+  trunk:
+    - Alamofire
+    - Firebase
+    - FirebaseAnalytics
+    - Nimble
+    - Quick
+    - Realm
+    - SwiftyJSON
+
+PODFILE CHECKSUM: 0123456789abcdef0123456789abcdef01234567
+
+COCOAPODS: 1.11.3
