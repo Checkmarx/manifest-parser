@@ -123,3 +123,30 @@ func TestManifestFileSelector_ExpectSwiftPackageToolchainVariant(t *testing.T) {
 		}
 	}
 }
+
+func TestManifestFileSelector_ExpectComposerJson(t *testing.T) {
+	manifest := "composer.json"
+	got := selectManifestFile(manifest)
+	want := ComposerJson
+	if got != want {
+		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+	}
+}
+
+func TestManifestFileSelector_ExpectGemfile(t *testing.T) {
+	manifest := "Gemfile"
+	got := selectManifestFile(manifest)
+	want := RubyGemsGemfile
+	if got != want {
+		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+	}
+}
+
+func TestManifestFileSelector_ExpectBowerJson(t *testing.T) {
+	manifest := "bower.json"
+	got := selectManifestFile(manifest)
+	want := BowerJson
+	if got != want {
+		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+	}
+}

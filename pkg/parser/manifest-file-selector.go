@@ -27,6 +27,9 @@ const (
 	CarthageCartfile
 	CarthageCartfilePrivate
 	CarthageCartfileResolved
+	ComposerJson
+	RubyGemsGemfile
+	BowerJson
 )
 
 // selectManifestFile a method to select a manifest file type by its name
@@ -124,6 +127,18 @@ func selectManifestFile(manifest string) Manifest {
 	}
 	if manifestFileName == "Cartfile.resolved" {
 		return CarthageCartfileResolved
+	}
+
+	if manifestFileName == "composer.json" {
+		return ComposerJson
+	}
+
+	if manifestFileName == "Gemfile" {
+		return RubyGemsGemfile
+	}
+
+	if manifestFileName == "bower.json" {
+		return BowerJson
 	}
 
 	return -1
