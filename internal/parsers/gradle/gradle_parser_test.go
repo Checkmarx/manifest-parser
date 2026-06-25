@@ -843,3 +843,100 @@ func TestStripInlineComment(t *testing.T) {
 		}
 	}
 }
+
+func TestGradleParser_AndroidFlavorConfigurations(t *testing.T) {
+	content := `
+dependencies {
+    // Standard
+    implementation "androidx.core:core-ktx:1.13.1"
+    api "com.squareup.retrofit2:retrofit:2.11.0"
+    compileOnly "org.projectlombok:lombok:1.18.38"
+    runtimeOnly "com.squareup.okhttp3:logging-interceptor:4.12.0"
+
+    // Build-type specific
+    debugImplementation "com.squareup.leakcanary:leakcanary-android:2.14"
+    releaseImplementation "com.google.firebase:firebase-crashlytics:19.0.0"
+    debugApi "com.google.code.gson:gson:2.13.1"
+    releaseApi "com.google.guava:guava:33.2.1-android"
+
+    // Flavor specific
+    freeImplementation "com.google.android.gms:play-services-ads:24.4.0"
+    paidImplementation "com.android.billingclient:billing:8.0.0"
+    devImplementation "com.squareup.okhttp3:mockwebserver:4.12.0"
+    prodImplementation "com.google.firebase:firebase-analytics:22.0.0"
+
+    // Flavor + BuildType
+    freeDebugImplementation "com.example:free-debug-sdk:1.0.0"
+    paidReleaseImplementation "com.example:paid-release-sdk:1.0.0"
+
+    // Multi-dimension flavors
+    freeDevImplementation "com.example:free-dev-sdk:1.0.0"
+    paidProdImplementation "com.example:paid-prod-sdk:1.0.0"
+
+    // Test scoped
+    testImplementation "junit:junit:4.13.2"
+    testApi "org.mockito:mockito-core:5.12.0"
+    testCompileOnly "org.projectlombok:lombok:1.18.38"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher:1.12.2"
+    androidTestImplementation "androidx.test.espresso:espresso-core:3.6.1"
+    androidTestApi "androidx.test:runner:1.6.1"
+    androidTestCompileOnly "org.projectlombok:lombok:1.18.38"
+    androidTestRuntimeOnly "androidx.test:core:1.6.1"
+
+    // Annotation processing
+    annotationProcessor "com.google.dagger:dagger-compiler:2.57"
+    kapt "com.google.dagger:hilt-compiler:2.57"
+    kaptTest "com.google.dagger:hilt-compiler:2.57"
+    kaptAndroidTest "com.google.dagger:hilt-compiler:2.57"
+}`
+
+	expected := map[string]string{
+		"androidx.core:core-ktx":                          "1.13.1",
+		"com.squareup.retrofit2:retrofit":                 "2.11.0",
+		"org.projectlombok:lombok":                        "1.18.38",
+		"com.squareup.okhttp3:logging-interceptor":        "4.12.0",
+		"com.squareup.leakcanary:leakcanary-android":      "2.14",
+		"com.google.firebase:firebase-crashlytics":        "19.0.0",
+		"com.google.code.gson:gson":                       "2.13.1",
+		"com.google.guava:guava":                          "33.2.1-android",
+		"com.google.android.gms:play-services-ads":        "24.4.0",
+		"com.android.billingclient:billing":               "8.0.0",
+		"com.squareup.okhttp3:mockwebserver":              "4.12.0",
+		"com.google.firebase:firebase-analytics":          "22.0.0",
+		"com.example:free-debug-sdk":                      "1.0.0",
+		"com.example:paid-release-sdk":                    "1.0.0",
+		"com.example:free-dev-sdk":                        "1.0.0",
+		"com.example:paid-prod-sdk":                       "1.0.0",
+		"junit:junit":                                     "4.13.2",
+		"org.mockito:mockito-core":                        "5.12.0",
+		"org.junit.platform:junit-platform-launcher":      "1.12.2",
+		"androidx.test.espresso:espresso-core":            "3.6.1",
+		"androidx.test:runner":                            "1.6.1",
+		"androidx.test:core":                              "1.6.1",
+		"com.google.dagger:dagger-compiler":               "2.57",
+		"com.google.dagger:hilt-compiler":                 "2.57",
+	}
+
+	tmpDir := t.TempDir()
+	filePath := filepath.Join(tmpDir, "build.gradle")
+	os.WriteFile(filePath, []byte(content), 0644)
+
+	parser := &GradleParser{}
+	pkgs, err := parser.Parse(filePath)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	got := make(map[string]string)
+	for _, p := range pkgs {
+		got[p.PackageName] = p.Version
+	}
+
+	for name, wantVer := range expected {
+		if gotVer, ok := got[name]; !ok {
+			t.Errorf("missing package %q", name)
+		} else if gotVer != wantVer {
+			t.Errorf("package %q: version = %q, want %q", name, gotVer, wantVer)
+		}
+	}
+}
