@@ -10,12 +10,15 @@ import (
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
 
-// configKeywords defines all supported Gradle dependency configuration keywords
-var configKeywords = `implementation|api|compile|compileOnly|runtime|runtimeOnly|` +
-	`testImplementation|testCompile|testCompileOnly|testRuntimeOnly|` +
-	`androidTestImplementation|debugImplementation|releaseImplementation|` +
-	`annotationProcessor|classpath|kapt|ksp|compileOnlyApi|` +
-	`testFixturesImplementation|testFixturesApi|lintChecks`
+// configKeywords matches any Gradle dependency configuration by suffix.
+// This covers standard configs and all Android variant-specific configs
+// generated from product flavors and build types, e.g.:
+//   - freeImplementation, paidDebugImplementation, freeProdApi  (flavor/buildtype combos)
+//   - debugApi, releaseCompileOnly, androidTestRuntimeOnly       (buildtype-scoped)
+//   - kaptTest, kaptAndroidTest                                  (kapt scopes)
+var configKeywords = `\w*implementation|\w*api|\w*compileonly|\w*runtimeonly|` +
+	`\w*compile\b|\w*runtime\b|\w*kapt|\w*ksp|\w*annotationprocessor|` +
+	`classpath|lintchecks`
 
 // GradleParser implements parsing of Gradle build files
 type GradleParser struct{}
