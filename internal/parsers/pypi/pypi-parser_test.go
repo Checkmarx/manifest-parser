@@ -333,7 +333,7 @@ func TestParseLineContinuationLocationTracking(t *testing.T) {
 }
 
 func TestPypiParser_Parse_UvExportFile(t *testing.T) {
-	filePath := "testdata/requirements-uv-export.txt"
+	filePath := "../../testdata/requirements-uv-export.txt"
 	parser := &PypiParser{}
 	pkgs, err := parser.Parse(filePath)
 	if err != nil {
@@ -413,7 +413,7 @@ func TestPypiParser_Parse_UvExportFile(t *testing.T) {
 }
 
 func TestPypiParser_Parse_PipFreezeFile(t *testing.T) {
-	filePath := "testdata/requirements-pip-freeze.txt"
+	filePath := "../../testdata/requirements-pip-freeze.txt"
 	parser := &PypiParser{}
 	pkgs, err := parser.Parse(filePath)
 	if err != nil {
@@ -471,7 +471,7 @@ func TestPypiParser_Parse_PipFreezeFile(t *testing.T) {
 }
 
 func TestPypiParser_Parse_PipCompileFile(t *testing.T) {
-	filePath := "testdata/requirements-pip-compile.txt"
+	filePath := "../../testdata/requirements-pip-compile.txt"
 	parser := &PypiParser{}
 	pkgs, err := parser.Parse(filePath)
 	if err != nil {
