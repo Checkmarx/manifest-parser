@@ -120,3 +120,20 @@ tasks.jacocoTestReport {
         html.required = true
     }
 }
+
+// =========================
+// Android Flavor Dependencies
+// =========================
+dependencies {
+    // Build-type specific
+    debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.14'
+    releaseImplementation 'com.google.firebase:firebase-crashlytics:19.0.0'
+
+    // Flavor specific
+    freeImplementation 'com.google.android.gms:play-services-ads:24.4.0'
+    paidImplementation 'com.android.billingclient:billing:8.0.0'
+
+    // Flavor + BuildType combinations
+    freeDebugImplementation 'com.example:free-debug-sdk:1.0.0'
+    paidReleaseImplementation 'com.example:paid-release-sdk:1.0.0'
+}

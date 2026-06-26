@@ -61,11 +61,13 @@ jobs:
           git push origin "${{ env.new_version }}"
 
       - name: Create GitHub Release
-        uses: actions/create-release@0cb9c9b65d5d1901c1f53e5e66eaf4afd303e70e  # v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ env.new_version }}
-          release_name: Release ${{ env.new_version }}
-          draft: false
-          prerelease: ${{ github.event.inputs.prerelease }}
+        run: |
+          prerelease_flag=""
+          if [ "${{ github.event.inputs.prerelease }}" = "true" ]; then
+            prerelease_flag="--prerelease"
+          fi
+          gh release create "${{ env.new_version }}" \
+            --title "Release ${{ env.new_version }}" \
+            $prerelease_flag
