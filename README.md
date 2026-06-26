@@ -830,7 +830,6 @@ test/resources/
 
 ## 📚 Documentation
 
-- [Gradle Parser Details](test/resources/GRADLE_TEST_FILES_README.md) - Comprehensive Gradle documentation with 31 vulnerable dependencies for testing
 - [Maven Documentation](https://maven.apache.org/pom.html)
 - [npm Documentation](https://docs.npmjs.com/cli/v10/configuring-npm/package-json)
 - [Go Modules Documentation](https://go.dev/ref/mod)
