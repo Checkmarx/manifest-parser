@@ -16,6 +16,7 @@ vendor/
 # IDEs and editors
 .idea/
 .vscode/
+.claude/
 *.swp
 
 # OS files
