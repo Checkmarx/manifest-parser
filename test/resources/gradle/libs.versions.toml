@@ -1,0 +1,228 @@
+# ==================================================================
+# Gradle Version Catalog - Central Dependency Management
+# ==================================================================
+# This file demonstrates the version catalog feature (Gradle 7.0+)
+# References: https://docs.gradle.org/current/userguide/platforms.html
+
+[versions]
+# Spring Framework
+spring-version = "5.3.20"
+spring-boot-version = "2.7.0"
+spring-security-version = "5.7.1"
+spring-cloud-version = "2021.0.3"
+
+# Java & Kotlin
+java-version = "11"
+kotlin-version = "1.6.21"
+gradle-kotlin-dsl-version = "0.4.0"
+
+# Logging & Observability
+slf4j-version = "1.7.36"
+logback-version = "1.2.11"
+log4j-version = "2.17.1"
+
+# Testing
+junit-version = "4.13.2"
+mockito-version = "4.6.1"
+assertj-version = "3.22.0"
+
+# Database
+hibernate-version = "5.6.10.Final"
+postgresql-version = "42.3.6"
+h2-version = "2.1.210"
+
+# JSON/XML
+jackson-version = "2.13.3"
+gson-version = "2.9.0"
+
+# Apache Commons
+commons-lang3-version = "3.12.0"
+commons-codec-version = "1.15"
+commons-collections-version = "3.2.2"
+
+# Google Libraries
+guava-version = "31.1-jre"
+google-cloud-bom-version = "26.1.0"
+
+# Build Tools
+jacoco-version = "0.8.8"
+checkstyle-version = "10.2"
+spotbugs-version = "4.7.2"
+
+# BOM Versions
+spring-cloud-bom-version = "2021.0.3"
+
+[libraries]
+# ==================================================================
+# Spring Framework Libraries
+# ==================================================================
+spring-core = { module = "org.springframework:spring-core", version.ref = "spring-version" }
+spring-web = { module = "org.springframework:spring-web", version.ref = "spring-version" }
+spring-context = { module = "org.springframework:spring-context", version.ref = "spring-version" }
+spring-orm = { module = "org.springframework:spring-orm", version.ref = "spring-version" }
+
+spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web", version.ref = "spring-boot-version" }
+spring-boot-starter-data-jpa = { module = "org.springframework.boot:spring-boot-starter-data-jpa", version.ref = "spring-boot-version" }
+spring-boot-starter-security = { module = "org.springframework.boot:spring-boot-starter-security", version.ref = "spring-boot-version" }
+spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator", version.ref = "spring-boot-version" }
+spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation", version.ref = "spring-boot-version" }
+spring-boot-starter-logging = { module = "org.springframework.boot:spring-boot-starter-logging", version.ref = "spring-boot-version" }
+
+spring-security-core = { module = "org.springframework.security:spring-security-core", version.ref = "spring-security-version" }
+spring-security-web = { module = "org.springframework.security:spring-security-web", version.ref = "spring-security-version" }
+spring-security-crypto = { module = "org.springframework.security:spring-security-crypto", version.ref = "spring-security-version" }
+
+spring-cloud-starter-gateway = { module = "org.springframework.cloud:spring-cloud-starter-gateway", version.ref = "spring-cloud-version" }
+spring-cloud-starter-consul-discovery = { module = "org.springframework.cloud:spring-cloud-starter-consul-discovery", version.ref = "spring-cloud-version" }
+
+# ==================================================================
+# Logging & Observability
+# ==================================================================
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j-version" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback-version" }
+logback-core = { module = "ch.qos.logback:logback-core", version.ref = "logback-version" }
+
+# CRITICAL VULNERABILITY: Log4j RCE (CVE-2021-44228)
+log4j-api = { module = "org.apache.logging.log4j:log4j-api", version.ref = "log4j-version" }
+log4j-core = { module = "org.apache.logging.log4j:log4j-core", version.ref = "log4j-version" }
+
+micrometer-registry-prometheus = "io.micrometer:micrometer-registry-prometheus:1.9.1"
+logstash-logback-encoder = "net.logstash.logback:logstash-logback-encoder:7.2"
+
+# ==================================================================
+# Database & ORM
+# ==================================================================
+hibernate-core = { module = "org.hibernate:hibernate-core", version.ref = "hibernate-version" }
+hibernate-validator = { module = "org.hibernate:hibernate-validator", version.ref = "hibernate-version" }
+
+postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql-version" }
+h2-database = { module = "com.h2database:h2", version.ref = "h2-version" }
+
+# MEDIUM VULNERABILITY: MySQL 5.1 (Legacy, prefer PostgreSQL)
+mysql-connector = "mysql:mysql-connector-java:5.1.40"
+
+liquibase-core = "org.liquibase:liquibase-core:4.9.1"
+commons-dbcp2 = "org.apache.commons:commons-dbcp2:2.9.0"
+
+# ==================================================================
+# JSON/XML & Serialization
+# ==================================================================
+jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson-version" }
+jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "jackson-version" }
+jackson-dataformat-xml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-xml", version.ref = "jackson-version" }
+
+gson = { module = "com.google.gson:gson", version.ref = "gson-version" }
+
+# HIGH VULNERABILITY: XStream (Deserialization RCE)
+xstream = "com.thoughtworks.xstream:xstream:1.4.17"
+
+# ==================================================================
+# Apache Commons (Known Vulnerabilities)
+# ==================================================================
+commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "commons-lang3-version" }
+commons-codec = { module = "commons-codec:commons-codec", version.ref = "commons-codec-version" }
+
+# CRITICAL VULNERABILITY: Commons Collections 3.2.1 (Gadget chain RCE)
+commons-collections = { module = "commons-collections:commons-collections", version.ref = "commons-collections-version" }
+
+# HIGH VULNERABILITY: HttpClient 4.5.5 (DoS via HTTPS)
+httpclient = { module = "org.apache.httpcomponents:httpclient", version.ref = "commons-codec-version" }
+
+# ==================================================================
+# Google Libraries
+# ==================================================================
+guava = { module = "com.google.guava:guava", version.ref = "guava-version" }
+google-cloud-storage = "com.google.cloud:google-cloud-storage"
+google-cloud-pubsub = "com.google.cloud:google-cloud-pubsub"
+
+# ==================================================================
+# Testing Frameworks
+# ==================================================================
+junit = { module = "junit:junit", version.ref = "junit-version" }
+mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito-version" }
+assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertj-version" }
+
+# ==================================================================
+# Code Generation & Annotation Processing
+# ==================================================================
+lombok = "org.projectlombok:lombok:1.18.24"
+dagger-compiler = "com.google.dagger:dagger-compiler:2.42"
+
+# ==================================================================
+# Android/Debug Only Dependencies
+# ==================================================================
+stetho = "com.facebook.stetho:stetho:1.6.0"
+stetho-okhttp3 = "com.facebook.stetho:stetho-okhttp3:1.6.0"
+
+# ==================================================================
+# Firebase & Analytics (Release builds)
+# ==================================================================
+firebase-crashlytics = "com.google.firebase:firebase-crashlytics:18.0.0"
+firebase-analytics = "com.google.firebase:firebase-analytics:21.1.1"
+
+# ==================================================================
+# API Documentation
+# ==================================================================
+springdoc-openapi-ui = "org.springdoc:springdoc-openapi-ui:1.6.9"
+springdoc-openapi-kotlin = "org.springdoc:springdoc-openapi-kotlin:1.6.9"
+
+# ==================================================================
+# JWT & OAuth2
+# ==================================================================
+jjwt = "io.jsonwebtoken:jjwt:0.11.5"
+spring-security-oauth2 = "org.springframework.security.oauth:spring-security-oauth2:2.5.2.RELEASE"
+
+# ==================================================================
+# Kotlin & Coroutines
+# ==================================================================
+kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk11", version.ref = "kotlin-version" }
+kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin-version" }
+kotlin-coroutines = "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.3"
+
+[bundles]
+# ==================================================================
+# Bundle Groups - Frequently Used Together
+# ==================================================================
+spring-core = [
+    "spring-core",
+    "spring-context",
+    "spring-web"
+]
+
+spring-boot-web = [
+    "spring-boot-starter-web",
+    "spring-boot-starter-validation",
+    "spring-boot-starter-logging"
+]
+
+spring-data-stack = [
+    "spring-boot-starter-data-jpa",
+    "hibernate-core",
+    "hibernate-validator"
+]
+
+spring-security-stack = [
+    "spring-boot-starter-security",
+    "spring-security-core",
+    "spring-security-web",
+    "spring-security-crypto"
+]
+
+logging-stack = [
+    "slf4j-api",
+    "logback-classic",
+    "logback-core",
+    "logstash-logback-encoder"
+]
+
+testing = [
+    "junit",
+    "mockito-core",
+    "assertj-core"
+]
+
+json-processing = [
+    "jackson-databind",
+    "jackson-annotations",
+    "gson"
+]

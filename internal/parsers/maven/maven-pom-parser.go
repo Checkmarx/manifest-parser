@@ -209,7 +209,11 @@ func (p *MavenPomParser) Parse(manifestFile string) ([]models.Package, error) {
 	}
 
 	var packages []models.Package
+	// Strip \r for CRLF files so len(line) is correct on Windows
 	lines := strings.Split(string(content), "\n")
+	for i := range lines {
+		lines[i] = strings.TrimRight(lines[i], "\r")
+	}
 
 	// Process only direct dependencies (not managed ones to avoid duplicates)
 	allDeps := project.Dependencies

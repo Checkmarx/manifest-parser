@@ -116,9 +116,12 @@ func (p *DotnetCsprojParser) Parse(manifestFile string) ([]models.Package, error
 		return nil, fmt.Errorf("failed to read manifest file: %w", err)
 	}
 
-	// Split content into lines for index computation
+	// Split content into lines for index computation (strip \r for CRLF files)
 	strContent := string(content)
 	lines := strings.Split(strContent, "\n")
+	for i := range lines {
+		lines[i] = strings.TrimRight(lines[i], "\r")
+	}
 
 	// Create XML decoder
 	decoder := xml.NewDecoder(strings.NewReader(strContent))
