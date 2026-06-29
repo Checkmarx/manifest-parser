@@ -141,5 +141,7 @@ func selectManifestFile(manifest string) Manifest {
 		return BowerJson
 	}
 
+	// yarn.lock is consumed as a sibling helper by the npm parser, not as a standalone manifest.
+
 	return -1
 }

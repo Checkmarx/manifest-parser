@@ -20,7 +20,7 @@ type packageJSON struct {
 	OptionalDependencies map[string]string `json:"optionalDependencies"`
 }
 
-// Modern package-lock.json structure (supporting both v1 and v2 formats)
+// Modern package-lock.json structure (supporting both v1 and v2 formats).
 type lockFile struct {
 	LockfileVersion int `json:"lockfileVersion"`
 
@@ -36,6 +36,9 @@ type lockFile struct {
 		Integrity    string            `json:"integrity,omitempty"`
 		Dependencies map[string]string `json:"dependencies,omitempty"`
 	} `json:"packages"`
+
+	// Populated from yarn.lock when package-lock.json is absent.
+	YarnVersions map[string]string `json:"-"`
 }
 
 // NpmParser extracts packages with position information from package.json
@@ -141,15 +144,16 @@ func (p *NpmPackageJsonParser) Parse(manifestFile string) ([]models.Package, err
 		return nil, fmt.Errorf("failed to parse JSON: %w", err)
 	}
 
-	// Try to load package-lock.json
-	lockPath := filepath.Join(filepath.Dir(manifestFile), "package-lock.json")
+	// Resolve ranged versions from package-lock.json, or yarn.lock if absent.
+	dir := filepath.Dir(manifestFile)
 	var lock lockFile
-	lockContent, err := os.ReadFile(lockPath)
+	lockContent, err := os.ReadFile(filepath.Join(dir, "package-lock.json"))
 	if err == nil {
 		if err := json.Unmarshal(lockContent, &lock); err != nil {
-			// Just log and continue - we'll use specified versions if lock parsing fails
 			fmt.Printf("Warning: could not parse package-lock.json: %v\n", err)
 		}
+	} else if yarnVersions, yarnErr := loadYarnLockVersions(filepath.Join(dir, "yarn.lock")); yarnErr == nil {
+		lock.YarnVersions = yarnVersions
 	}
 
 	var results []models.Package
@@ -218,6 +222,12 @@ func getResolvedVersion(name, specVersion string, lock lockFile) string {
 			if entry, ok := pkgs[path]; ok && entry.Version != "" && isLockVersionGreater(specVersion, entry.Version) {
 				return entry.Version
 			}
+		}
+	}
+
+	if yv := lock.YarnVersions; yv != nil {
+		if version, ok := yv[name]; ok && version != "" && isLockVersionGreater(specVersion, version) {
+			return version
 		}
 	}
 

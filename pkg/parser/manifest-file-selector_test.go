@@ -150,3 +150,9 @@ func TestManifestFileSelector_ExpectBowerJson(t *testing.T) {
 		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
 	}
 }
+
+func TestManifestFileSelector_YarnLockNotStandalone(t *testing.T) {
+	if got := selectManifestFile("yarn.lock"); got != -1 {
+		t.Errorf("yarn.lock should not be a standalone manifest; got %v, want -1", got)
+	}
+}
