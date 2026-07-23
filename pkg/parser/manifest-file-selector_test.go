@@ -156,3 +156,102 @@ func TestManifestFileSelector_YarnLockNotStandalone(t *testing.T) {
 		t.Errorf("yarn.lock should not be a standalone manifest; got %v, want -1", got)
 	}
 }
+
+func TestManifestFileSelector_ExpectPypiRequirementsTxt(t *testing.T) {
+	manifest := "requirements.txt"
+	got := selectManifestFile(manifest)
+	want := PypiRequirements
+	if got != want {
+		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+	}
+}
+
+func TestManifestFileSelector_ExpectPypiRequirementsDev(t *testing.T) {
+	manifest := "requirements-dev.txt"
+	got := selectManifestFile(manifest)
+	want := PypiRequirements
+	if got != want {
+		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+	}
+}
+
+func TestManifestFileSelector_ExpectPypiRequirementSingular(t *testing.T) {
+	manifest := "requirement.txt"
+	got := selectManifestFile(manifest)
+	want := PypiRequirements
+	if got != want {
+		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+	}
+}
+
+func TestManifestFileSelector_ExpectPypiRequirementSingularDev(t *testing.T) {
+	manifest := "requirement-dev.txt"
+	got := selectManifestFile(manifest)
+	want := PypiRequirements
+	if got != want {
+		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+	}
+}
+
+func TestManifestFileSelector_ExpectPypiRequirementsWithPath(t *testing.T) {
+	manifest := "/some/path/to/requirements-prod.txt"
+	got := selectManifestFile(manifest)
+	want := PypiRequirements
+	if got != want {
+		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+	}
+}
+
+func TestManifestFileSelector_ExpectPypiConstraints(t *testing.T) {
+	manifest := "constraints.txt"
+	got := selectManifestFile(manifest)
+	want := PypiRequirements
+	if got != want {
+		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+	}
+}
+
+func TestManifestFileSelector_ExpectPypiConstraintsDev(t *testing.T) {
+	manifest := "constraints-dev.txt"
+	got := selectManifestFile(manifest)
+	want := PypiRequirements
+	if got != want {
+		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+	}
+}
+
+func TestManifestFileSelector_ExpectPypiConstraintsWithPath(t *testing.T) {
+	manifest := "/some/path/to/constraints-prod.txt"
+	got := selectManifestFile(manifest)
+	want := PypiRequirements
+	if got != want {
+		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+	}
+}
+
+func TestManifestFileSelector_ExpectSetuptoolsSetupCfg(t *testing.T) {
+	manifest := "setup.cfg"
+	got := selectManifestFile(manifest)
+	want := SetuptoolsSetupCfg
+	if got != want {
+		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+	}
+}
+
+func TestManifestFileSelector_ExpectSetuptoolsSetupPy(t *testing.T) {
+	manifest := "setup.py"
+	got := selectManifestFile(manifest)
+	want := SetuptoolsSetupPy
+	if got != want {
+		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+	}
+}
+
+func TestManifestFileSelector_ExpectPoetryPyproject(t *testing.T) {
+	manifest := "pyproject.toml"
+	got := selectManifestFile(manifest)
+	want := PoetryPyproject
+	if got != want {
+		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+	}
+}

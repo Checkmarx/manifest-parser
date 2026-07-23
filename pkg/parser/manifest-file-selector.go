@@ -30,6 +30,9 @@ const (
 	ComposerJson
 	RubyGemsGemfile
 	BowerJson
+	SetuptoolsSetupCfg
+	SetuptoolsSetupPy
+	PoetryPyproject
 )
 
 // selectManifestFile a method to select a manifest file type by its name
@@ -43,9 +46,10 @@ func selectManifestFile(manifest string) Manifest {
 	}
 
 	if manifestFileExtension == ".txt" {
-		//check if file name starts with "requirement" or "packages"
+		// check if file name starts with "requirement", "packages", or "constraint"
 		if strings.HasPrefix(manifestFileName, "requirement") ||
-			strings.HasPrefix(manifestFileName, "packages") {
+			strings.HasPrefix(manifestFileName, "packages") ||
+			strings.HasPrefix(manifestFileName, "constraint") {
 			return PypiRequirements
 		}
 	}
@@ -142,6 +146,18 @@ func selectManifestFile(manifest string) Manifest {
 	}
 
 	// yarn.lock is consumed as a sibling helper by the npm parser, not as a standalone manifest.
+
+	if manifestFileName == "setup.cfg" {
+		return SetuptoolsSetupCfg
+	}
+
+	if manifestFileName == "setup.py" {
+		return SetuptoolsSetupPy
+	}
+
+	if manifestFileName == "pyproject.toml" {
+		return PoetryPyproject
+	}
 
 	return -1
 }
