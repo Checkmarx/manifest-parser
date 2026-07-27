@@ -1,0 +1,35 @@
+name: example_app
+description: A sample Flutter application.
+version: 1.0.0+1
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: ">=3.10.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^0.13.5
+  provider: 6.0.5
+  path: '>=1.8.0 <2.0.0'
+  collection: any
+  intl: ^1.0.0
+  custom_git_pkg:
+    git:
+      url: https://github.com/example/custom_git_pkg.git
+      ref: main
+  local_pkg:
+    path: ../local_pkg
+  hosted_pkg:
+    hosted: https://my-pub.example.com
+    version: ^2.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  test: ^1.21.0
+  mockito: 5.4.2
+
+dependency_overrides:
+  collection: 1.17.0

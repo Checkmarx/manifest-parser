@@ -33,6 +33,8 @@ const (
 	SetuptoolsSetupCfg
 	SetuptoolsSetupPy
 	PoetryPyproject
+	DartPubspec
+	DartPubspecLock
 )
 
 // selectManifestFile a method to select a manifest file type by its name
@@ -157,6 +159,16 @@ func selectManifestFile(manifest string) Manifest {
 
 	if manifestFileName == "pyproject.toml" {
 		return PoetryPyproject
+	}
+
+	// Dart / Flutter (pub):
+	//   pubspec.yaml - declared dependencies (main manifest)
+	//   pubspec.lock - YAML lock file with resolved versions
+	if manifestFileName == "pubspec.yaml" {
+		return DartPubspec
+	}
+	if manifestFileName == "pubspec.lock" {
+		return DartPubspecLock
 	}
 
 	return -1

@@ -255,3 +255,21 @@ func TestManifestFileSelector_ExpectPoetryPyproject(t *testing.T) {
 		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
 	}
 }
+
+func TestManifestFileSelector_ExpectDartPubspec(t *testing.T) {
+	manifest := "pubspec.yaml"
+	got := selectManifestFile(manifest)
+	want := DartPubspec
+	if got != want {
+		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+	}
+}
+
+func TestManifestFileSelector_ExpectDartPubspecLock(t *testing.T) {
+	manifest := "pubspec.lock"
+	got := selectManifestFile(manifest)
+	want := DartPubspecLock
+	if got != want {
+		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+	}
+}

@@ -5,6 +5,7 @@ import (
 	"github.com/Checkmarx/manifest-parser/internal/parsers/carthage"
 	"github.com/Checkmarx/manifest-parser/internal/parsers/cocoapods"
 	"github.com/Checkmarx/manifest-parser/internal/parsers/composer"
+	"github.com/Checkmarx/manifest-parser/internal/parsers/dart"
 	"github.com/Checkmarx/manifest-parser/internal/parsers/dotnet"
 	"github.com/Checkmarx/manifest-parser/internal/parsers/golang"
 	"github.com/Checkmarx/manifest-parser/internal/parsers/gradle"
@@ -60,6 +61,8 @@ func ParsersFactory(manifest string) Parser {
 		return &setuptools.SetupPyParser{}
 	case PoetryPyproject:
 		return &poetry.PoetryPyprojectParser{}
+	case DartPubspec, DartPubspecLock:
+		return &dart.DartParser{}
 	default:
 		return nil
 	}
