@@ -848,3 +848,63 @@ func TestGetResolvedVersionComparisonWithLock(t *testing.T) {
 		})
 	}
 }
+
+func TestParse_YarnV1Fixture(t *testing.T) {
+	parser := &NpmPackageJsonParser{}
+	packages, err := parser.Parse(filepath.Join("..", "..", "..", "test", "resources", "yarn-v1", "package.json"))
+	if err != nil {
+		t.Fatalf("parsing failed: %v", err)
+	}
+
+	expected := map[string]string{
+		"react":             "18.2.0",
+		"lodash":            "4.17.21",
+		"express":           "4.17.1",
+		"@babel/code-frame": "7.10.4",
+		"jest":              "29.7.0",
+	}
+
+	got := make(map[string]string)
+	for _, pkg := range packages {
+		got[pkg.PackageName] = pkg.Version
+	}
+
+	if len(packages) != len(expected) {
+		t.Errorf("expected %d packages, got %d", len(expected), len(packages))
+	}
+	for name, wantVer := range expected {
+		if got[name] != wantVer {
+			t.Errorf("package %s: expected version %q, got %q", name, wantVer, got[name])
+		}
+	}
+}
+
+func TestParse_YarnV2Fixture(t *testing.T) {
+	parser := &NpmPackageJsonParser{}
+	packages, err := parser.Parse(filepath.Join("..", "..", "..", "test", "resources", "yarn-v2", "package.json"))
+	if err != nil {
+		t.Fatalf("parsing failed: %v", err)
+	}
+
+	expected := map[string]string{
+		"react":             "18.2.0",
+		"lodash":            "4.17.21",
+		"express":           "4.17.1",
+		"@babel/code-frame": "7.18.6",
+		"jest":              "29.7.0",
+	}
+
+	got := make(map[string]string)
+	for _, pkg := range packages {
+		got[pkg.PackageName] = pkg.Version
+	}
+
+	if len(packages) != len(expected) {
+		t.Errorf("expected %d packages, got %d", len(expected), len(packages))
+	}
+	for name, wantVer := range expected {
+		if got[name] != wantVer {
+			t.Errorf("package %s: expected version %q, got %q", name, wantVer, got[name])
+		}
+	}
+}
