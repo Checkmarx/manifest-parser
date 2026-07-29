@@ -43,11 +43,11 @@ func ParsersFactory(manifest string) Parser {
 		return &gradle.VersionCatalogParser{}
 	case SbtBuild:
 		return &sbt.SbtParser{}
-	case SwiftPackage, SwiftPackageResolved:
+	case SwiftPackage:
 		return &swiftpm.SwiftPmParser{}
-	case CocoaPodsPodfile, CocoaPodsPodfileLock, CocoaPodsPodspec, CocoaPodsPodspecJSON:
+	case CocoaPodsPodfile, CocoaPodsPodspec, CocoaPodsPodspecJSON:
 		return &cocoapods.CocoaPodsParser{}
-	case CarthageCartfile, CarthageCartfilePrivate, CarthageCartfileResolved:
+	case CarthageCartfile, CarthageCartfilePrivate:
 		return &carthage.CarthageParser{}
 	case ComposerJson:
 		return &composer.ComposerJsonParser{}
@@ -61,7 +61,7 @@ func ParsersFactory(manifest string) Parser {
 		return &setuptools.SetupPyParser{}
 	case PoetryPyproject:
 		return &poetry.PoetryPyprojectParser{}
-	case DartPubspec, DartPubspecLock:
+	case DartPubspec:
 		return &dart.DartParser{}
 	default:
 		return nil

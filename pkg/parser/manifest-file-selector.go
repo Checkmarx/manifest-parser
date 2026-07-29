@@ -19,14 +19,11 @@ const (
 	GradleVersionCatalog
 	SbtBuild
 	SwiftPackage
-	SwiftPackageResolved
 	CocoaPodsPodfile
-	CocoaPodsPodfileLock
 	CocoaPodsPodspec
 	CocoaPodsPodspecJSON
 	CarthageCartfile
 	CarthageCartfilePrivate
-	CarthageCartfileResolved
 	ComposerJson
 	RubyGemsGemfile
 	BowerJson
@@ -34,7 +31,6 @@ const (
 	SetuptoolsSetupPy
 	PoetryPyproject
 	DartPubspec
-	DartPubspecLock
 )
 
 // selectManifestFile a method to select a manifest file type by its name
@@ -90,13 +86,11 @@ func selectManifestFile(manifest string) Manifest {
 
 	// SwiftPM:
 	//   Package.swift            - Swift DSL manifest (Checkmarx SCA)
-	//   Package.resolved         - JSON lock file (Checkmarx SCA)
+	//   Package.resolved         - JSON lock file (helper for version resolution)
 	//   Package@swift-X.Y.swift  - Swift-version-tooled manifest. Real Apple feature;
 	//                              libraries supporting multiple Swift toolchains ship these.
 	//                              Not on Checkmarx's core list but common in the wild.
-	if manifestFileName == "Package.resolved" {
-		return SwiftPackageResolved
-	}
+	//   Package@swift-X.Y.resolved - lock file for multi-toolchain variant (helper)
 	if manifestFileName == "Package.swift" ||
 		(strings.HasPrefix(manifestFileName, "Package@swift-") && strings.HasSuffix(manifestFileName, ".swift")) {
 		return SwiftPackage
@@ -104,14 +98,11 @@ func selectManifestFile(manifest string) Manifest {
 
 	// CocoaPods:
 	//   Podfile           - Ruby DSL app manifest (Checkmarx SCA)
-	//   Podfile.lock      - YAML lock file        (Checkmarx SCA)
+	//   Podfile.lock      - YAML lock file (helper for version resolution)
 	//   *.podspec         - Ruby DSL pod author spec      (pragmatic)
 	//   *.podspec.json    - JSON pod author spec          (pragmatic)
 	if manifestFileName == "Podfile" {
 		return CocoaPodsPodfile
-	}
-	if manifestFileName == "Podfile.lock" {
-		return CocoaPodsPodfileLock
 	}
 	if strings.HasSuffix(manifestFileName, ".podspec.json") {
 		return CocoaPodsPodspecJSON
@@ -120,19 +111,15 @@ func selectManifestFile(manifest string) Manifest {
 		return CocoaPodsPodspec
 	}
 
-	// Carthage (all three share the same syntax; routing differs only to
-	// distinguish resolved-vs-spec semantics downstream):
+	// Carthage:
 	//   Cartfile          - production dependencies     (Checkmarx SCA, required)
 	//   Cartfile.private  - private/test dependencies   (Checkmarx SCA)
-	//   Cartfile.resolved - lock file with resolved vers (Checkmarx SCA)
+	//   Cartfile.resolved - lock file with resolved versions (helper for version resolution)
 	if manifestFileName == "Cartfile" {
 		return CarthageCartfile
 	}
 	if manifestFileName == "Cartfile.private" {
 		return CarthageCartfilePrivate
-	}
-	if manifestFileName == "Cartfile.resolved" {
-		return CarthageCartfileResolved
 	}
 
 	if manifestFileName == "composer.json" {
@@ -163,12 +150,9 @@ func selectManifestFile(manifest string) Manifest {
 
 	// Dart / Flutter (pub):
 	//   pubspec.yaml - declared dependencies (main manifest)
-	//   pubspec.lock - YAML lock file with resolved versions
+	//   pubspec.lock - YAML lock file with resolved versions (helper for version resolution)
 	if manifestFileName == "pubspec.yaml" {
 		return DartPubspec
-	}
-	if manifestFileName == "pubspec.lock" {
-		return DartPubspecLock
 	}
 
 	return -1

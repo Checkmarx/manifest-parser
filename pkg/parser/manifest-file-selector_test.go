@@ -103,12 +103,10 @@ func TestManifestFileSelector_ExpectSwiftPackage(t *testing.T) {
 	}
 }
 
-func TestManifestFileSelector_ExpectSwiftPackageResolved(t *testing.T) {
-	manifest := "Package.resolved"
-	got := selectManifestFile(manifest)
-	want := SwiftPackageResolved
-	if got != want {
-		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+func TestManifestFileSelector_PackageResolvedNotStandalone(t *testing.T) {
+	// Package.resolved is a lock file, not a standalone manifest
+	if got := selectManifestFile("Package.resolved"); got != -1 {
+		t.Errorf("Package.resolved should not be a standalone manifest; got %v, want -1", got)
 	}
 }
 
@@ -265,11 +263,32 @@ func TestManifestFileSelector_ExpectDartPubspec(t *testing.T) {
 	}
 }
 
-func TestManifestFileSelector_ExpectDartPubspecLock(t *testing.T) {
-	manifest := "pubspec.lock"
-	got := selectManifestFile(manifest)
-	want := DartPubspecLock
-	if got != want {
-		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+func TestManifestFileSelector_PubspecLockNotStandalone(t *testing.T) {
+	// pubspec.lock is a lock file, not a standalone manifest
+	if got := selectManifestFile("pubspec.lock"); got != -1 {
+		t.Errorf("pubspec.lock should not be a standalone manifest; got %v, want -1", got)
+	}
+}
+
+func TestManifestFileSelector_PodfileLockNotStandalone(t *testing.T) {
+	// Podfile.lock is a lock file, not a standalone manifest
+	if got := selectManifestFile("Podfile.lock"); got != -1 {
+		t.Errorf("Podfile.lock should not be a standalone manifest; got %v, want -1", got)
+	}
+}
+
+func TestManifestFileSelector_CartfileResolvedNotStandalone(t *testing.T) {
+	// Cartfile.resolved is a lock file, not a standalone manifest
+	if got := selectManifestFile("Cartfile.resolved"); got != -1 {
+		t.Errorf("Cartfile.resolved should not be a standalone manifest; got %v, want -1", got)
+	}
+}
+
+func TestManifestFileSelector_PackageSwiftMultitoolchainResolvedNotStandalone(t *testing.T) {
+	// Package@swift-X.Y.resolved files are lock files, not standalone manifests
+	for _, manifest := range []string{"Package@swift-5.5.resolved", "Package@swift-6.0.resolved"} {
+		if got := selectManifestFile(manifest); got != -1 {
+			t.Errorf("%s should not be a standalone manifest; got %v, want -1", manifest, got)
+		}
 	}
 }
