@@ -35,16 +35,17 @@ func TestPackageSwift_FixtureFile(t *testing.T) {
 		}
 	}
 
+	// Expected versions from Package.resolved (lock file), not manifest ranges.
 	cases := map[string]string{
-		"swift-nio":         "2.0.0", // from:
-		"swift-log":         "1.4.0", // .upToNextMajor
-		"swift-crypto":      "2.0.0", // .upToNextMinor
-		"Alamofire":         "5.2.0", // exact:
-		"SnapKit":           "5.0.0", // multi-line
-		"Kingfisher":        "7.0.0", // named form
-		"swift-collections": "latest", // branch:
-		"swift-syntax":      "latest", // revision:
-		"apple.swift-algorithms": "1.0.0", // registry id:
+		"swift-nio":              "2.42.0", // manifest: 2.0.0 (from:), lock: 2.42.0
+		"swift-log":              "1.4.4",  // manifest: 1.4.0 (.upToNextMajor), lock: 1.4.4
+		"swift-crypto":           "2.0.6",  // manifest: 2.0.0 (.upToNextMinor), lock: 2.0.6
+		"Alamofire":              "5.2.0",  // exact: matches lock
+		"SnapKit":                "5.6.0",  // manifest: 5.0.0 (.upToNextMajor), lock: 5.6.0
+		"Kingfisher":             "7.6.2",  // manifest: 7.0.0 (from:), lock: 7.6.2
+		"swift-collections":      "latest", // branch only, no version in lock
+		"swift-syntax":           "latest", // revision only, no version in lock
+		"apple.swift-algorithms": "1.0.0",  // exact matches lock
 	}
 	for name, wantVer := range cases {
 		if ver, ok := got[name]; !ok {
@@ -103,6 +104,43 @@ func TestParenDelta(t *testing.T) {
 	for _, c := range cases {
 		if got := parenDelta(c.in); got != c.want {
 			t.Errorf("parenDelta(%q) = %d, want %d", c.in, got, c.want)
+		}
+	}
+}
+
+func TestPackageSwift_WithLockFile(t *testing.T) {
+	// TC_32: Verify that when both Package.swift and Package.resolved are present,
+	// exact versions from the lock file are used instead of ranges from the manifest.
+	parser := &SwiftPmParser{}
+	pkgs, err := parser.Parse(filepath.Join("..", "..", "..", "test", "resources", "Package.swift"))
+	if err != nil {
+		t.Fatalf("parse error: %v", err)
+	}
+
+	got := make(map[string]string, len(pkgs))
+	for _, p := range pkgs {
+		got[p.PackageName] = p.Version
+	}
+
+	// Expected versions from Package.resolved (lock file), not from Package.swift ranges.
+	lockExpectations := map[string]string{
+		"swift-nio":              "2.42.0", // Lock has 2.42.0, manifest has 2.0.0 (from:)
+		"swift-log":              "1.4.4",  // Lock has 1.4.4, manifest has 1.4.0 (.upToNextMajor)
+		"swift-crypto":           "2.0.6",  // Lock has 2.0.6, manifest has 2.0.0 (.upToNextMinor)
+		"Alamofire":              "5.2.0",  // Lock matches manifest (exact:)
+		"SnapKit":                "5.6.0",  // Lock has 5.6.0, manifest has 5.0.0 (.upToNextMajor)
+		"Kingfisher":             "7.6.2",  // Lock has 7.6.2, manifest has 7.0.0 (from:)
+		"swift-collections":      "latest", // Lock has no version (branch only)
+		"swift-syntax":           "latest", // Lock has no version (revision only)
+		"apple.swift-algorithms": "1.0.0",  // Lock matches manifest
+	}
+
+	for name, wantVer := range lockExpectations {
+		if ver, ok := got[name]; !ok {
+			t.Errorf("expected package %q not found", name)
+		} else if ver != wantVer {
+			t.Errorf("%s: version = %q, want %q (lock file should override manifest range)",
+				name, ver, wantVer)
 		}
 	}
 }

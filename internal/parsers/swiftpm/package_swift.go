@@ -3,6 +3,7 @@ package swiftpm
 import (
 	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -24,6 +25,7 @@ var (
 
 // parsePackageSwift parses a Package.swift manifest using line-oriented scanning.
 // Multi-line .package(...) calls are accumulated until parentheses balance, then parsed.
+// If a sibling Package.resolved exists, exact versions from the lock file override ranges.
 func parsePackageSwift(manifestFile string) ([]models.Package, error) {
 	content, err := os.ReadFile(manifestFile)
 	if err != nil {
@@ -33,6 +35,9 @@ func parsePackageSwift(manifestFile string) ([]models.Package, error) {
 	lines := splitLinesCRLF(string(content))
 	statements := extractPackageStatements(lines)
 
+	// Load lock file versions if present.
+	lockVersions := loadLockFileVersions(manifestFile)
+
 	var packages []models.Package
 	for _, stmt := range statements {
 		pkg := parsePackageStatement(stmt)
@@ -41,6 +46,12 @@ func parsePackageSwift(manifestFile string) ([]models.Package, error) {
 		}
 		pkg.FilePath = manifestFile
 		pkg.Locations = computeStatementLocations(stmt.rawLines)
+
+		// Override version with lock file if available (case-insensitive lookup).
+		if lockedVer, ok := lockVersions[strings.ToLower(pkg.PackageName)]; ok {
+			pkg.Version = lockedVer
+		}
+
 		packages = append(packages, *pkg)
 	}
 	return packages, nil
@@ -191,4 +202,22 @@ func parenDelta(line string) int {
 		}
 	}
 	return delta
+}
+
+// loadLockFileVersions attempts to load a sibling Package.resolved and returns
+// a map of package name -> exact version for those found in the lock.
+// Package names are stored in lowercase for case-insensitive lookup.
+// Returns nil if the lock file is not found or fails to parse.
+func loadLockFileVersions(manifestFile string) map[string]string {
+	lockFile := filepath.Join(filepath.Dir(manifestFile), "Package.resolved")
+	lockedPkgs, err := parseResolved(lockFile)
+	if err != nil {
+		return nil // Lock file not found or invalid; continue with manifest versions
+	}
+
+	versionMap := make(map[string]string)
+	for _, pkg := range lockedPkgs {
+		versionMap[strings.ToLower(pkg.PackageName)] = pkg.Version
+	}
+	return versionMap
 }

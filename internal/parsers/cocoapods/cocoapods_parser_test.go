@@ -16,15 +16,16 @@ func TestPodfile_Fixture(t *testing.T) {
 
 	got := indexByName(pkgs)
 
+	// Expected versions from Podfile.lock (lock file), not manifest ranges.
 	cases := map[string]string{
-		"Alamofire":     "5.2.0",  // pinned single-quote
-		"Nimble":        "9.2.0",  // pinned double-quote
-		"Firebase/Core": "7.0.0",  // subspec form
-		"Realm":         "latest", // ~> range
-		"SwiftyJSON":    "latest", // >= range
-		"Quick":         "latest", // no version specified
-		"Kingfisher":    "latest", // :git => ref
-		"SDWebImage":    "latest", // modern hash syntax git ref
+		"Alamofire":     "5.2.0",   // pinned single-quote, matches lock
+		"Nimble":        "9.2.0",   // pinned double-quote, matches lock
+		"Firebase/Core": "7.0.0",   // subspec form, matches lock
+		"Realm":         "10.20.0", // manifest: ~> 10.0 (latest), lock: 10.20.0
+		"SwiftyJSON":    "4.3.0",   // manifest: >= 4.0 (latest), lock: 4.3.0
+		"Quick":         "4.0.0",   // manifest: no version (latest), lock: 4.0.0
+		"Kingfisher":    "7.6.2",   // manifest: :git (latest), lock: 7.6.2
+		"SDWebImage":    "5.12.0",  // manifest: git ref (latest), lock: 5.12.0
 	}
 
 	if len(pkgs) != len(cases) {
@@ -118,6 +119,45 @@ func TestPodspecJSON_Fixture(t *testing.T) {
 
 	for name, wantVer := range cases {
 		assertPkg(t, got, name, "cocoapods", wantVer)
+	}
+}
+
+func TestPodfile_WithLockFile(t *testing.T) {
+	// Verify that when both Podfile and Podfile.lock are present,
+	// exact versions from the lock file override ranges from the manifest.
+	parser := &CocoaPodsParser{}
+	pkgs, err := parser.Parse(filepath.Join("..", "..", "..", "test", "resources", "Podfile"))
+	if err != nil {
+		t.Fatalf("parse error: %v", err)
+	}
+
+	got := indexByName(pkgs)
+
+	// Expected versions from Podfile.lock (lock file), not from Podfile ranges.
+	// Podfile has: Realm (~> range), SwiftyJSON (>= range), Quick (no version), Kingfisher (:git)
+	// Podfile.lock has exact versions for these.
+	lockExpectations := map[string]string{
+		"Alamofire":     "5.2.0",   // pinned in manifest and lock match
+		"Nimble":        "9.2.0",   // pinned in manifest, lock matches
+		"Firebase/Core": "7.0.0",   // subspec pinned
+		"Realm":         "10.20.0", // Podfile has ~> 10.0, lock has 10.20.0
+		"SwiftyJSON":    "4.3.0",   // Podfile has >= 4.0, lock has 4.3.0
+		"Quick":         "4.0.0",   // Podfile has no version (latest), lock has 4.0.0
+		"Kingfisher":    "7.6.2",   // Podfile has :git, lock has exact 7.6.2
+		"SDWebImage":    "5.12.0",  // Podfile has :git, lock has exact 5.12.0
+	}
+
+	if len(pkgs) != len(lockExpectations) {
+		t.Errorf("expected %d pods, got %d", len(lockExpectations), len(pkgs))
+	}
+
+	for name, wantVer := range lockExpectations {
+		if p, ok := got[name]; !ok {
+			t.Errorf("expected pod %q not found", name)
+		} else if p.Version != wantVer {
+			t.Errorf("%s: version = %q, want %q (lock file should override manifest range)",
+				name, p.Version, wantVer)
+		}
 	}
 }
 

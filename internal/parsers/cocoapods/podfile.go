@@ -2,6 +2,7 @@ package cocoapods
 
 import (
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -38,6 +39,7 @@ var (
 )
 
 // parsePodfile parses a Podfile and returns one Package per `pod` line.
+// If a sibling Podfile.lock exists, exact versions from the lock file override ranges.
 func parsePodfile(manifestFile string) ([]models.Package, error) {
 	content, err := os.ReadFile(manifestFile)
 	if err != nil {
@@ -45,6 +47,10 @@ func parsePodfile(manifestFile string) ([]models.Package, error) {
 	}
 
 	lines := splitLinesCRLF(string(content))
+
+	// Load lock file versions if present.
+	lockVersions := loadPodfileLockVersions(manifestFile)
+
 	var packages []models.Package
 
 	for i, raw := range lines {
@@ -70,11 +76,18 @@ func parsePodfile(manifestFile string) ([]models.Package, error) {
 			version = ""
 		}
 
+		resolvedVersion := resolveVersion(version)
+
+		// Override with lock file version if available and more specific.
+		if lockedVer, ok := lockVersions[name]; ok && lockedVer != "latest" {
+			resolvedVersion = lockedVer
+		}
+
 		startIdx, endIdx := lineExtent(raw, strings.TrimRight(code, " \t"))
 		packages = append(packages, models.Package{
 			PackageManager: packageManagerName,
 			PackageName:    name,
-			Version:        resolveVersion(version),
+			Version:        resolvedVersion,
 			FilePath:       manifestFile,
 			Locations: []models.Location{{
 				Line:       i,
@@ -94,4 +107,21 @@ func firstNonEmpty(values ...string) string {
 		}
 	}
 	return ""
+}
+
+// loadPodfileLockVersions attempts to load a sibling Podfile.lock and returns
+// a map of pod name -> exact version for those found in the lock.
+// Returns nil if the lock file is not found or fails to parse.
+func loadPodfileLockVersions(manifestFile string) map[string]string {
+	lockFile := filepath.Join(filepath.Dir(manifestFile), "Podfile.lock")
+	lockedPkgs, err := parsePodfileLock(lockFile)
+	if err != nil {
+		return nil // Lock file not found or invalid; continue with manifest versions
+	}
+
+	versionMap := make(map[string]string)
+	for _, pkg := range lockedPkgs {
+		versionMap[pkg.PackageName] = pkg.Version
+	}
+	return versionMap
 }

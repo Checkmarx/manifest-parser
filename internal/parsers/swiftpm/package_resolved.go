@@ -20,11 +20,11 @@ type resolvedObject struct {
 }
 
 type resolvedPin struct {
-	Package       string `json:"package,omitempty"`
-	RepositoryURL string `json:"repositoryURL,omitempty"`
-	Identity      string `json:"identity,omitempty"`
-	Kind          string `json:"kind,omitempty"`
-	Location      string `json:"location,omitempty"`
+	Package       string        `json:"package,omitempty"`
+	RepositoryURL string        `json:"repositoryURL,omitempty"`
+	Identity      string        `json:"identity,omitempty"`
+	Kind          string        `json:"kind,omitempty"`
+	Location      string        `json:"location,omitempty"`
 	State         resolvedState `json:"state"`
 }
 

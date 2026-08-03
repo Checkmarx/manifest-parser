@@ -15,34 +15,35 @@ func TestCartfile_Fixture(t *testing.T) {
 	}
 
 	got := indexByName(pkgs)
+
+	// Expected versions from Cartfile.resolved (lock file), not manifest ranges.
 	cases := map[string]string{
-		"Alamofire/Alamofire":                         "5.2.0",  // quoted exact tag
-		"ReactiveCocoa/ReactiveSwift":                 "6.7.0",  // == operator
-		"onevcat/Kingfisher":                          "latest", // ~> range
-		"SnapKit/SnapKit":                             "latest", // >= range
-		"Quick/Quick":                                 "latest", // no spec
-		"ReactiveX/RxSwift":                           "latest", // branch ref
-		"MyFramework":                                 "1.4.2",  // git origin (last path component, .git stripped)
+		"Alamofire/Alamofire":         "5.2.0",  // quoted exact tag, matches lock
+		"ReactiveCocoa/ReactiveSwift": "6.7.0",  // == operator, matches lock
+		"onevcat/Kingfisher":          "7.6.2",  // manifest: ~> 7.0 (latest), lock: 7.6.2
+		"SnapKit/SnapKit":             "5.6.0",  // manifest: >= 5.0.0 (latest), lock: 5.6.0
+		"Quick/Quick":                 "v4.0.0", // manifest: no spec (latest), lock: v4.0.0
+		"ReactiveX/RxSwift":           "latest", // branch ref, lock has SHA (not semver)
+		"MyFramework":                 "1.4.2",  // Git origin (exact version from manifest, not overridden by lock)
 	}
-	// Binary origin uses .json suffix stripped — should also appear.
-	cases["MyFramework"] = "1.4.2" // already set; binary appears separately via different parse
 
 	// Verify each expected package
 	for name, wantVer := range cases {
 		assertPkg(t, got, name, "carthage", wantVer)
 	}
 
-	// Binary entry — note both git and binary in fixture happen to produce the same
-	// derived name "MyFramework". The git one is pinned 1.4.2; the binary one is
-	// ranged ~> 2.3 -> latest. The parser emits both Locations as separate Packages.
-	binaryCount := 0
+	// Note: Both git and binary origins produce "MyFramework" as the package name.
+	// The git version is 1.4.2 (pinned, matches lock).
+	// The binary version is ranged ~> 2.3, which resolves to 2.3.1 from lock.
+	// indexByName keeps only the first occurrence, so we count separately.
 	gitCount := 0
+	binaryCount := 0
 	for _, p := range pkgs {
 		if p.PackageName == "MyFramework" {
 			switch p.Version {
 			case "1.4.2":
 				gitCount++
-			case "latest":
+			case "2.3.1":
 				binaryCount++
 			}
 		}
@@ -51,7 +52,7 @@ func TestCartfile_Fixture(t *testing.T) {
 		t.Errorf("expected 1 MyFramework@1.4.2 (git origin), got %d", gitCount)
 	}
 	if binaryCount != 1 {
-		t.Errorf("expected 1 MyFramework@latest (binary origin), got %d", binaryCount)
+		t.Errorf("expected 1 MyFramework@2.3.1 (binary origin), got %d", binaryCount)
 	}
 }
 
@@ -64,9 +65,9 @@ func TestCartfilePrivate_Fixture(t *testing.T) {
 
 	got := indexByName(pkgs)
 	cases := map[string]string{
-		"Quick/Nimble":                            "9.2.0",
-		"pointfreeco/swift-snapshot-testing":      "latest",
-		"TestUtils":                               "latest", // git origin, branch ref "main"
+		"Quick/Nimble":                       "9.2.0",
+		"pointfreeco/swift-snapshot-testing": "latest",
+		"TestUtils":                          "latest", // git origin, branch ref "main"
 	}
 
 	if len(pkgs) != len(cases) {
@@ -91,8 +92,8 @@ func TestCartfileResolved_Fixture(t *testing.T) {
 		"ReactiveCocoa/ReactiveSwift": "6.7.0",
 		"onevcat/Kingfisher":          "7.6.2",
 		"SnapKit/SnapKit":             "5.6.0",
-		"Quick/Quick":                 "v4.0.0",                  // tag-prefixed semver — accepted as-is by looksLikeSemver
-		"ReactiveX/RxSwift":           "latest",                  // 19-hex commit SHA — not semver
+		"Quick/Quick":                 "v4.0.0", // tag-prefixed semver — accepted as-is by looksLikeSemver
+		"ReactiveX/RxSwift":           "latest", // 19-hex commit SHA — not semver
 	}
 	// MyFramework appears twice (git + binary), both pinned.
 	for name, wantVer := range cases {
@@ -108,6 +109,58 @@ func TestCartfileResolved_Fixture(t *testing.T) {
 	}
 	if myFrameworkCount != 2 {
 		t.Errorf("expected 2 MyFramework entries in resolved file, got %d", myFrameworkCount)
+	}
+}
+
+func TestCartfile_WithLockFile(t *testing.T) {
+	// Verify that when both Cartfile and Cartfile.resolved are present,
+	// exact versions from the lock file override ranges from the manifest.
+	parser := &CarthageParser{}
+	pkgs, err := parser.Parse(filepath.Join("..", "..", "..", "test", "resources", "Cartfile"))
+	if err != nil {
+		t.Fatalf("parse error: %v", err)
+	}
+
+	got := indexByName(pkgs)
+
+	// Expected versions from Cartfile.resolved (lock file), not from Cartfile ranges.
+	// Cartfile has: ~> ranges, >= ranges, no spec, branch refs
+	// Cartfile.resolved has exact versions for all.
+	lockExpectations := map[string]string{
+		"Alamofire/Alamofire":         "5.2.0",  // quoted exact in both
+		"ReactiveCocoa/ReactiveSwift": "6.7.0",  // == in manifest, lock has 6.7.0
+		"onevcat/Kingfisher":          "7.6.2",  // ~> range in manifest, lock has 7.6.2
+		"SnapKit/SnapKit":             "5.6.0",  // >= range in manifest, lock has 5.6.0
+		"Quick/Quick":                 "v4.0.0", // no spec in manifest, lock has v4.0.0
+		"ReactiveX/RxSwift":           "latest", // branch ref in manifest, lock has SHA (not semver -> latest)
+		// MyFramework: both git and binary origins are parsed separately
+	}
+
+	for name, wantVer := range lockExpectations {
+		if p, ok := got[name]; !ok {
+			t.Errorf("expected package %q not found", name)
+		} else if p.Version != wantVer {
+			t.Errorf("%s: version = %q, want %q (lock file should override manifest range)",
+				name, p.Version, wantVer)
+		}
+	}
+
+	// MyFramework from both git and binary origins should use lock file versions
+	myFrameworkVersions := make(map[string]bool)
+	for _, p := range pkgs {
+		if p.PackageName == "MyFramework" {
+			myFrameworkVersions[p.Version] = true
+		}
+	}
+
+	// Cartfile.resolved has both: git "1.4.2" and binary "2.3.1"
+	if !myFrameworkVersions["1.4.2"] {
+		t.Errorf("MyFramework git version should be 1.4.2 from lock file, got versions: %v",
+			myFrameworkVersions)
+	}
+	if !myFrameworkVersions["2.3.1"] {
+		t.Errorf("MyFramework binary version should be 2.3.1 from lock file, got versions: %v",
+			myFrameworkVersions)
 	}
 }
 
