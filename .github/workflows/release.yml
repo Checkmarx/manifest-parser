@@ -13,24 +13,31 @@ on:
         default: 'false'
         type: boolean
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.repository }}-${{ github.ref }}
+
 permissions:
   contents: read
 
 jobs:
   tag-and-release:
+    name: Tag and Release
     permissions:
-      contents: write  # for Git to git push
+      contents: write  # for git push tag
     runs-on: cx-public-ubuntu-x64
     steps:
       - name: Checkout repository
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           fetch-depth: 0   # need full history for tags
+          persist-credentials: false
 
       - name: Determine new version
         id: newver
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version }}
         run: |
-          raw="${{ github.event.inputs.version }}"
+          raw="${INPUT_VERSION}"
 
           if [ -n "$raw" ]; then
             # Ensure 'v' prefix
@@ -57,20 +64,26 @@ jobs:
           echo "new_version=${new}" >> $GITHUB_ENV
 
       - name: Create and push Git tag
+        env:
+          ACTOR: ${{ github.actor }}
+          ACTOR_ID: ${{ github.actor_id }}
+          NEW_VERSION: ${{ env.new_version }}
         run: |
-          git config user.name "${{ github.actor }}"
-          git config user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
-          git tag "${{ env.new_version }}" -m "Release ${{ env.new_version }}"
-          git push origin "${{ env.new_version }}"
+          git config user.name "${ACTOR}"
+          git config user.email "${ACTOR_ID}+${ACTOR}@users.noreply.github.com"
+          git tag "${NEW_VERSION}" -m "Release ${NEW_VERSION}"
+          git push origin "${NEW_VERSION}"
 
       - name: Create GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEW_VERSION: ${{ env.new_version }}
+          IS_PRERELEASE: ${{ github.event.inputs.prerelease }}
         run: |
           prerelease_flag=""
-          if [ "${{ github.event.inputs.prerelease }}" = "true" ]; then
+          if [ "${IS_PRERELEASE}" = "true" ]; then
             prerelease_flag="--prerelease"
           fi
-          gh release create "${{ env.new_version }}" \
-            --title "Release ${{ env.new_version }}" \
+          gh release create "${NEW_VERSION}" \
+            --title "Release ${NEW_VERSION}" \
             $prerelease_flag
