@@ -29,9 +29,21 @@ type composerLock struct {
 type ComposerJsonParser struct{}
 
 func isSkippedPackage(name string) bool {
+	// Real packages always have vendor/package format with a "/"
+	// Virtual packages NEVER have a "/"
+	// So if there's a "/", it's a real package - never skip it!
+	if strings.Contains(name, "/") {
+		return false
+	}
+
+	// Now safe to use broad prefix matching for pure virtual packages
+	// (they can't match real packages since real packages always have "/")
 	return name == "php" ||
-		strings.HasPrefix(name, "ext-") ||
-		strings.HasPrefix(name, "lib-")
+		strings.HasPrefix(name, "php-") || // php-64bit, php-32bit, php-ipv6, etc.
+		strings.HasPrefix(name, "ext-") || // ext-json, ext-curl, etc.
+		strings.HasPrefix(name, "lib-") || // lib-openssl, lib-zlib, etc.
+		strings.HasPrefix(name, "composer-") || // composer-plugin-api, composer-runtime, etc.
+		strings.HasPrefix(name, "hhvm") // hhvm, hhvm-64bit, etc.
 }
 
 func findLockVersion(name string, lock composerLock) string {
