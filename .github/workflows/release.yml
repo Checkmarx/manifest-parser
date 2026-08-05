@@ -72,7 +72,7 @@ jobs:
         run: |
           git config user.name "${ACTOR}"
           git config user.email "${ACTOR_ID}+${ACTOR}@users.noreply.github.com"
-          git remote set-url origin https://${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
+          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
           git tag "${NEW_VERSION}" -m "Release ${NEW_VERSION}"
           git push origin "${NEW_VERSION}"
 
