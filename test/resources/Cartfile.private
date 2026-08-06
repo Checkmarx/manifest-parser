@@ -1,0 +1,5 @@
+# Cartfile.private — private / test dependencies, parsed identically to Cartfile.
+
+github "Quick/Nimble" "9.2.0"
+github "pointfreeco/swift-snapshot-testing" ~> 1.9
+git "https://example.com/internal/TestUtils.git" "main"

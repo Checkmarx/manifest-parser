@@ -1,0 +1,13 @@
+{
+  "name": "yarn-v1-fixture",
+  "version": "1.0.0",
+  "dependencies": {
+    "react": "^18.0.0",
+    "lodash": "~4.17.0",
+    "express": "4.17.1",
+    "@babel/code-frame": "^7.10.4"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0"
+  }
+}

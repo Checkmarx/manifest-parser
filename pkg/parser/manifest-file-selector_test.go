@@ -94,6 +94,67 @@ func TestManifestFileSelector_ExpectSbtCustom(t *testing.T) {
 	}
 }
 
+func TestManifestFileSelector_ExpectSwiftPackage(t *testing.T) {
+	manifest := "Package.swift"
+	got := selectManifestFile(manifest)
+	want := SwiftPackage
+	if got != want {
+		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+	}
+}
+
+func TestManifestFileSelector_PackageResolvedNotStandalone(t *testing.T) {
+	// Package.resolved is a lock file, not a standalone manifest
+	if got := selectManifestFile("Package.resolved"); got != -1 {
+		t.Errorf("Package.resolved should not be a standalone manifest; got %v, want -1", got)
+	}
+}
+
+func TestManifestFileSelector_ExpectSwiftPackageToolchainVariant(t *testing.T) {
+	// Apple-documented multi-toolchain manifest. Real projects ship these even though
+	// Checkmarx's core SCA list only mentions Package.swift.
+	for _, manifest := range []string{"Package@swift-5.5.swift", "Package@swift-6.swift"} {
+		got := selectManifestFile(manifest)
+		want := SwiftPackage
+		if got != want {
+			t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+		}
+	}
+}
+
+func TestManifestFileSelector_ExpectComposerJson(t *testing.T) {
+	manifest := "composer.json"
+	got := selectManifestFile(manifest)
+	want := ComposerJson
+	if got != want {
+		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+	}
+}
+
+func TestManifestFileSelector_ExpectGemfile(t *testing.T) {
+	manifest := "Gemfile"
+	got := selectManifestFile(manifest)
+	want := RubyGemsGemfile
+	if got != want {
+		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+	}
+}
+
+func TestManifestFileSelector_ExpectBowerJson(t *testing.T) {
+	manifest := "bower.json"
+	got := selectManifestFile(manifest)
+	want := BowerJson
+	if got != want {
+		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+	}
+}
+
+func TestManifestFileSelector_YarnLockNotStandalone(t *testing.T) {
+	if got := selectManifestFile("yarn.lock"); got != -1 {
+		t.Errorf("yarn.lock should not be a standalone manifest; got %v, want -1", got)
+	}
+}
+
 func TestManifestFileSelector_ExpectPypiRequirementsTxt(t *testing.T) {
 	manifest := "requirements.txt"
 	got := selectManifestFile(manifest)
@@ -190,5 +251,44 @@ func TestManifestFileSelector_ExpectPoetryPyproject(t *testing.T) {
 	want := PoetryPyproject
 	if got != want {
 		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+	}
+}
+
+func TestManifestFileSelector_ExpectDartPubspec(t *testing.T) {
+	manifest := "pubspec.yaml"
+	got := selectManifestFile(manifest)
+	want := DartPubspec
+	if got != want {
+		t.Errorf("selectManifestFile(%q) = %v; want %v", manifest, got, want)
+	}
+}
+
+func TestManifestFileSelector_PubspecLockNotStandalone(t *testing.T) {
+	// pubspec.lock is a lock file, not a standalone manifest
+	if got := selectManifestFile("pubspec.lock"); got != -1 {
+		t.Errorf("pubspec.lock should not be a standalone manifest; got %v, want -1", got)
+	}
+}
+
+func TestManifestFileSelector_PodfileLockNotStandalone(t *testing.T) {
+	// Podfile.lock is a lock file, not a standalone manifest
+	if got := selectManifestFile("Podfile.lock"); got != -1 {
+		t.Errorf("Podfile.lock should not be a standalone manifest; got %v, want -1", got)
+	}
+}
+
+func TestManifestFileSelector_CartfileResolvedNotStandalone(t *testing.T) {
+	// Cartfile.resolved is a lock file, not a standalone manifest
+	if got := selectManifestFile("Cartfile.resolved"); got != -1 {
+		t.Errorf("Cartfile.resolved should not be a standalone manifest; got %v, want -1", got)
+	}
+}
+
+func TestManifestFileSelector_PackageSwiftMultitoolchainResolvedNotStandalone(t *testing.T) {
+	// Package@swift-X.Y.resolved files are lock files, not standalone manifests
+	for _, manifest := range []string{"Package@swift-5.5.resolved", "Package@swift-6.0.resolved"} {
+		if got := selectManifestFile(manifest); got != -1 {
+			t.Errorf("%s should not be a standalone manifest; got %v, want -1", manifest, got)
+		}
 	}
 }

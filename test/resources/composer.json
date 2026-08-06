@@ -1,0 +1,12 @@
+{
+    "name": "vendor/myapp",
+    "description": "A sample PHP application",
+    "require": {
+        "guzzlehttp/guzzle": "7.4.0",
+        "monolog/monolog": "^2.3"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.5",
+        "mockery/mockery": "~1.4"
+    }
+}

@@ -128,6 +128,7 @@ Per-ecosystem parsers live under [internal/parsers/](internal/parsers/):
 - `setuptools/` — two parsers for Python packaging manifests: `setup_cfg_parser.go` (`setup.cfg` INI format) and `setup_py_parser.go` (`setup.py` script). Both support `install_requires`, `setup_requires`, `tests_require`, and `extras_require`. Duplicate packages across sections are stored as separate entries with distinct line numbers. `PackageManager` = `"pypi"`.
 - `golang/` — uses `golang.org/x/mod/modfile` to parse `go.mod`, then uses the parser's line metadata to compute character offsets. `PackageManager` = `"go"`.
 - `dotnet/` — three parsers: `csproj_parser.go` (`.csproj`), `directory_packages_props_parser.go` (central package management), `packages_config_parser.go` (legacy). Bracketed version ranges become `"latest"`. `PackageManager` = `"nuget"` for all three.
+- `dart/` — parses `pubspec.yaml` (Dart/Flutter manifest) plus, if present as a sibling file, `pubspec.lock` (YAML lock). Mines the `dependencies`, `dev_dependencies`, and `dependency_overrides` sections via line-oriented scanning. The dependency-entry indent is detected per section (from the first entry), so any consistent indent width — not just 2 spaces — is parsed. Supports pub's constraint operators (`^`, `>=`, `<=`, `>`, `<`, compound ranges, exact, `any`) and nested source maps (`git`, `path`, `hosted`, `sdk`); the npm-style `~` and `*` are handled defensively though they are not valid pub syntax. SDK-sourced deps (`flutter`, `flutter_test`, anything with an `sdk:` key) are skipped since they are not pub.dev packages. Duplicate declarations across sections each emit a separate entry with their own location. Ranged/source-map versions resolve from the lock, falling back to `"latest"`. `pubspec.lock` is also routed as a standalone manifest. `PackageManager` = `"pub"`.
 - `sbt/` — parses any `.sbt` file (`build.sbt`, `plugins.sbt`, `dependencies.sbt`, etc.) using line-oriented scanning. Supports `val`/`lazy val`/`def` variable declarations, all SBT dependency operators (`%`, `%%`, `%%%`), `Seq(...)` blocks, `addSbtPlugin(...)` syntax, dependency modifiers (`exclude`, `excludeAll`, `intransitive`, `withSources`, `classifier`, `cross`), block and inline comments, scope annotations, and duplicate detection. `PackageManager` = `"sbt"`.
 
 ## Project Rules (Invariants)
@@ -159,7 +160,9 @@ test/resources/
 ├── Gateway.csproj            .NET csproj (variant)
 ├── Directory.Packages.props  .NET centralized packages
 ├── packages.config           .NET legacy NuGet
-└── requirements.txt          Python pip (basic format)
+├── requirements.txt          Python pip (basic format)
+├── pubspec.yaml              Dart/Flutter pub manifest
+└── pubspec.lock              Dart/Flutter pub lock file
 ```
 
 **Parser-specific fixtures** in [internal/testdata/](internal/testdata/):
@@ -194,6 +197,7 @@ Expected pattern for a new parser: fixture file under `test/resources/` or `inte
 - **npm**: Ranged version specifiers (`^`, `~`, `*`, `>`, `<`) without a matching `package-lock.json` entry resolve to `"latest"` rather than the actual installed version.
 - **Maven**: Managed-only deps (present in `<dependencyManagement>` but not in `<dependencies>`) are not emitted, to avoid duplicating entries already declared in a BOM consumer.
 - **dotnet**: Bracketed version ranges (e.g., `[1.0,2.0)`) become `"latest"`.
+- **dart**: SDK-sourced dependencies (`sdk: flutter`, etc.) are intentionally skipped — they are not pub.dev packages. Ranged constraints and source-map deps (`git`/`path`/`hosted`) without a matching `pubspec.lock` entry resolve to `"latest"`. Flow/inline-map dependency declarations (`dependencies: {http: ^0.13.5}`) are not parsed — block style only.
 - **sbt**: Version variables using object member access (e.g., `Versions.log4j`) are not resolved — only simple `val`/`lazy val` string assignments are captured.
 - **All parsers**: Direct dependencies only — transitive dependencies are not resolved or scanned.
 

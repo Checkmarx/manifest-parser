@@ -1,0 +1,26 @@
+# Test fixture for Carthage Cartfile (production dependencies).
+# Mix of pinned, ranged, and branch-based specifiers to exercise the parser.
+
+# Exact tag — quoted version literal
+github "Alamofire/Alamofire" "5.2.0"
+
+# Exact equality operator
+github "ReactiveCocoa/ReactiveSwift" == 6.7.0
+
+# Semver-compatible range -> latest
+github "onevcat/Kingfisher" ~> 7.0
+
+# Minimum version -> latest
+github "SnapKit/SnapKit" >= 5.0.0
+
+# No specifier at all -> latest
+github "Quick/Quick"
+
+# Branch ref -> latest
+github "ReactiveX/RxSwift" "main"
+
+# Generic git origin with quoted exact tag
+git "https://example.com/internal/MyFramework.git" "1.4.2"
+
+# Binary framework with semver-compatible range -> latest
+binary "https://my.domain.com/release/MyFramework.json" ~> 2.3

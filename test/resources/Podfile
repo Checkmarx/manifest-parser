@@ -1,0 +1,32 @@
+# Test fixture covering the pod declaration forms supported by the parser.
+# Intentionally pins old / vulnerable versions of well-known pods so vulnerability
+# scanners have something to flag.
+
+platform :ios, '13.0'
+use_frameworks!
+
+target 'ManifestParserTestApp' do
+  # Pinned exact version
+  pod 'Alamofire', '5.2.0'
+
+  # Pinned exact version (double-quoted)
+  pod "Nimble", "9.2.0"
+
+  # Subspec form
+  pod 'Firebase/Core', '7.0.0'
+
+  # Ranged version specifier -> resolves to "latest"
+  pod 'Realm', '~> 10.20'
+
+  # Greater-than-or-equal -> latest
+  pod 'SwiftyJSON', '>= 4.0'
+
+  # No version specifier at all -> latest
+  pod 'Quick'
+
+  # Git ref (branch) -> latest
+  pod 'Kingfisher', :git => 'https://github.com/onevcat/Kingfisher.git', :branch => 'main'
+
+  # Modern Ruby hash syntax for git ref -> latest
+  pod 'SDWebImage', git: 'https://github.com/SDWebImage/SDWebImage.git', tag: '5.12.0'
+end
