@@ -10,19 +10,46 @@ import (
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
 
-// PoetryPyprojectParser parses pyproject.toml Poetry dependency sections.
+// PoetryPyprojectParser parses pyproject.toml: Poetry's own tables, plus the
+// PEP 621/735 sections uv (and other PEP 621 tools) use — uv has no manifest
+// format of its own, so it has no dedicated parser.
 type PoetryPyprojectParser struct{}
 
 var (
-	groupDepSectionRe     = regexp.MustCompile(`^\[tool\.poetry\.group\.[^.]+\.dependencies\]$`)
-	inlineTableVersionRe  = regexp.MustCompile(`version\s*=\s*"([^"]*)"`)
-	pep621OptDepSectionRe = regexp.MustCompile(`^\[project\.optional-dependencies\]$`)
+	groupDepSectionRe         = regexp.MustCompile(`^\[tool\.poetry\.group\.[^.]+\.dependencies\]$`)
+	inlineTableVersionRe      = regexp.MustCompile(`version\s*=\s*"([^"]*)"`)
+	pep621OptDepSectionRe     = regexp.MustCompile(`^\[project\.optional-dependencies\]$`)
+	dependencyGroupsSectionRe = regexp.MustCompile(`^\[dependency-groups\]$`)
+	pypiNameSepRe             = regexp.MustCompile(`[-_.]+`)
 )
 
 func isPoetryDepsSection(line string) bool {
 	return line == "[tool.poetry.dependencies]" ||
 		line == "[tool.poetry.dev-dependencies]" ||
 		groupDepSectionRe.MatchString(line)
+}
+
+// isArrayDependencySection reports whether line opens a PEP 621/735 table whose
+// entries are arrays of PEP 508 requirement strings.
+func isArrayDependencySection(line string) bool {
+	return line == "[project]" ||
+		pep621OptDepSectionRe.MatchString(line) ||
+		dependencyGroupsSectionRe.MatchString(line)
+}
+
+// normalizePyPIName applies PEP 503 normalization (lowercase; -/_/. equivalent)
+// so lock lookups aren't broken by naming-convention differences.
+func normalizePyPIName(name string) string {
+	return pypiNameSepRe.ReplaceAllString(strings.ToLower(name), "-")
+}
+
+// stripExtras strips a PEP 508 extras suffix ("requests[security]" -> "requests")
+// so PackageName matches the real package and the lock file's entry for it.
+func stripExtras(name string) string {
+	if idx := strings.Index(name, "["); idx >= 0 {
+		return strings.TrimSpace(name[:idx])
+	}
+	return name
 }
 
 func parsePoetryVersion(v string) string {
@@ -83,11 +110,10 @@ func parsePyprojectDepLine(line string) (name, version string, ok bool) {
 	return name, version, true
 }
 
-// parseLockFile reads poetry.lock and returns a map of package name to version
-func parseLockFile(manifestDir string) map[string]string {
+// parseLockPackageVersions scans [[package]] blocks (poetry.lock and uv.lock
+// share this shape) into a PEP-503-normalized name -> version map.
+func parseLockPackageVersions(lockPath string) map[string]string {
 	lockVersions := make(map[string]string)
-
-	lockPath := filepath.Join(manifestDir, "poetry.lock")
 
 	file, err := os.Open(lockPath)
 	if err != nil {
@@ -99,8 +125,7 @@ func parseLockFile(manifestDir string) map[string]string {
 	var currentPackageName string
 
 	for scanner.Scan() {
-		line := scanner.Text()
-		trimmed := strings.TrimSpace(line)
+		trimmed := strings.TrimSpace(scanner.Text())
 
 		if strings.HasPrefix(trimmed, "[[package]]") {
 			currentPackageName = ""
@@ -113,15 +138,12 @@ func parseLockFile(manifestDir string) map[string]string {
 		}
 
 		if strings.HasPrefix(trimmed, "name = ") {
-			currentPackageName = strings.TrimSpace(strings.TrimPrefix(trimmed, "name = "))
-			currentPackageName = strings.Trim(currentPackageName, "\"")
-			currentPackageName = strings.ToLower(currentPackageName)
+			currentPackageName = normalizePyPIName(strings.Trim(strings.TrimPrefix(trimmed, "name = "), "\""))
 			continue
 		}
 
 		if currentPackageName != "" && strings.HasPrefix(trimmed, "version = ") {
-			version := strings.TrimSpace(strings.TrimPrefix(trimmed, "version = "))
-			version = strings.Trim(version, "\"")
+			version := strings.Trim(strings.TrimPrefix(trimmed, "version = "), "\"")
 			lockVersions[currentPackageName] = version
 			currentPackageName = ""
 			continue
@@ -131,17 +153,38 @@ func parseLockFile(manifestDir string) map[string]string {
 	return lockVersions
 }
 
-// resolveVersionWithLock resolves version using poetry.lock if available
+// loadLockVersions merges poetry.lock and uv.lock; if both exist for a package,
+// poetry.lock wins and uv.lock fills in the rest. Neither is ever scanned as a
+// standalone manifest — both are resolvers only, like every other lock file here.
+func loadLockVersions(manifestDir string) map[string]string {
+	lockVersions := parseLockPackageVersions(filepath.Join(manifestDir, "poetry.lock"))
+	for name, version := range parseLockPackageVersions(filepath.Join(manifestDir, "uv.lock")) {
+		if _, exists := lockVersions[name]; !exists {
+			lockVersions[name] = version
+		}
+	}
+	return lockVersions
+}
+
+// resolveVersionWithLock resolves version using poetry.lock/uv.lock if available.
+// "latest" is the callers' sentinel for "no specifier given", not a real version,
+// so it must still go through lock resolution rather than being returned as-is.
 func resolveVersionWithLock(pkgName, version string, lockVersions map[string]string) string {
-	if !strings.ContainsAny(version, "^~><,!=;*") {
+	if version != "latest" && !strings.ContainsAny(version, "^~><,!=;*") {
 		return version
 	}
 
+	if strings.HasPrefix(version, "===") {
+		return strings.TrimSpace(version[3:])
+	}
 	if strings.HasPrefix(version, "==") {
-		return strings.TrimSpace(version[2:])
+		// "==1.*" is a wildcard match, not an exact pin, so it still needs the lock.
+		if exact := strings.TrimSpace(version[2:]); !strings.Contains(exact, "*") {
+			return exact
+		}
 	}
 
-	if lockVersion, found := lockVersions[strings.ToLower(pkgName)]; found {
+	if lockVersion, found := lockVersions[normalizePyPIName(pkgName)]; found {
 		return lockVersion
 	}
 
@@ -150,6 +193,11 @@ func resolveVersionWithLock(pkgName, version string, lockVersions map[string]str
 
 func parsePep621Requirement(req string) (name, version string, ok bool) {
 	req = strings.TrimSpace(req)
+	if strings.HasPrefix(req, "{") {
+		// e.g. PEP 735 {include-group = "test"} — not a requirement string; the
+		// referenced group is parsed on its own, so skip here to avoid double-counting.
+		return "", "", false
+	}
 	if strings.HasPrefix(req, "\"") {
 		req = strings.TrimPrefix(req, "\"")
 	}
@@ -166,19 +214,25 @@ func parsePep621Requirement(req string) (name, version string, ok bool) {
 		return "", "", false
 	}
 
-	for _, sep := range []string{"==", ">=", "<=", "~=", "!=", ">", "<", ";"} {
-		if idx := strings.Index(req, sep); idx >= 0 {
-			name = strings.TrimSpace(req[:idx])
-			versionPart := strings.TrimSpace(req[idx+len(sep):])
-			if idx2 := strings.Index(versionPart, ";"); idx2 >= 0 {
-				versionPart = strings.TrimSpace(versionPart[:idx2])
-			}
-			version = sep + versionPart
+	// Markers (e.g. "; python_version >= '3.8'") can contain their own comparison
+	// operators, so they must be split off before searching for the package's
+	// own version specifier — otherwise a marker-only requirement like
+	// "tomli; python_version < '3.11'" would have its marker's "<" mistaken for
+	// the package's separator, corrupting the name into "tomli; python_version".
+	reqNoMarker := req
+	if idx := strings.Index(req, ";"); idx >= 0 {
+		reqNoMarker = strings.TrimSpace(req[:idx])
+	}
+
+	for _, sep := range []string{"===", "==", ">=", "<=", "~=", "!=", ">", "<"} {
+		if idx := strings.Index(reqNoMarker, sep); idx >= 0 {
+			name = stripExtras(strings.TrimSpace(reqNoMarker[:idx]))
+			version = sep + strings.TrimSpace(reqNoMarker[idx+len(sep):])
 			return name, version, name != ""
 		}
 	}
 
-	name = strings.TrimSpace(req)
+	name = stripExtras(strings.TrimSpace(reqNoMarker))
 	return name, "latest", name != ""
 }
 
@@ -190,13 +244,13 @@ func (p *PoetryPyprojectParser) Parse(manifestFile string) ([]models.Package, er
 	defer file.Close()
 
 	manifestDir := filepath.Dir(manifestFile)
-	lockVersions := parseLockFile(manifestDir)
+	lockVersions := loadLockVersions(manifestDir)
 
 	var packages []models.Package
 	scanner := bufio.NewScanner(file)
 	lineNum := 0
 	inPoetryDepsSection := false
-	inPep621Section := false
+	inArrayDependencySection := false
 	inPep621Array := false
 	skipUntilCloseBrace := false
 
@@ -214,7 +268,7 @@ func (p *PoetryPyprojectParser) Parse(manifestFile string) ([]models.Package, er
 
 		if strings.HasPrefix(trimmed, "[") {
 			inPoetryDepsSection = isPoetryDepsSection(trimmed)
-			inPep621Section = trimmed == "[project]" || pep621OptDepSectionRe.MatchString(trimmed)
+			inArrayDependencySection = isArrayDependencySection(trimmed)
 			inPep621Array = false
 			lineNum++
 			continue
@@ -227,7 +281,12 @@ func (p *PoetryPyprojectParser) Parse(manifestFile string) ([]models.Package, er
 				continue
 			}
 
-			name, version, ok := parsePep621Requirement(trimmed)
+			arrayItem := trimmed
+			if idx := strings.Index(arrayItem, "#"); idx >= 0 {
+				arrayItem = strings.TrimSpace(arrayItem[:idx])
+			}
+
+			name, version, ok := parsePep621Requirement(arrayItem)
 			if ok {
 				resolvedVersion := resolveVersionWithLock(name, version, lockVersions)
 				startIdx, endIdx := pyprojectLineIndices(raw, name)
@@ -287,7 +346,7 @@ func (p *PoetryPyprojectParser) Parse(manifestFile string) ([]models.Package, er
 			continue
 		}
 
-		if (inPep621Section) && (strings.Contains(trimmed, " = [") || strings.Contains(trimmed, "=[")) && !strings.HasPrefix(trimmed, "[") {
+		if inArrayDependencySection && (strings.Contains(trimmed, " = [") || strings.Contains(trimmed, "=[")) && !strings.HasPrefix(trimmed, "[") {
 			openIdx := strings.Index(trimmed, "[")
 			closeIdx := strings.LastIndex(trimmed, "]")
 			if openIdx >= 0 && closeIdx > openIdx {
