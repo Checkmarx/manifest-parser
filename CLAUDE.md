@@ -19,7 +19,7 @@ Go module that parses package manifests from multiple ecosystems (Maven, npm, Py
 | JSON output | stdlib `encoding/json` |
 | Database | None |
 | Web framework | None |
-| Dependencies | Vendored (`vendor/`) — no `go mod download` required |
+| Dependencies | Fetched via Go modules (`vendor/` is gitignored and not committed). CI resolves them through the Echo Go proxy (`GOPROXY`, `ECHO_LIBRARIES_ACCESS_KEY` org secret) |
 
 ## Repository Structure
 
@@ -50,13 +50,12 @@ internal/parsers/               Per-ecosystem implementations (not importable by
   └── swiftpm/
 internal/testdata/              Parser-specific test fixtures (sbt, Python, .NET, SwiftPM, CocoaPods)
 test/resources/                 Shared fixture files for all parser tests
-vendor/                         Vendored dependencies
 .github/workflows/ci.yml        CI pipeline (test + 60% coverage gate)
 ```
 
 ## Development Setup
 
-**Prerequisites:** Go ≥ 1.23, git. No other tools required — dependencies are vendored.
+**Prerequisites:** Go ≥ 1.23, git. No other tools required — `go test` / `go build` fetch dependencies automatically (locally via the default Go proxy; in CI via the Echo Go proxy).
 
 ```bash
 git clone https://github.com/Checkmarx/manifest-parser.git
