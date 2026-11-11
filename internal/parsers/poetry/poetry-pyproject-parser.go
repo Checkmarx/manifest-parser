@@ -171,25 +171,20 @@ func loadLockVersions(manifestDir string) map[string]string {
 	return lockVersions
 }
 
-// resolveVersionWithLock returns the exact version of a declared version, from
-// the declaration itself or else poetry.lock/uv.lock, or "" when there is none.
+// resolveVersionWithLock resolves version using poetry.lock/uv.lock if available.
 // "latest" is the callers' sentinel for "no specifier given", not a real version,
 // so it must still go through lock resolution rather than being returned as-is.
 func resolveVersionWithLock(pkgName, version string, lockVersions map[string]string) string {
 	if version != "latest" && !strings.ContainsAny(version, "^~><,!=;*") {
-		exact, _ := versionspec.Classify("pypi", version)
-		return exact
+		return version
 	}
 
-	// "==1.0" pins an exact version; "==1.0,<2" and "==1.*" don't, so they still
-	// need the lock.
-	switch {
-	case strings.HasPrefix(version, "==="):
-		if exact, _ := versionspec.Classify("pypi", version[3:]); exact != "" {
-			return exact
-		}
-	case strings.HasPrefix(version, "=="):
-		if exact, _ := versionspec.Classify("pypi", version[2:]); exact != "" {
+	if strings.HasPrefix(version, "===") {
+		return strings.TrimSpace(version[3:])
+	}
+	if strings.HasPrefix(version, "==") {
+		// "==1.*" is a wildcard match, not an exact pin, so it still needs the lock.
+		if exact := strings.TrimSpace(version[2:]); !strings.Contains(exact, "*") {
 			return exact
 		}
 	}
@@ -198,7 +193,7 @@ func resolveVersionWithLock(pkgName, version string, lockVersions map[string]str
 		return lockVersion
 	}
 
-	return ""
+	return "latest"
 }
 
 // declaredVersionSpec returns the version specifier a declared version carries,
@@ -308,14 +303,13 @@ func (p *PoetryPyprojectParser) Parse(manifestFile string) ([]models.Package, er
 
 			name, version, ok := parsePep621Requirement(arrayItem)
 			if ok {
-				exact := resolveVersionWithLock(name, version, lockVersions)
-				resolvedVersion, versionSpec := versionspec.Result(exact, declaredVersionSpec(version), p.ReportVersionSpecs)
+				resolvedVersion := resolveVersionWithLock(name, version, lockVersions)
 				startIdx, endIdx := pyprojectLineIndices(raw, name)
 				packages = append(packages, models.Package{
 					PackageManager: "pypi",
 					PackageName:    name,
 					Version:        resolvedVersion,
-					VersionSpec:    versionSpec,
+					VersionSpec:    versionspec.Spec(declaredVersionSpec(version), resolvedVersion, p.ReportVersionSpecs),
 					FilePath:       manifestFile,
 					Locations: []models.Location{{
 						Line:       lineNum,
@@ -350,15 +344,14 @@ func (p *PoetryPyprojectParser) Parse(manifestFile string) ([]models.Package, er
 				skipUntilCloseBrace = true
 			}
 
-			exact := resolveVersionWithLock(name, version, lockVersions)
-			resolvedVersion, versionSpec := versionspec.Result(exact, declaredVersionSpec(version), p.ReportVersionSpecs)
+			resolvedVersion := resolveVersionWithLock(name, version, lockVersions)
 
 			startIdx, endIdx := pyprojectLineIndices(raw, name)
 			packages = append(packages, models.Package{
 				PackageManager: "pypi",
 				PackageName:    name,
 				Version:        resolvedVersion,
-				VersionSpec:    versionSpec,
+				VersionSpec:    versionspec.Spec(declaredVersionSpec(version), resolvedVersion, p.ReportVersionSpecs),
 				FilePath:       manifestFile,
 				Locations: []models.Location{{
 					Line:       lineNum,
@@ -379,14 +372,13 @@ func (p *PoetryPyprojectParser) Parse(manifestFile string) ([]models.Package, er
 				for _, part := range parts {
 					name, version, ok := parsePep621Requirement(part)
 					if ok {
-						exact := resolveVersionWithLock(name, version, lockVersions)
-						resolvedVersion, versionSpec := versionspec.Result(exact, declaredVersionSpec(version), p.ReportVersionSpecs)
+						resolvedVersion := resolveVersionWithLock(name, version, lockVersions)
 						startIdx, endIdx := pyprojectLineIndices(raw, name)
 						packages = append(packages, models.Package{
 							PackageManager: "pypi",
 							PackageName:    name,
 							Version:        resolvedVersion,
-							VersionSpec:    versionSpec,
+							VersionSpec:    versionspec.Spec(declaredVersionSpec(version), resolvedVersion, p.ReportVersionSpecs),
 							FilePath:       manifestFile,
 							Locations: []models.Location{{
 								Line:       lineNum,

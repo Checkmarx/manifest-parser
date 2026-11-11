@@ -16,6 +16,25 @@ type SetupCfgParser struct {
 	ReportVersionSpecs bool
 }
 
+func extractVersion(line string) string {
+	var version string
+	switch {
+	case strings.Contains(line, "=="):
+		parts := strings.SplitN(line, "==", 2)
+		if len(parts) == 2 {
+			version = strings.TrimSpace(parts[1])
+			if strings.Contains(version, "*") {
+				version = "latest"
+			}
+		} else {
+			version = "latest"
+		}
+	default:
+		version = "latest"
+	}
+	return version
+}
+
 func extractPackageName(line string, re *regexp.Regexp) (string, bool) {
 	if match := re.FindStringSubmatch(line); match != nil {
 		return match[1], true
@@ -93,14 +112,13 @@ func (p *SetupCfgParser) Parse(manifestFile string) ([]models.Package, error) {
 			if depLine != "" {
 				pkgName, ok := extractPackageName(depLine, re)
 				if ok {
-					exact, declared := versionspec.PEP508Version(depLine)
-					version, versionSpec := versionspec.Result(exact, declared, p.ReportVersionSpecs)
+					version := extractVersion(depLine)
 					startCol, endCol := computeIndices(raw, pkgName)
 					packages = append(packages, models.Package{
 						PackageManager: "pypi",
 						PackageName:    pkgName,
 						Version:        version,
-						VersionSpec:    versionSpec,
+						VersionSpec:    versionspec.Spec(versionspec.RequirementSpec(depLine), version, p.ReportVersionSpecs),
 						FilePath:       manifestFile,
 						Locations: []models.Location{{
 							Line:       lineNum,
@@ -128,14 +146,13 @@ func (p *SetupCfgParser) Parse(manifestFile string) ([]models.Package, error) {
 						if depLine != "" {
 							pkgName, ok := extractPackageName(depLine, re)
 							if ok {
-								exact, declared := versionspec.PEP508Version(depLine)
-								version, versionSpec := versionspec.Result(exact, declared, p.ReportVersionSpecs)
+								version := extractVersion(depLine)
 								startCol, endCol := computeIndices(raw, pkgName)
 								packages = append(packages, models.Package{
 									PackageManager: "pypi",
 									PackageName:    pkgName,
 									Version:        version,
-									VersionSpec:    versionSpec,
+									VersionSpec:    versionspec.Spec(versionspec.RequirementSpec(depLine), version, p.ReportVersionSpecs),
 									FilePath:       manifestFile,
 									Locations: []models.Location{{
 										Line:       lineNum,

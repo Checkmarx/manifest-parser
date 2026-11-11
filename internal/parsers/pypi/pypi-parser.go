@@ -131,6 +131,32 @@ func extractPackageName(line string, re *regexp.Regexp, lineNum int, manifestFil
 	return "", false
 }
 
+func extractVersion(line string) string {
+	var version string
+	switch {
+	case strings.Contains(line, "==="):
+		parts := strings.SplitN(line, "===", 2)
+		if len(parts) == 2 {
+			version = strings.TrimSpace(parts[1])
+		} else {
+			version = "latest"
+		}
+	case strings.Contains(line, "=="):
+		parts := strings.SplitN(line, "==", 2)
+		if len(parts) == 2 {
+			version = strings.TrimSpace(parts[1])
+			if strings.Contains(version, "*") {
+				version = "latest"
+			}
+		} else {
+			version = "latest"
+		}
+	default:
+		version = "latest"
+	}
+	return version
+}
+
 // vcsSchemes lists VCS prefixes used in pip requirements.
 var vcsSchemes = []string{"git+", "hg+", "svn+", "bzr+"}
 
@@ -269,7 +295,9 @@ func (p *PypiParser) Parse(manifestFile string) ([]models.Package, error) {
 			line = strings.TrimSpace(line)
 		}
 
-		var pkgName, exact, declared string
+		var pkgName string
+		var version string
+		var declared string
 
 		switch {
 		case isURLRequirement(line):
@@ -278,16 +306,16 @@ func (p *PypiParser) Parse(manifestFile string) ([]models.Package, error) {
 				log.Printf("Skipping URL line %d in %s: no package name found", ll.firstLine, manifestFile)
 				continue
 			}
+			version = "latest"
 		default:
 			var ok bool
 			pkgName, ok = extractPackageName(line, re, ll.firstLine, manifestFile)
 			if !ok {
 				continue
 			}
-			exact, declared = versionspec.PEP508Version(line)
+			version = extractVersion(line)
+			declared = versionspec.RequirementSpec(line)
 		}
-
-		version, versionSpec := versionspec.Result(exact, declared, p.ReportVersionSpecs)
 
 		// Strip trailing backslash from the raw first line before computing indices
 		rawForIndices := strings.TrimRight(ll.rawFirst, " \t\\")
@@ -297,7 +325,7 @@ func (p *PypiParser) Parse(manifestFile string) ([]models.Package, error) {
 			PackageManager: "pypi",
 			PackageName:    pkgName,
 			Version:        version,
-			VersionSpec:    versionSpec,
+			VersionSpec:    versionspec.Spec(declared, version, p.ReportVersionSpecs),
 			FilePath:       manifestFile,
 			Locations: []models.Location{{
 				Line:       ll.firstLine,

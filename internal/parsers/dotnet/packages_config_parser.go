@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/Checkmarx/manifest-parser/internal/versionspec"
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
 
@@ -25,6 +26,20 @@ type PackageConfig struct {
 }
 
 const PackageTag = "package"
+
+// parseVersionConfig handles version resolution for packages.config
+func parseVersionConfig(version string) string {
+	if version == "" {
+		return "latest"
+	}
+	if strings.ContainsAny(version, "[]()") {
+		return "latest"
+	}
+	if strings.ContainsAny(version, "*^~><") {
+		return "latest"
+	}
+	return version
+}
 
 // computePackageLocations calculates all locations for a package element
 func computePackageLocations(lines []string, startLine int) []models.Location {
@@ -170,12 +185,11 @@ func (p *DotnetPackagesConfigParser) Parse(manifestFile string) ([]models.Packag
 			version = pkg.VersionNested
 		}
 
-		resolved, versionSpec := nugetVersion(version, p.ReportVersionSpecs)
 		packages = append(packages, models.Package{
 			PackageManager: "nuget",
 			PackageName:    pkg.ID,
-			Version:        resolved,
-			VersionSpec:    versionSpec,
+			Version:        parseVersionConfig(version),
+			VersionSpec:    versionspec.Spec(version, parseVersionConfig(version), p.ReportVersionSpecs),
 			FilePath:       manifestFile,
 			Locations:      locations,
 		})

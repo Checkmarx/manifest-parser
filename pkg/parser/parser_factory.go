@@ -53,7 +53,7 @@ func ParsersFactoryWithOptions(manifest string, opts ...Option) Parser {
 	case GradleBuild:
 		return &gradle.GradleParser{ReportVersionSpecs: o.versionSpecs}
 	case GradleVersionCatalog:
-		return &gradle.VersionCatalogParser{ReportVersionSpecs: o.versionSpecs}
+		return &gradle.VersionCatalogParser{}
 	case SbtBuild:
 		return &sbt.SbtParser{}
 	case SwiftPackage:

@@ -166,15 +166,14 @@ func (p *NpmPackageJsonParser) Parse(manifestFile string) ([]models.Package, err
 	// Process all dependency types
 	processDeps := func(depMap map[string]string, depType string) {
 		for name, version := range depMap {
-			_, declaredSpec := versionspec.Classify("npm", version)
-			resolvedVersion, versionSpec := versionspec.Result(exactVersion(name, version, lock), declaredSpec, p.ReportVersionSpecs)
+			resolvedVersion := getResolvedVersion(name, version, lock)
 			lineStart, startIndex, endIndex := findPositions(string(fileContent), name, depType)
 
 			results = append(results, models.Package{
 				PackageManager: "npm",
 				PackageName:    name,
 				Version:        resolvedVersion,
-				VersionSpec:    versionSpec,
+				VersionSpec:    versionspec.Spec(version, resolvedVersion, p.ReportVersionSpecs),
 				FilePath:       manifestFile,
 				Locations: []models.Location{{
 					Line:       lineStart,
@@ -198,28 +197,14 @@ func (p *NpmPackageJsonParser) Parse(manifestFile string) ([]models.Package, err
 	return results, nil
 }
 
-// getResolvedVersion returns the exact version of a declared npm version, or
-// "latest" when there is none (see exactVersion).
+// - Returns the exact version directly if specified in package.json
+// - Looks up in package-lock.json if version contains range specifiers
+// - Falls back to sensible defaults if necessary
 func getResolvedVersion(name, specVersion string, lock lockFile) string {
-	if version := exactVersion(name, specVersion, lock); version != "" {
-		return version
-	}
+	// Check if version is already exact - if so, return it directly
 
-	return versionspec.Latest
-}
-
-// exactVersion returns the exact version of a declared npm version: the
-// declared one when it is exact, else the one package-lock.json or yarn.lock
-// resolves it to. It returns "" when there is none, and never looks a source
-// (file:, git+, workspace:, npm: aliases) up in the lock files.
-func exactVersion(name, specVersion string, lock lockFile) string {
-	exact, spec := versionspec.Classify("npm", specVersion)
-	if exact != "" {
-		return exact
-	}
-
-	if spec == "" {
-		return ""
+	if !checkRangeSpecifiersPresent(specVersion) && !strings.Contains(specVersion, "latest") {
+		return specVersion
 	}
 
 	// Try v1 format first
@@ -252,7 +237,13 @@ func exactVersion(name, specVersion string, lock lockFile) string {
 		}
 	}
 
-	return ""
+	// For version specifiers, return "latest" as fallback
+
+	if checkRangeSpecifiersPresent(specVersion) {
+		return "latest"
+	}
+	// Otherwise return the specified version
+	return specVersion
 }
 func isLockVersionGreater(specVersion, lockVersion string) bool {
 	specVersion = stripRangeSpecifier(specVersion)

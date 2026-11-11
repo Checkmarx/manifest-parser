@@ -202,7 +202,7 @@ func TestMavenPomParser_Parse(t *testing.T) {
 				{
 					PackageManager: "mvn",
 					PackageName:    "org.springframework:spring-core",
-					Version:        "latest",
+					Version:        "${spring.version}${version.suffix}",
 					Locations: []models.Location{
 						{Line: 8, StartIndex: 8, EndIndex: 20},
 						{Line: 9, StartIndex: 12, EndIndex: 50},
@@ -286,7 +286,7 @@ func TestParseVersion(t *testing.T) {
 			name:     "version range",
 			version:  "[1.2.3,2.0.0)",
 			props:    make(map[string]string),
-			expected: "[1.2.3,2.0.0)",
+			expected: "latest",
 		},
 		{
 			name:     "property substitution",
@@ -328,7 +328,7 @@ func TestParseVersion(t *testing.T) {
 			},
 			groupId:    "org.example",
 			artifactId: "test-lib",
-			expected:   "[1.0.0,2.0.0)",
+			expected:   "latest",
 		},
 		{
 			name:    "managed dependency with property",

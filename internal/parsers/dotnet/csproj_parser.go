@@ -19,16 +19,6 @@ type DotnetCsprojParser struct {
 	ReportVersionSpecs bool
 }
 
-// nugetVersion returns the Version and VersionSpec of a declared NuGet version:
-// the exact version when the declaration names one, else "latest" with the
-// declared range when reportSpecs is set. A missing version, a range, a
-// wildcard or an unresolved MSBuild property is "latest".
-func nugetVersion(declared string, reportSpecs bool) (version, versionSpec string) {
-	exact, spec := versionspec.Classify("nuget", declared)
-
-	return versionspec.Result(exact, spec, reportSpecs)
-}
-
 // PackageReference represents a package reference in the .csproj file
 type PackageReference struct {
 	Include       string `xml:"Include,attr"`
@@ -39,6 +29,30 @@ type PackageReference struct {
 // PackageReferenceTag is the XML tag for package references in .csproj files
 const PackageReferenceTag = "PackageReference"
 
+// parseVersion handles version resolution
+// - Returns exact version if specified
+// - Returns "latest" for version ranges or special version specifiers
+func parseVersion(version string) string {
+	// Handle empty version
+	if version == "" {
+		return "latest"
+	}
+
+	// If the version contains any kind of brackets, return "latest"
+	if strings.ContainsAny(version, "[]()") {
+		return "latest"
+	}
+
+	// Handle special version specifiers
+	if strings.ContainsAny(version, "*^~><") {
+		return "latest"
+	}
+
+	// Return exact version
+	return version
+}
+
+// computeLocations calculates all locations for a PackageReference element
 func computeLocations(lines []string, startLine int) []models.Location {
 	var locations []models.Location
 	currentLine := lines[startLine]
@@ -169,12 +183,11 @@ func (p *DotnetCsprojParser) Parse(manifestFile string) ([]models.Package, error
 				}
 
 				// Create package entry
-				resolved, versionSpec := nugetVersion(version, p.ReportVersionSpecs)
 				packages = append(packages, models.Package{
 					PackageManager: "nuget",
 					PackageName:    pkgRef.Include,
-					Version:        resolved,
-					VersionSpec:    versionSpec,
+					Version:        parseVersion(version),
+					VersionSpec:    versionspec.Spec(version, parseVersion(version), p.ReportVersionSpecs),
 					FilePath:       manifestFile,
 					Locations:      locations,
 				})

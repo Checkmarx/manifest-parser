@@ -222,9 +222,9 @@ func TestParseVersion(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, _ := nugetVersion(tt.version, false)
+			result := parseVersion(tt.version)
 			if result != tt.expected {
-				t.Errorf("nugetVersion(%q) = %q, want %q", tt.version, result, tt.expected)
+				t.Errorf("parseVersion(%q) = %q, want %q", tt.version, result, tt.expected)
 			}
 		})
 	}

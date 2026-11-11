@@ -722,26 +722,17 @@ p := parser.ParsersFactoryWithOptions("package.json", parser.WithVersionSpecs())
 
 The CLI takes the same option as `-version-specs`. `VersionSpec` is only filled
 for npm, PyPI, Maven, Gradle and NuGet manifests; other parsers ignore the
-option. It is never set alongside an exact `Version`, and it is left out of JSON
-when empty.
+option. It is only set where `Version` is `"latest"`, and it is left out of JSON
+when empty. Without the option the output is exactly what it was before.
 
-### Behaviour changes
+`VersionSpec` is the declaration as written, not a checked range: a package
+that names a source other than a registry (`workspace:*`, `$(Property)`) reports
+that text, and the caller decides what to do with it.
 
-Values that were reported as exact versions but aren't now report `"latest"`
-(their range is in `VersionSpec` when the option is on):
-
-- npm: `1.x`, `1.2.x`, `1 || 2`, `1.0` (not a full semver), `file:`, `git+`,
-  `github:`, `workspace:`, `npm:` aliases.
-- PyPI: `pkg==1.0,<2` (was `1.0,<2`).
-- Maven: `LATEST`, `RELEASE`, a `${property}` that doesn't resolve (was the
-  literal `${property}`). A partly interpolated version such as `1.${x}` is
-  resolved where `x` is defined.
-- Gradle: `1.+`, `[2.0,3.0)` and `latest.release` in a version catalog (were
-  verbatim); an unresolved `$variable`, and a bare identifier used as a
-  version (was the identifier's name).
-
-In `setup.py` and `setup.cfg`, environment markers (`; python_version < "3.8"`)
-and inline comments no longer end up in a version.
+Some parsers already pass a non-exact value through as the version: npm `1.x`
+or `file:../x`, Maven `LATEST` or an unresolved `${property}`, Gradle `1.+` in a
+version catalog or `latest.release`. Those stay in `Version`, unchanged, and get
+no `VersionSpec`; telling them from exact versions is up to the caller.
 
 ### JSON Output Example
 

@@ -57,7 +57,7 @@ func (p *GradleParser) Parse(manifestFile string) ([]models.Package, error) {
 
 	// Parse version catalog dependencies (libs.xxx references)
 	if catalog != nil {
-		catalogDeps := parseVersionCatalogDependencies(manifestContent, catalog, p.ReportVersionSpecs)
+		catalogDeps := parseVersionCatalogDependencies(manifestContent, catalog)
 		for i := range catalogDeps {
 			catalogDeps[i].FilePath = manifestFile
 		}
@@ -317,12 +317,12 @@ func parseDependencyStatement(statement string, variables map[string]string, rep
 			}
 
 			if group != "" && name != "" {
-				resolved, versionSpec := gradleVersion(version, reportSpecs)
+				cleaned := cleanVersion(version)
 				packages = append(packages, models.Package{
 					PackageManager: "gradle",
 					PackageName:    group + ":" + name,
-					Version:        resolved,
-					VersionSpec:    versionSpec,
+					Version:        cleaned,
+					VersionSpec:    versionspec.Spec(version, cleaned, reportSpecs),
 					FilePath:       "",
 					Locations:      []models.Location{{}},
 				})
@@ -347,15 +347,10 @@ func parseDependencyKeyValue(statement string, variables map[string]string, repo
 		regexp.MustCompile(`(?i)(group|name|version)\s*[:=]\s*([A-Za-z_][A-Za-z0-9_]*)`),
 	}
 
-	for i, pattern := range patterns {
+	for _, pattern := range patterns {
 		for _, match := range pattern.FindAllStringSubmatch(statement, -1) {
 			if len(match) > 2 {
 				key := strings.ToLower(match[1])
-				// A bare identifier is a reference to a variable this parser can't
-				// follow (only "$name" forms are resolved), so it isn't a version.
-				if i == 1 && key == "version" {
-					continue
-				}
 				value := match[2]
 				fields[key] = resolveVariables(value, variables)
 			}
@@ -366,13 +361,13 @@ func parseDependencyKeyValue(statement string, variables map[string]string, repo
 		return nil
 	}
 
-	resolved, versionSpec := gradleVersion(fields["version"], reportSpecs)
+	cleaned := cleanVersion(fields["version"])
 
 	return &models.Package{
 		PackageManager: "gradle",
 		PackageName:    fields["group"] + ":" + fields["name"],
-		Version:        resolved,
-		VersionSpec:    versionSpec,
+		Version:        cleaned,
+		VersionSpec:    versionspec.Spec(fields["version"], cleaned, reportSpecs),
 		FilePath:       "",
 		Locations:      []models.Location{{}},
 	}
@@ -403,14 +398,17 @@ func resolveVariables(str string, variables map[string]string) string {
 	return str
 }
 
-// gradleVersion returns the Version and VersionSpec of a declared Gradle
-// version: the exact version, else "latest" with the declared range when
-// reportSpecs is set. A missing version or an unresolved variable is "latest"
-// with no range.
-func gradleVersion(declared string, reportSpecs bool) (version, versionSpec string) {
-	exact, spec := versionspec.Classify("gradle", declared)
-
-	return versionspec.Result(exact, spec, reportSpecs)
+// cleanVersion handles version ranges and classifiers
+func cleanVersion(version string) string {
+	if version == "" {
+		return "latest"
+	}
+	// Check for any range or wildcard patterns
+	if strings.ContainsAny(version, "[]()^~*><") || strings.Contains(version, "+") {
+		return "latest"
+	}
+	// For now, keep classifiers as is
+	return version
 }
 
 // findLineNumber finds the line number of a substring in content

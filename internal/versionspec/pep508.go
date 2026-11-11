@@ -34,27 +34,10 @@ func ParsePEP508(requirement string) (name, spec string, ok bool) {
 	return match[1], spec, true
 }
 
-// PEP508Version returns the exact version a requirement pins with "==" or
-// "===", or "" when it pins none, and the version specifier the requirement
-// declares ("" when it has none). A range, a wildcard, or a pin that isn't a
-// single version, such as "==1.0,<2", gives no exact version.
-func PEP508Version(requirement string) (exact, declared string) {
-	_, spec, ok := ParsePEP508(requirement)
-	if !ok || spec == "" {
-		return "", ""
-	}
+// RequirementSpec returns the version specifier of a PEP 508 requirement, or ""
+// when it declares none or isn't a plain named requirement.
+func RequirementSpec(requirement string) string {
+	_, spec, _ := ParsePEP508(requirement)
 
-	var pinned string
-	switch {
-	case strings.HasPrefix(spec, "==="):
-		pinned = strings.TrimSpace(spec[3:])
-	case strings.HasPrefix(spec, "=="):
-		pinned = strings.TrimSpace(spec[2:])
-	default:
-		return "", spec
-	}
-
-	exact, _ = Classify("pypi", pinned)
-
-	return exact, spec
+	return spec
 }

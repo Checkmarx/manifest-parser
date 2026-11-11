@@ -14,7 +14,9 @@ type want struct{ version, spec string }
 
 // versionFixtures holds, per dependency file, the packages it declares and what
 // each one reports. Every case is run with WithVersionSpecs off and on: Version
-// is the same both ways, and VersionSpec is set only when the option is on.
+// is the same both ways, and VersionSpec is set only when the option is on and
+// Version is "latest". A value a parser passes through as if it were exact
+// ("1.x", "LATEST", "file:../x") stays in Version and gets no VersionSpec.
 var versionFixtures = []struct {
 	file    string
 	content string
@@ -27,9 +29,9 @@ var versionFixtures = []struct {
 		want: map[string]want{
 			"exact": {"4.0.0", ""},
 			"caret": {"latest", "^4.0.0"},
-			"x":     {"latest", "1.x"},
-			"file":  {"latest", ""},
-			"git":   {"latest", ""},
+			"x":     {"1.x", ""},
+			"file":  {"file:../langchain", ""},
+			"git":   {"git+https://github.com/x/y.git", ""},
 			"star":  {"latest", "*"},
 		},
 	},
@@ -40,7 +42,7 @@ var versionFixtures = []struct {
 			"exact":  {"4.0.0", ""},
 			"ranged": {"latest", ">=1.0,<2"},
 			"wild":   {"latest", "==1.*"},
-			"multi":  {"latest", "==1.0,<2"},
+			"multi":  {"1.0,<2", ""},
 			"bare":   {"latest", ""},
 		},
 	},
@@ -64,12 +66,12 @@ git = { git = "https://github.com/x/y.git" }
 install_requires =
     exact==4.0.0
     ranged>=1.0,<2
-    marked==1.0; python_version < "3.8"
+    bare
 `,
 		want: map[string]want{
 			"exact":  {"4.0.0", ""},
 			"ranged": {"latest", ">=1.0,<2"},
-			"marked": {"1.0", ""},
+			"bare":   {"latest", ""},
 		},
 	},
 	{
@@ -90,10 +92,15 @@ setup(
 		file: "pom.xml",
 		content: `<project><groupId>g</groupId><artifactId>a</artifactId><version>1</version>
 <properties><openai.version>0.7.2</openai.version><range>[1.0,2.0)</range></properties>
+<dependencyManagement><dependencies>
+<dependency><groupId>g</groupId><artifactId>managed</artifactId><version>[1.0,2.0)</version></dependency>
+</dependencies></dependencyManagement>
 <dependencies>
 <dependency><groupId>g</groupId><artifactId>exact</artifactId><version>4.0.0</version></dependency>
 <dependency><groupId>g</groupId><artifactId>prop</artifactId><version>${openai.version}</version></dependency>
 <dependency><groupId>g</groupId><artifactId>range</artifactId><version>${range}</version></dependency>
+<dependency><groupId>g</groupId><artifactId>managed</artifactId></dependency>
+<dependency><groupId>g</groupId><artifactId>none</artifactId></dependency>
 <dependency><groupId>g</groupId><artifactId>latest</artifactId><version>LATEST</version></dependency>
 <dependency><groupId>g</groupId><artifactId>missing</artifactId><version>${missing}</version></dependency>
 </dependencies></project>`,
@@ -101,8 +108,10 @@ setup(
 			"g:exact":   {"4.0.0", ""},
 			"g:prop":    {"0.7.2", ""},
 			"g:range":   {"latest", "[1.0,2.0)"},
-			"g:latest":  {"latest", "LATEST"},
-			"g:missing": {"latest", ""},
+			"g:managed": {"latest", "[1.0,2.0)"},
+			"g:none":    {"latest", ""},
+			"g:latest":  {"LATEST", ""},
+			"g:missing": {"${missing}", ""},
 		},
 	},
 	{
@@ -116,8 +125,8 @@ setup(
 		want: map[string]want{
 			"g:exact":      {"4.0.0", ""},
 			"g:range":      {"latest", "1.+"},
-			"g:dynamic":    {"latest", "latest.release"},
-			"g:unresolved": {"latest", ""},
+			"g:dynamic":    {"latest.release", ""},
+			"g:unresolved": {"$undefinedVersion", ""},
 		},
 	},
 	{
@@ -133,8 +142,8 @@ dynamic = { group = "g", name = "dynamic", version = "1.+" }
 `,
 		want: map[string]want{
 			"g:exact":   {"1.0.0", ""},
-			"g:ranged":  {"latest", "[1.0,2.0)"},
-			"g:dynamic": {"latest", "1.+"},
+			"g:ranged":  {"[1.0,2.0)", ""},
+			"g:dynamic": {"1.+", ""},
 		},
 	},
 	{
@@ -149,7 +158,7 @@ dynamic = { group = "g", name = "dynamic", version = "1.+" }
 			"Exact": {"4.0.0", ""},
 			"Caret": {"latest", "^4.0.0"},
 			"Range": {"latest", "[1.0,2.0)"},
-			"Prop":  {"latest", ""},
+			"Prop":  {"latest", "$(OpenAIVersion)"},
 		},
 	},
 	{
