@@ -154,7 +154,7 @@ dependencies {
 // build.gradle.kts
 subprojects {
     apply(plugin = "java")
-    
+
     dependencies {
         implementation("org.springframework.boot:spring-boot-starter-web")
     }
@@ -723,16 +723,11 @@ p := parser.ParsersFactoryWithOptions("package.json", parser.WithVersionSpecs())
 The CLI takes the same option as `-version-specs`. `VersionSpec` is only filled
 for npm, PyPI, Maven, Gradle and NuGet manifests; other parsers ignore the
 option. It is only set where `Version` is `"latest"`, and it is left out of JSON
-when empty. Without the option the output is exactly what it was before.
+when empty.
 
 `VersionSpec` is the declaration as written, not a checked range: a package
 that names a source other than a registry (`workspace:*`, `$(Property)`) reports
 that text, and the caller decides what to do with it.
-
-Some parsers already pass a non-exact value through as the version: npm `1.x`
-or `file:../x`, Maven `LATEST` or an unresolved `${property}`, Gradle `1.+` in a
-version catalog or `latest.release`. Those stay in `Version`, unchanged, and get
-no `VersionSpec`; telling them from exact versions is up to the caller.
 
 ### JSON Output Example
 

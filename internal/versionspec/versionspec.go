@@ -1,5 +1,3 @@
-// Package versionspec decides the VersionSpec a parser reports: the version a
-// dependency is declared with, for a dependency whose Version is "latest".
 package versionspec
 
 import "strings"
