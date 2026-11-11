@@ -6,28 +6,14 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/Checkmarx/manifest-parser/internal/versionspec"
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
 
-type SetupCfgParser struct{}
-
-func extractVersion(line string) string {
-	var version string
-	switch {
-	case strings.Contains(line, "=="):
-		parts := strings.SplitN(line, "==", 2)
-		if len(parts) == 2 {
-			version = strings.TrimSpace(parts[1])
-			if strings.Contains(version, "*") {
-				version = "latest"
-			}
-		} else {
-			version = "latest"
-		}
-	default:
-		version = "latest"
-	}
-	return version
+type SetupCfgParser struct {
+	// ReportVersionSpecs sets Package.VersionSpec to the declared range when no
+	// exact version is known. See parser.WithVersionSpecs.
+	ReportVersionSpecs bool
 }
 
 func extractPackageName(line string, re *regexp.Regexp) (string, bool) {
@@ -107,12 +93,14 @@ func (p *SetupCfgParser) Parse(manifestFile string) ([]models.Package, error) {
 			if depLine != "" {
 				pkgName, ok := extractPackageName(depLine, re)
 				if ok {
-					version := extractVersion(depLine)
+					exact, declared := versionspec.PEP508Version(depLine)
+					version, versionSpec := versionspec.Result(exact, declared, p.ReportVersionSpecs)
 					startCol, endCol := computeIndices(raw, pkgName)
 					packages = append(packages, models.Package{
 						PackageManager: "pypi",
 						PackageName:    pkgName,
 						Version:        version,
+						VersionSpec:    versionSpec,
 						FilePath:       manifestFile,
 						Locations: []models.Location{{
 							Line:       lineNum,
@@ -140,12 +128,14 @@ func (p *SetupCfgParser) Parse(manifestFile string) ([]models.Package, error) {
 						if depLine != "" {
 							pkgName, ok := extractPackageName(depLine, re)
 							if ok {
-								version := extractVersion(depLine)
+								exact, declared := versionspec.PEP508Version(depLine)
+								version, versionSpec := versionspec.Result(exact, declared, p.ReportVersionSpecs)
 								startCol, endCol := computeIndices(raw, pkgName)
 								packages = append(packages, models.Package{
 									PackageManager: "pypi",
 									PackageName:    pkgName,
 									Version:        version,
+									VersionSpec:    versionSpec,
 									FilePath:       manifestFile,
 									Locations: []models.Location{{
 										Line:       lineNum,

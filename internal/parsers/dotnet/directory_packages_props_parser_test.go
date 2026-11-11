@@ -32,9 +32,9 @@ func TestParseVersionProps(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := parseVersionProps(tt.version)
+			result, _ := nugetVersion(tt.version, false)
 			if result != tt.expected {
-				t.Errorf("parseVersionProps(%q) = %q, want %q", tt.version, result, tt.expected)
+				t.Errorf("nugetVersion(%q) = %q, want %q", tt.version, result, tt.expected)
 			}
 		})
 	}

@@ -37,6 +37,9 @@ func ComparePackages(t *testing.T, got, want models.Package) {
 	if got.Version != want.Version {
 		t.Errorf("Version: got %q, want %q", got.Version, want.Version)
 	}
+	if got.VersionSpec != want.VersionSpec {
+		t.Errorf("VersionSpec: got %q, want %q", got.VersionSpec, want.VersionSpec)
+	}
 	if got.FilePath != want.FilePath {
 		t.Errorf("FilePath: got %q, want %q", got.FilePath, want.FilePath)
 	}

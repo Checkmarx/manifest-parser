@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Checkmarx/manifest-parser/internal/versionspec"
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
 
@@ -42,7 +43,11 @@ type lockFile struct {
 }
 
 // NpmParser extracts packages with position information from package.json
-type NpmPackageJsonParser struct{}
+type NpmPackageJsonParser struct {
+	// ReportVersionSpecs sets Package.VersionSpec to the declared range when no
+	// exact version is known. See parser.WithVersionSpecs.
+	ReportVersionSpecs bool
+}
 
 // Extract line and character positions for a key in JSON within a specific section
 func findPositions(fileContent string, key string, sectionName string) (lineStart, startIndex, endIndex int) {
@@ -161,13 +166,15 @@ func (p *NpmPackageJsonParser) Parse(manifestFile string) ([]models.Package, err
 	// Process all dependency types
 	processDeps := func(depMap map[string]string, depType string) {
 		for name, version := range depMap {
-			resolvedVersion := getResolvedVersion(name, version, lock)
+			_, declaredSpec := versionspec.Classify("npm", version)
+			resolvedVersion, versionSpec := versionspec.Result(exactVersion(name, version, lock), declaredSpec, p.ReportVersionSpecs)
 			lineStart, startIndex, endIndex := findPositions(string(fileContent), name, depType)
 
 			results = append(results, models.Package{
 				PackageManager: "npm",
 				PackageName:    name,
 				Version:        resolvedVersion,
+				VersionSpec:    versionSpec,
 				FilePath:       manifestFile,
 				Locations: []models.Location{{
 					Line:       lineStart,
@@ -191,14 +198,28 @@ func (p *NpmPackageJsonParser) Parse(manifestFile string) ([]models.Package, err
 	return results, nil
 }
 
-// - Returns the exact version directly if specified in package.json
-// - Looks up in package-lock.json if version contains range specifiers
-// - Falls back to sensible defaults if necessary
+// getResolvedVersion returns the exact version of a declared npm version, or
+// "latest" when there is none (see exactVersion).
 func getResolvedVersion(name, specVersion string, lock lockFile) string {
-	// Check if version is already exact - if so, return it directly
+	if version := exactVersion(name, specVersion, lock); version != "" {
+		return version
+	}
 
-	if !checkRangeSpecifiersPresent(specVersion) && !strings.Contains(specVersion, "latest") {
-		return specVersion
+	return versionspec.Latest
+}
+
+// exactVersion returns the exact version of a declared npm version: the
+// declared one when it is exact, else the one package-lock.json or yarn.lock
+// resolves it to. It returns "" when there is none, and never looks a source
+// (file:, git+, workspace:, npm: aliases) up in the lock files.
+func exactVersion(name, specVersion string, lock lockFile) string {
+	exact, spec := versionspec.Classify("npm", specVersion)
+	if exact != "" {
+		return exact
+	}
+
+	if spec == "" {
+		return ""
 	}
 
 	// Try v1 format first
@@ -231,13 +252,7 @@ func getResolvedVersion(name, specVersion string, lock lockFile) string {
 		}
 	}
 
-	// For version specifiers, return "latest" as fallback
-
-	if checkRangeSpecifiersPresent(specVersion) {
-		return "latest"
-	}
-	// Otherwise return the specified version
-	return specVersion
+	return ""
 }
 func isLockVersionGreater(specVersion, lockVersion string) bool {
 	specVersion = stripRangeSpecifier(specVersion)

@@ -19,28 +19,41 @@ import (
 	"github.com/Checkmarx/manifest-parser/internal/parsers/swiftpm"
 )
 
+// ParsersFactory returns the parser for manifest, or nil when there is none.
+// It is ParsersFactoryWithOptions without options.
 func ParsersFactory(manifest string) Parser {
+	return ParsersFactoryWithOptions(manifest)
+}
+
+// ParsersFactoryWithOptions returns the parser for manifest, built with opts,
+// or nil when there is none.
+func ParsersFactoryWithOptions(manifest string, opts ...Option) Parser {
+	var o options
+	for _, opt := range opts {
+		opt(&o)
+	}
+
 	manifestType := selectManifestFile(manifest)
 
 	switch manifestType {
 	case MavenPom:
-		return &maven.MavenPomParser{}
+		return &maven.MavenPomParser{ReportVersionSpecs: o.versionSpecs}
 	case DotnetCsproj:
-		return &dotnet.DotnetCsprojParser{}
+		return &dotnet.DotnetCsprojParser{ReportVersionSpecs: o.versionSpecs}
 	case DotnetDirectoryPackagesProps:
-		return &dotnet.DotnetDirectoryPackagesPropsParser{}
+		return &dotnet.DotnetDirectoryPackagesPropsParser{ReportVersionSpecs: o.versionSpecs}
 	case PypiRequirements:
-		return &pypi.PypiParser{}
+		return &pypi.PypiParser{ReportVersionSpecs: o.versionSpecs}
 	case NpmPackageJson:
-		return &npm.NpmPackageJsonParser{}
+		return &npm.NpmPackageJsonParser{ReportVersionSpecs: o.versionSpecs}
 	case DotnetPackagesConfig:
-		return &dotnet.DotnetPackagesConfigParser{}
+		return &dotnet.DotnetPackagesConfigParser{ReportVersionSpecs: o.versionSpecs}
 	case GoMod:
 		return &golang.GoModParser{}
 	case GradleBuild:
-		return &gradle.GradleParser{}
+		return &gradle.GradleParser{ReportVersionSpecs: o.versionSpecs}
 	case GradleVersionCatalog:
-		return &gradle.VersionCatalogParser{}
+		return &gradle.VersionCatalogParser{ReportVersionSpecs: o.versionSpecs}
 	case SbtBuild:
 		return &sbt.SbtParser{}
 	case SwiftPackage:
@@ -56,11 +69,11 @@ func ParsersFactory(manifest string) Parser {
 	case BowerJson:
 		return &bower.BowerJsonParser{}
 	case SetuptoolsSetupCfg:
-		return &setuptools.SetupCfgParser{}
+		return &setuptools.SetupCfgParser{ReportVersionSpecs: o.versionSpecs}
 	case SetuptoolsSetupPy:
-		return &setuptools.SetupPyParser{}
+		return &setuptools.SetupPyParser{ReportVersionSpecs: o.versionSpecs}
 	case PoetryPyproject:
-		return &poetry.PoetryPyprojectParser{}
+		return &poetry.PoetryPyprojectParser{ReportVersionSpecs: o.versionSpecs}
 	case DartPubspec:
 		return &dart.DartParser{}
 	default:

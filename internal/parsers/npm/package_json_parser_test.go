@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/Checkmarx/manifest-parser/internal/testdata"
@@ -584,7 +583,7 @@ func TestCorruptedPackageLock(t *testing.T) {
 	}
 }
 
-// Direct test of getResolvedVersion function - optional if the function can be accessed directly
+// TestGetResolvedVersionDirectly tests the real getResolvedVersion against a v2 lock file.
 func TestGetResolvedVersionDirectly(t *testing.T) {
 	// Create the function being tested
 	var lock lockFile
@@ -597,46 +596,6 @@ func TestGetResolvedVersionDirectly(t *testing.T) {
 		}
 	}`), &lock); err != nil {
 		t.Fatalf("failed to create test lock file: %v", err)
-	}
-
-	getResolvedVersion := func(name, specVersion string) string {
-		// Check if version is already exact
-		if !strings.HasPrefix(specVersion, "^") &&
-			!strings.HasPrefix(specVersion, "~") &&
-			!strings.Contains(specVersion, "*") &&
-			!strings.Contains(specVersion, ">") &&
-			!strings.Contains(specVersion, "<") &&
-			!strings.Contains(specVersion, "latest") {
-			return specVersion
-		}
-
-		// Search in v2 format
-		if pkgs := lock.Packages; pkgs != nil {
-			pathVariations := []string{
-				"node_modules/" + name,
-				"node_modules/" + name + "@" + specVersion,
-				"node_modules/" + name + "@" + strings.TrimPrefix(specVersion, "^"),
-				"node_modules/" + name + "@" + strings.TrimPrefix(specVersion, "~"),
-				"", // Root package
-			}
-
-			for _, path := range pathVariations {
-				if entry, ok := pkgs[path]; ok && entry.Version != "" {
-					return entry.Version
-				}
-			}
-		}
-
-		// Default fallback
-		if strings.HasPrefix(specVersion, "^") ||
-			strings.HasPrefix(specVersion, "~") ||
-			strings.Contains(specVersion, "*") ||
-			strings.Contains(specVersion, ">") ||
-			strings.Contains(specVersion, "<") {
-			return "latest"
-		}
-
-		return specVersion
 	}
 
 	// Test cases
@@ -656,7 +615,7 @@ func TestGetResolvedVersionDirectly(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			result := getResolvedVersion(tc.pkgName, tc.version)
+			result := getResolvedVersion(tc.pkgName, tc.version, lock)
 			if result != tc.expected {
 				t.Errorf("getResolvedVersion(%q, %q): expected %q, got %q",
 					tc.pkgName, tc.version, tc.expected, result)

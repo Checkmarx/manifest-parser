@@ -7,13 +7,18 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/Checkmarx/manifest-parser/internal/versionspec"
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
 
 // PoetryPyprojectParser parses pyproject.toml: Poetry's own tables, plus the
 // PEP 621/735 sections uv (and other PEP 621 tools) use — uv has no manifest
 // format of its own, so it has no dedicated parser.
-type PoetryPyprojectParser struct{}
+type PoetryPyprojectParser struct {
+	// ReportVersionSpecs sets Package.VersionSpec to the declared range when no
+	// exact version is known. See parser.WithVersionSpecs.
+	ReportVersionSpecs bool
+}
 
 var (
 	groupDepSectionRe         = regexp.MustCompile(`^\[tool\.poetry\.group\.[^.]+\.dependencies\]$`)
@@ -166,20 +171,25 @@ func loadLockVersions(manifestDir string) map[string]string {
 	return lockVersions
 }
 
-// resolveVersionWithLock resolves version using poetry.lock/uv.lock if available.
+// resolveVersionWithLock returns the exact version of a declared version, from
+// the declaration itself or else poetry.lock/uv.lock, or "" when there is none.
 // "latest" is the callers' sentinel for "no specifier given", not a real version,
 // so it must still go through lock resolution rather than being returned as-is.
 func resolveVersionWithLock(pkgName, version string, lockVersions map[string]string) string {
 	if version != "latest" && !strings.ContainsAny(version, "^~><,!=;*") {
-		return version
+		exact, _ := versionspec.Classify("pypi", version)
+		return exact
 	}
 
-	if strings.HasPrefix(version, "===") {
-		return strings.TrimSpace(version[3:])
-	}
-	if strings.HasPrefix(version, "==") {
-		// "==1.*" is a wildcard match, not an exact pin, so it still needs the lock.
-		if exact := strings.TrimSpace(version[2:]); !strings.Contains(exact, "*") {
+	// "==1.0" pins an exact version; "==1.0,<2" and "==1.*" don't, so they still
+	// need the lock.
+	switch {
+	case strings.HasPrefix(version, "==="):
+		if exact, _ := versionspec.Classify("pypi", version[3:]); exact != "" {
+			return exact
+		}
+	case strings.HasPrefix(version, "=="):
+		if exact, _ := versionspec.Classify("pypi", version[2:]); exact != "" {
 			return exact
 		}
 	}
@@ -188,7 +198,17 @@ func resolveVersionWithLock(pkgName, version string, lockVersions map[string]str
 		return lockVersion
 	}
 
-	return "latest"
+	return ""
+}
+
+// declaredVersionSpec returns the version specifier a declared version carries,
+// "" when it carries none (the "latest" sentinel).
+func declaredVersionSpec(version string) string {
+	if version == "latest" {
+		return ""
+	}
+
+	return version
 }
 
 func parsePep621Requirement(req string) (name, version string, ok bool) {
@@ -288,12 +308,14 @@ func (p *PoetryPyprojectParser) Parse(manifestFile string) ([]models.Package, er
 
 			name, version, ok := parsePep621Requirement(arrayItem)
 			if ok {
-				resolvedVersion := resolveVersionWithLock(name, version, lockVersions)
+				exact := resolveVersionWithLock(name, version, lockVersions)
+				resolvedVersion, versionSpec := versionspec.Result(exact, declaredVersionSpec(version), p.ReportVersionSpecs)
 				startIdx, endIdx := pyprojectLineIndices(raw, name)
 				packages = append(packages, models.Package{
 					PackageManager: "pypi",
 					PackageName:    name,
 					Version:        resolvedVersion,
+					VersionSpec:    versionSpec,
 					FilePath:       manifestFile,
 					Locations: []models.Location{{
 						Line:       lineNum,
@@ -328,13 +350,15 @@ func (p *PoetryPyprojectParser) Parse(manifestFile string) ([]models.Package, er
 				skipUntilCloseBrace = true
 			}
 
-			resolvedVersion := resolveVersionWithLock(name, version, lockVersions)
+			exact := resolveVersionWithLock(name, version, lockVersions)
+			resolvedVersion, versionSpec := versionspec.Result(exact, declaredVersionSpec(version), p.ReportVersionSpecs)
 
 			startIdx, endIdx := pyprojectLineIndices(raw, name)
 			packages = append(packages, models.Package{
 				PackageManager: "pypi",
 				PackageName:    name,
 				Version:        resolvedVersion,
+				VersionSpec:    versionSpec,
 				FilePath:       manifestFile,
 				Locations: []models.Location{{
 					Line:       lineNum,
@@ -355,12 +379,14 @@ func (p *PoetryPyprojectParser) Parse(manifestFile string) ([]models.Package, er
 				for _, part := range parts {
 					name, version, ok := parsePep621Requirement(part)
 					if ok {
-						resolvedVersion := resolveVersionWithLock(name, version, lockVersions)
+						exact := resolveVersionWithLock(name, version, lockVersions)
+						resolvedVersion, versionSpec := versionspec.Result(exact, declaredVersionSpec(version), p.ReportVersionSpecs)
 						startIdx, endIdx := pyprojectLineIndices(raw, name)
 						packages = append(packages, models.Package{
 							PackageManager: "pypi",
 							PackageName:    name,
 							Version:        resolvedVersion,
+							VersionSpec:    versionSpec,
 							FilePath:       manifestFile,
 							Locations: []models.Location{{
 								Line:       lineNum,

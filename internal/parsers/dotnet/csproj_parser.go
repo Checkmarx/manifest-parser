@@ -8,11 +8,26 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/Checkmarx/manifest-parser/internal/versionspec"
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
 
 // DotnetCsprojParser implements parsing of .NET project files (.csproj)
-type DotnetCsprojParser struct{}
+type DotnetCsprojParser struct {
+	// ReportVersionSpecs sets Package.VersionSpec to the declared range when no
+	// exact version is known. See parser.WithVersionSpecs.
+	ReportVersionSpecs bool
+}
+
+// nugetVersion returns the Version and VersionSpec of a declared NuGet version:
+// the exact version when the declaration names one, else "latest" with the
+// declared range when reportSpecs is set. A missing version, a range, a
+// wildcard or an unresolved MSBuild property is "latest".
+func nugetVersion(declared string, reportSpecs bool) (version, versionSpec string) {
+	exact, spec := versionspec.Classify("nuget", declared)
+
+	return versionspec.Result(exact, spec, reportSpecs)
+}
 
 // PackageReference represents a package reference in the .csproj file
 type PackageReference struct {
@@ -24,30 +39,6 @@ type PackageReference struct {
 // PackageReferenceTag is the XML tag for package references in .csproj files
 const PackageReferenceTag = "PackageReference"
 
-// parseVersion handles version resolution
-// - Returns exact version if specified
-// - Returns "latest" for version ranges or special version specifiers
-func parseVersion(version string) string {
-	// Handle empty version
-	if version == "" {
-		return "latest"
-	}
-
-	// If the version contains any kind of brackets, return "latest"
-	if strings.ContainsAny(version, "[]()") {
-		return "latest"
-	}
-
-	// Handle special version specifiers
-	if strings.ContainsAny(version, "*^~><") {
-		return "latest"
-	}
-
-	// Return exact version
-	return version
-}
-
-// computeLocations calculates all locations for a PackageReference element
 func computeLocations(lines []string, startLine int) []models.Location {
 	var locations []models.Location
 	currentLine := lines[startLine]
@@ -178,10 +169,12 @@ func (p *DotnetCsprojParser) Parse(manifestFile string) ([]models.Package, error
 				}
 
 				// Create package entry
+				resolved, versionSpec := nugetVersion(version, p.ReportVersionSpecs)
 				packages = append(packages, models.Package{
 					PackageManager: "nuget",
 					PackageName:    pkgRef.Include,
-					Version:        parseVersion(version),
+					Version:        resolved,
+					VersionSpec:    versionSpec,
 					FilePath:       manifestFile,
 					Locations:      locations,
 				})

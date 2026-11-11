@@ -11,7 +11,11 @@ import (
 )
 
 // VersionCatalogParser implements parsing of Gradle version catalogs (libs.versions.toml)
-type VersionCatalogParser struct{}
+type VersionCatalogParser struct {
+	// ReportVersionSpecs sets Package.VersionSpec to the declared range when no
+	// exact version is known. See parser.WithVersionSpecs.
+	ReportVersionSpecs bool
+}
 
 // Parse implements the Parser interface for version catalog files
 func (p *VersionCatalogParser) Parse(manifestFile string) ([]models.Package, error) {
@@ -25,14 +29,12 @@ func (p *VersionCatalogParser) Parse(manifestFile string) ([]models.Package, err
 	// Convert catalog libraries to packages
 	for _, lib := range catalog.Libraries {
 		if lib.Group != "" && lib.Name != "" {
-			version := lib.Version
-			if version == "" {
-				version = "latest"
-			}
+			version, versionSpec := gradleVersion(lib.Version, p.ReportVersionSpecs)
 			packages = append(packages, models.Package{
 				PackageManager: "gradle",
 				PackageName:    lib.Group + ":" + lib.Name,
 				Version:        version,
+				VersionSpec:    versionSpec,
 				FilePath:       manifestFile,
 				Locations: []models.Location{{
 					Line:       lib.Line,
@@ -231,7 +233,7 @@ func catalogKeyToDependency(ref string, catalog *VersionCatalog) *CatalogLibrary
 }
 
 // parseVersionCatalogDependencies extracts dependencies from version catalog references in content
-func parseVersionCatalogDependencies(content string, catalog *VersionCatalog) []models.Package {
+func parseVersionCatalogDependencies(content string, catalog *VersionCatalog, reportSpecs bool) []models.Package {
 	if catalog == nil {
 		return nil
 	}
@@ -262,14 +264,12 @@ func parseVersionCatalogDependencies(content string, catalog *VersionCatalog) []
 				lib := catalogKeyToDependency(ref, catalog)
 				if lib != nil && lib.Group != "" && lib.Name != "" {
 					startIdx, endIdx := lineExtent(stripInlineComment(raw))
-					version := lib.Version
-					if version == "" {
-						version = "latest"
-					}
+					version, versionSpec := gradleVersion(lib.Version, reportSpecs)
 					packages = append(packages, models.Package{
 						PackageManager: "gradle",
 						PackageName:    lib.Group + ":" + lib.Name,
 						Version:        version,
+						VersionSpec:    versionSpec,
 						Locations: []models.Location{{
 							Line:       i,
 							StartIndex: startIdx,

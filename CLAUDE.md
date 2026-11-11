@@ -95,7 +95,7 @@ type Parser interface {
 }
 ```
 
-**`ParsersFactory`** ([pkg/parser/parser_factory.go](pkg/parser/parser_factory.go)) — the **only** public entry point. Returns a concrete `Parser` for the given filename, or `nil` for unsupported files.
+**`ParsersFactory`** ([pkg/parser/parser_factory.go](pkg/parser/parser_factory.go)) — the **only** public entry point. Returns a concrete `Parser` for the given filename, or `nil` for unsupported files. `ParsersFactoryWithOptions(manifest, opts...)` is the same with options; `parser.WithVersionSpecs()` ([pkg/parser/options.go](pkg/parser/options.go)) turns on `Package.VersionSpec`. `ParsersFactory` is `ParsersFactoryWithOptions` with no options.
 
 **`Package` / `Location` structs** ([pkg/parser/models/package_model.go](pkg/parser/models/package_model.go)):
 ```go
@@ -103,6 +103,7 @@ type Package struct {
     PackageManager string
     PackageName    string
     Version        string
+    VersionSpec    string // declared range, only with WithVersionSpecs; omitted from JSON when empty
     FilePath       string
     Locations      []Location
 }
@@ -150,7 +151,8 @@ Per-ecosystem parsers live under [internal/parsers/](internal/parsers/):
 - **Unresolvable or ranged versions resolve to the literal string `"latest"`**, never an empty string. Callers branch on this value.
 - **`PackageManager` strings are part of the contract**: `"gradle"`, `"mvn"`, `"npm"`, `"pypi"`, `"go"`, `"nuget"`, `"sbt"`, `"pub"`, `"swift"`, `"cocoapods"`, `"carthage"`, `"packagist"`, `"rubygems"`. Don't rename them.
 - Maven emits one `Location` per **non-comment line** of the `<dependency>` block (open tag, each child element, close tag). Single-line `Locations` for Maven would be a regression.
-- Do not add `ParsersFactory` overloads or alternative entry points without coordinating with AST-CLI.
+- Do not add `ParsersFactory` overloads or alternative entry points without coordinating with AST-CLI. `ParsersFactoryWithOptions` and `WithVersionSpecs` are such a change: coordinate before merging them.
+- `internal/versionspec` is where version classification lives (exact, range, or neither) and what `Version`/`VersionSpec` a parser reports. Parsers call it instead of deciding locally.
 - **Do not modify or rename existing `PackageManager` strings**. AST-CLI and Checkmarx One SCA branch on these values — a silent rename breaks downstream parsing with no compile-time error. If a rename is genuinely required, stop and confirm with the user.
 - All Python parsers (`pypi/`, `poetry/`, `setuptools/`) return `PackageManager` = `"pypi"` because all Python packages ultimately live on PyPI regardless of the tool that declared them. Do not introduce separate strings like `"poetry"` or `"setuptools"`.
 - `bower/` deliberately returns `PackageManager` = `"npm"`, not `"bower"` — this is intentional (Bower packages are JS-ecosystem packages), not an oversight. Don't "fix" it without confirming with the user first.

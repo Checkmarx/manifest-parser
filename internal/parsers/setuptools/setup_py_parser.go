@@ -5,36 +5,23 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/Checkmarx/manifest-parser/internal/versionspec"
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
 
-type SetupPyParser struct{}
+type SetupPyParser struct {
+	// ReportVersionSpecs sets Package.VersionSpec to the declared range when no
+	// exact version is known. See parser.WithVersionSpecs.
+	ReportVersionSpecs bool
+}
 
 type depWithPosition struct {
 	name       string
-	version    string
+	exact      string
+	declared   string
 	lineNum    int
 	startIndex int
 	endIndex   int
-}
-
-func extractVersionPy(line string) string {
-	var version string
-	switch {
-	case strings.Contains(line, "=="):
-		parts := strings.SplitN(line, "==", 2)
-		if len(parts) == 2 {
-			version = strings.TrimSpace(parts[1])
-			if strings.Contains(version, "*") {
-				version = "latest"
-			}
-		} else {
-			version = "latest"
-		}
-	default:
-		version = "latest"
-	}
-	return version
 }
 
 func extractPackageNamePy(line string, re *regexp.Regexp) (string, bool) {
@@ -148,13 +135,14 @@ func extractDepsFromListContent(content string, fullText string, searchStartPos 
 			continue
 		}
 
-		version := extractVersionPy(depLine)
+		exact, declared := versionspec.PEP508Version(depLine)
 
 		lineNum, startIdx, endIdx := findPositionInFile(fullText, m.dep, searchStartPos)
 
 		deps = append(deps, depWithPosition{
 			name:       pkgName,
-			version:    version,
+			exact:      exact,
+			declared:   declared,
 			lineNum:    lineNum,
 			startIndex: startIdx,
 			endIndex:   endIdx,
@@ -282,10 +270,12 @@ func (p *SetupPyParser) Parse(manifestFile string) ([]models.Package, error) {
 		keyPosInText := strings.Index(text, key+"=")
 		deps := extractDependencies(setupContent, key, text, keyPosInText)
 		for _, dep := range deps {
+			version, versionSpec := versionspec.Result(dep.exact, dep.declared, p.ReportVersionSpecs)
 			packages = append(packages, models.Package{
 				PackageManager: "pypi",
 				PackageName:    dep.name,
-				Version:        dep.version,
+				Version:        version,
+				VersionSpec:    versionSpec,
 				FilePath:       manifestFile,
 				Locations: []models.Location{{
 					Line:       dep.lineNum,
@@ -310,10 +300,12 @@ func (p *SetupPyParser) Parse(manifestFile string) ([]models.Package, error) {
 					extrasStartInText := strings.Index(text, "extras_require")
 					deps := extractDepsFromListContent(dictContent, text, extrasStartInText)
 					for _, dep := range deps {
+						version, versionSpec := versionspec.Result(dep.exact, dep.declared, p.ReportVersionSpecs)
 						packages = append(packages, models.Package{
 							PackageManager: "pypi",
 							PackageName:    dep.name,
-							Version:        dep.version,
+							Version:        version,
+							VersionSpec:    versionSpec,
 							FilePath:       manifestFile,
 							Locations: []models.Location{{
 								Line:       dep.lineNum,

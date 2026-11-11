@@ -13,7 +13,11 @@ import (
 
 // DotnetDirectoryPackagesPropsParser implements parsing of Directory.Packages.props files
 // These files are used for central package management in .NET projects
-type DotnetDirectoryPackagesPropsParser struct{}
+type DotnetDirectoryPackagesPropsParser struct {
+	// ReportVersionSpecs sets Package.VersionSpec to the declared range when no
+	// exact version is known. See parser.WithVersionSpecs.
+	ReportVersionSpecs bool
+}
 
 // PackageVersion represents a <PackageVersion> element in Directory.Packages.props
 type PackageVersion struct {
@@ -24,31 +28,6 @@ type PackageVersion struct {
 
 const PackageVersionTag = "PackageVersion"
 
-// parseVersionProps handles version resolution for Directory.Packages.props
-// Returns:
-// - Exact version if specified
-// - "latest" for version ranges or special version specifiers
-func parseVersionProps(version string) string {
-	// Handle empty version
-	if version == "" {
-		return "latest"
-	}
-
-	// If the version contains any kind of brackets, return "latest"
-	if strings.ContainsAny(version, "[]()") {
-		return "latest"
-	}
-
-	// Handle special version specifiers
-	if strings.ContainsAny(version, "*^~><") {
-		return "latest"
-	}
-
-	// Return exact version
-	return version
-}
-
-// computePackageVersionLocations calculates all locations for a PackageVersion element
 func computePackageVersionLocations(lines []string, startLine int) []models.Location {
 	// Handle empty lines or invalid start line
 	if len(lines) == 0 || startLine < 0 || startLine >= len(lines) {
@@ -183,10 +162,12 @@ func (p *DotnetDirectoryPackagesPropsParser) Parse(manifestFile string) ([]model
 				}
 
 				// Create package entry
+				resolved, versionSpec := nugetVersion(version, p.ReportVersionSpecs)
 				packages = append(packages, models.Package{
 					PackageManager: "nuget",
 					PackageName:    pkgVer.Include,
-					Version:        parseVersionProps(version),
+					Version:        resolved,
+					VersionSpec:    versionSpec,
 					FilePath:       manifestFile,
 					Locations:      locations,
 				})

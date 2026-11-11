@@ -697,7 +697,8 @@ All parsers return a standardized `Package` structure:
 type Package struct {
     PackageManager string      // "gradle", "maven", "npm", "go", "dotnet", "pip"
     PackageName    string      // "group:name" or "name"
-    Version        string      // "1.2.3"
+    Version        string      // "1.2.3", or "latest" when no exact version is known
+    VersionSpec    string      // "^1.2.3", "[1.0,2.0)": the declared range, only with WithVersionSpecs
     FilePath       string      // Path to manifest file
     Locations      []Location  // Line numbers
 }
@@ -708,6 +709,39 @@ type Location struct {
     EndIndex   int            // Character offset
 }
 ```
+
+### Declared version ranges
+
+A dependency with no exact version (a range, a wildcard, a tag) reports
+`Version: "latest"`. Build the parser with `parser.WithVersionSpecs()` to also
+get the range as written in the manifest, in `VersionSpec`:
+
+```go
+p := parser.ParsersFactoryWithOptions("package.json", parser.WithVersionSpecs())
+```
+
+The CLI takes the same option as `-version-specs`. `VersionSpec` is only filled
+for npm, PyPI, Maven, Gradle and NuGet manifests; other parsers ignore the
+option. It is never set alongside an exact `Version`, and it is left out of JSON
+when empty.
+
+### Behaviour changes
+
+Values that were reported as exact versions but aren't now report `"latest"`
+(their range is in `VersionSpec` when the option is on):
+
+- npm: `1.x`, `1.2.x`, `1 || 2`, `1.0` (not a full semver), `file:`, `git+`,
+  `github:`, `workspace:`, `npm:` aliases.
+- PyPI: `pkg==1.0,<2` (was `1.0,<2`).
+- Maven: `LATEST`, `RELEASE`, a `${property}` that doesn't resolve (was the
+  literal `${property}`). A partly interpolated version such as `1.${x}` is
+  resolved where `x` is defined.
+- Gradle: `1.+`, `[2.0,3.0)` and `latest.release` in a version catalog (were
+  verbatim); an unresolved `$variable`, and a bare identifier used as a
+  version (was the identifier's name).
+
+In `setup.py` and `setup.cfg`, environment markers (`; python_version < "3.8"`)
+and inline comments no longer end up in a version.
 
 ### JSON Output Example
 
