@@ -7,13 +7,18 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/Checkmarx/manifest-parser/internal/versionspec"
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
 
 // PoetryPyprojectParser parses pyproject.toml: Poetry's own tables, plus the
 // PEP 621/735 sections uv (and other PEP 621 tools) use — uv has no manifest
 // format of its own, so it has no dedicated parser.
-type PoetryPyprojectParser struct{}
+type PoetryPyprojectParser struct {
+	// ReportVersionSpecs sets Package.VersionSpec to the declared range when no
+	// exact version is known. See parser.WithVersionSpecs.
+	ReportVersionSpecs bool
+}
 
 var (
 	groupDepSectionRe         = regexp.MustCompile(`^\[tool\.poetry\.group\.[^.]+\.dependencies\]$`)
@@ -191,6 +196,16 @@ func resolveVersionWithLock(pkgName, version string, lockVersions map[string]str
 	return "latest"
 }
 
+// declaredVersionSpec returns the version specifier a declared version carries,
+// "" when it carries none (the "latest" sentinel).
+func declaredVersionSpec(version string) string {
+	if version == "latest" {
+		return ""
+	}
+
+	return version
+}
+
 func parsePep621Requirement(req string) (name, version string, ok bool) {
 	req = strings.TrimSpace(req)
 	if strings.HasPrefix(req, "{") {
@@ -294,6 +309,7 @@ func (p *PoetryPyprojectParser) Parse(manifestFile string) ([]models.Package, er
 					PackageManager: "pypi",
 					PackageName:    name,
 					Version:        resolvedVersion,
+					VersionSpec:    versionspec.Spec(declaredVersionSpec(version), resolvedVersion, p.ReportVersionSpecs),
 					FilePath:       manifestFile,
 					Locations: []models.Location{{
 						Line:       lineNum,
@@ -335,6 +351,7 @@ func (p *PoetryPyprojectParser) Parse(manifestFile string) ([]models.Package, er
 				PackageManager: "pypi",
 				PackageName:    name,
 				Version:        resolvedVersion,
+				VersionSpec:    versionspec.Spec(declaredVersionSpec(version), resolvedVersion, p.ReportVersionSpecs),
 				FilePath:       manifestFile,
 				Locations: []models.Location{{
 					Line:       lineNum,
@@ -361,6 +378,7 @@ func (p *PoetryPyprojectParser) Parse(manifestFile string) ([]models.Package, er
 							PackageManager: "pypi",
 							PackageName:    name,
 							Version:        resolvedVersion,
+							VersionSpec:    versionspec.Spec(declaredVersionSpec(version), resolvedVersion, p.ReportVersionSpecs),
 							FilePath:       manifestFile,
 							Locations: []models.Location{{
 								Line:       lineNum,

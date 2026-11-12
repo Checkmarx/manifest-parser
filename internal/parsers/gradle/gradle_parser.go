@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/Checkmarx/manifest-parser/internal/versionspec"
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
 
@@ -21,7 +22,11 @@ var configKeywords = `\w*implementation|\w*api|\w*compileonly|\w*runtimeonly|` +
 	`classpath|lintchecks`
 
 // GradleParser implements parsing of Gradle build files
-type GradleParser struct{}
+type GradleParser struct {
+	// ReportVersionSpecs sets Package.VersionSpec to the declared range when no
+	// exact version is known. See parser.WithVersionSpecs.
+	ReportVersionSpecs bool
+}
 
 // Parse implements the Parser interface for Gradle build files
 func (p *GradleParser) Parse(manifestFile string) ([]models.Package, error) {
@@ -44,7 +49,7 @@ func (p *GradleParser) Parse(manifestFile string) ([]models.Package, error) {
 	var packages []models.Package
 
 	// Parse main dependencies
-	mainDeps := parseDependencies(manifestContent, variables)
+	mainDeps := parseDependencies(manifestContent, variables, p.ReportVersionSpecs)
 	for i := range mainDeps {
 		mainDeps[i].FilePath = manifestFile
 	}
@@ -147,13 +152,13 @@ type rawLineInfo struct {
 }
 
 // parseDependencies parses dependencies from the content
-func parseDependencies(content string, variables map[string]string) []models.Package {
+func parseDependencies(content string, variables map[string]string, reportSpecs bool) []models.Package {
 	var packages []models.Package
 
 	statements := extractDependencyStatements(content)
 	for _, stmt := range statements {
 		locations := computeGradleLocations(stmt.RawLines)
-		for _, pkg := range parseDependencyStatement(stmt.Text, variables) {
+		for _, pkg := range parseDependencyStatement(stmt.Text, variables, reportSpecs) {
 			pkg.Locations = locations
 			packages = append(packages, pkg)
 		}
@@ -280,7 +285,7 @@ func dependencyStatementComplete(statement string) bool {
 	return false
 }
 
-func parseDependencyStatement(statement string, variables map[string]string) []models.Package {
+func parseDependencyStatement(statement string, variables map[string]string, reportSpecs bool) []models.Package {
 	var packages []models.Package
 
 	kw := configKeywords
@@ -312,10 +317,12 @@ func parseDependencyStatement(statement string, variables map[string]string) []m
 			}
 
 			if group != "" && name != "" {
+				cleaned := cleanVersion(version)
 				packages = append(packages, models.Package{
 					PackageManager: "gradle",
 					PackageName:    group + ":" + name,
-					Version:        cleanVersion(version),
+					Version:        cleaned,
+					VersionSpec:    versionspec.Spec(version, cleaned, reportSpecs),
 					FilePath:       "",
 					Locations:      []models.Location{{}},
 				})
@@ -324,7 +331,7 @@ func parseDependencyStatement(statement string, variables map[string]string) []m
 	}
 
 	if len(packages) == 0 {
-		if pkg := parseDependencyKeyValue(statement, variables); pkg != nil {
+		if pkg := parseDependencyKeyValue(statement, variables, reportSpecs); pkg != nil {
 			packages = append(packages, *pkg)
 		}
 	}
@@ -332,7 +339,7 @@ func parseDependencyStatement(statement string, variables map[string]string) []m
 	return packages
 }
 
-func parseDependencyKeyValue(statement string, variables map[string]string) *models.Package {
+func parseDependencyKeyValue(statement string, variables map[string]string, reportSpecs bool) *models.Package {
 	fields := map[string]string{}
 
 	patterns := []*regexp.Regexp{
@@ -354,10 +361,13 @@ func parseDependencyKeyValue(statement string, variables map[string]string) *mod
 		return nil
 	}
 
+	cleaned := cleanVersion(fields["version"])
+
 	return &models.Package{
 		PackageManager: "gradle",
 		PackageName:    fields["group"] + ":" + fields["name"],
-		Version:        cleanVersion(fields["version"]),
+		Version:        cleaned,
+		VersionSpec:    versionspec.Spec(fields["version"], cleaned, reportSpecs),
 		FilePath:       "",
 		Locations:      []models.Location{{}},
 	}

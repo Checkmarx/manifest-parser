@@ -154,7 +154,7 @@ dependencies {
 // build.gradle.kts
 subprojects {
     apply(plugin = "java")
-    
+
     dependencies {
         implementation("org.springframework.boot:spring-boot-starter-web")
     }
@@ -697,7 +697,8 @@ All parsers return a standardized `Package` structure:
 type Package struct {
     PackageManager string      // "gradle", "maven", "npm", "go", "dotnet", "pip"
     PackageName    string      // "group:name" or "name"
-    Version        string      // "1.2.3"
+    Version        string      // "1.2.3", or "latest" when no exact version is known
+    VersionSpec    string      // "^1.2.3", "[1.0,2.0)": the declared range, only with WithVersionSpecs
     FilePath       string      // Path to manifest file
     Locations      []Location  // Line numbers
 }
@@ -708,6 +709,25 @@ type Location struct {
     EndIndex   int            // Character offset
 }
 ```
+
+### Declared version ranges
+
+A dependency with no exact version (a range, a wildcard, a tag) reports
+`Version: "latest"`. Build the parser with `parser.WithVersionSpecs()` to also
+get the range as written in the manifest, in `VersionSpec`:
+
+```go
+p := parser.ParsersFactoryWithOptions("package.json", parser.WithVersionSpecs())
+```
+
+The CLI takes the same option as `-version-specs`. `VersionSpec` is only filled
+for npm, PyPI, Maven, Gradle and NuGet manifests; other parsers ignore the
+option. It is only set where `Version` is `"latest"`, and it is left out of JSON
+when empty.
+
+`VersionSpec` is the declaration as written, not a checked range: a package
+that names a source other than a registry (`workspace:*`, `$(Property)`) reports
+that text, and the caller decides what to do with it.
 
 ### JSON Output Example
 

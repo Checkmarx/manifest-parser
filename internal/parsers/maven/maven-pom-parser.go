@@ -6,11 +6,16 @@ import (
 	"os"
 	"strings"
 
+	"github.com/Checkmarx/manifest-parser/internal/versionspec"
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
 
 // MavenPomParser implements parsing of Maven POM files
-type MavenPomParser struct{}
+type MavenPomParser struct {
+	// ReportVersionSpecs sets Package.VersionSpec to the declared range when no
+	// exact version is known. See parser.WithVersionSpecs.
+	ReportVersionSpecs bool
+}
 
 // MavenDependency represents a dependency in the POM file
 type MavenDependency struct {
@@ -44,12 +49,7 @@ type MavenProject struct {
 // and looks up managed versions
 func resolveVersion(raw string, props map[string]string, managedDeps []MavenDependency, groupId, artifactId string) string {
 	// First, resolve property variables
-	if strings.HasPrefix(raw, "${") && strings.HasSuffix(raw, "}") {
-		key := strings.TrimSuffix(strings.TrimPrefix(raw, "${"), "}")
-		if resolved, exists := props[key]; exists {
-			raw = resolved
-		}
-	}
+	raw = resolveProperty(raw, props)
 
 	// If version is empty or contains range chars, try to find in managed dependencies
 	if raw == "" || strings.ContainsAny(raw, "[]()^~*><") {
@@ -61,6 +61,37 @@ func resolveVersion(raw string, props map[string]string, managedDeps []MavenDepe
 			}
 		}
 		return "latest"
+	}
+
+	return raw
+}
+
+// resolveProperty replaces raw with its value in <properties> when raw is a
+// single "${...}" reference to a defined property.
+func resolveProperty(raw string, props map[string]string) string {
+	if strings.HasPrefix(raw, "${") && strings.HasSuffix(raw, "}") {
+		key := strings.TrimSuffix(strings.TrimPrefix(raw, "${"), "}")
+		if resolved, exists := props[key]; exists {
+			return resolved
+		}
+	}
+
+	return raw
+}
+
+// declaredVersion returns the version a dependency is declared with, for the
+// dependency whose resolveVersion is "latest": the version with its property
+// reference replaced, or the managed version when it has none (or a range). It
+// is "" when the dependency declares no version at all.
+func declaredVersion(raw string, props map[string]string, managedDeps []MavenDependency, groupId, artifactId string) string {
+	raw = resolveProperty(raw, props)
+
+	if raw == "" || strings.ContainsAny(raw, "[]()^~*><") {
+		for _, managedDep := range managedDeps {
+			if managedDep.GroupId == groupId && managedDep.ArtifactId == artifactId && managedDep.Version != "" {
+				return resolveProperty(managedDep.Version, props)
+			}
+		}
 	}
 
 	return raw
@@ -223,11 +254,19 @@ func (p *MavenPomParser) Parse(manifestFile string) ([]models.Package, error) {
 		// Use the enhanced location finding function
 		locations := findDependencyLocations(lines, dep)
 
+		version := resolveVersion(dep.Version, props, project.DependencyManagement.Dependencies, dep.GroupId, dep.ArtifactId)
+
+		var declared string
+		if p.ReportVersionSpecs && version == versionspec.Latest {
+			declared = declaredVersion(dep.Version, props, project.DependencyManagement.Dependencies, dep.GroupId, dep.ArtifactId)
+		}
+
 		// Create package entry
 		packages = append(packages, models.Package{
 			PackageManager: "mvn",
 			PackageName:    dep.GroupId + ":" + dep.ArtifactId,
-			Version:        resolveVersion(dep.Version, props, project.DependencyManagement.Dependencies, dep.GroupId, dep.ArtifactId),
+			Version:        version,
+			VersionSpec:    versionspec.Spec(declared, version, p.ReportVersionSpecs),
 			FilePath:       manifestFile,
 			Locations:      locations,
 		})

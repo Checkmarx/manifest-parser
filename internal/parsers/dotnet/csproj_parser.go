@@ -8,11 +8,16 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/Checkmarx/manifest-parser/internal/versionspec"
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
 
 // DotnetCsprojParser implements parsing of .NET project files (.csproj)
-type DotnetCsprojParser struct{}
+type DotnetCsprojParser struct {
+	// ReportVersionSpecs sets Package.VersionSpec to the declared range when no
+	// exact version is known. See parser.WithVersionSpecs.
+	ReportVersionSpecs bool
+}
 
 // PackageReference represents a package reference in the .csproj file
 type PackageReference struct {
@@ -182,6 +187,7 @@ func (p *DotnetCsprojParser) Parse(manifestFile string) ([]models.Package, error
 					PackageManager: "nuget",
 					PackageName:    pkgRef.Include,
 					Version:        parseVersion(version),
+					VersionSpec:    versionspec.Spec(version, parseVersion(version), p.ReportVersionSpecs),
 					FilePath:       manifestFile,
 					Locations:      locations,
 				})

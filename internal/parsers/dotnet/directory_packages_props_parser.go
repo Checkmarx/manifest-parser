@@ -8,12 +8,17 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/Checkmarx/manifest-parser/internal/versionspec"
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
 
 // DotnetDirectoryPackagesPropsParser implements parsing of Directory.Packages.props files
 // These files are used for central package management in .NET projects
-type DotnetDirectoryPackagesPropsParser struct{}
+type DotnetDirectoryPackagesPropsParser struct {
+	// ReportVersionSpecs sets Package.VersionSpec to the declared range when no
+	// exact version is known. See parser.WithVersionSpecs.
+	ReportVersionSpecs bool
+}
 
 // PackageVersion represents a <PackageVersion> element in Directory.Packages.props
 type PackageVersion struct {
@@ -187,6 +192,7 @@ func (p *DotnetDirectoryPackagesPropsParser) Parse(manifestFile string) ([]model
 					PackageManager: "nuget",
 					PackageName:    pkgVer.Include,
 					Version:        parseVersionProps(version),
+					VersionSpec:    versionspec.Spec(version, parseVersionProps(version), p.ReportVersionSpecs),
 					FilePath:       manifestFile,
 					Locations:      locations,
 				})
