@@ -12,12 +12,19 @@ const Latest = "latest"
 // never unless the caller asked for it.
 //
 // declared is reported as written: it is not checked to be a range. A package
-// with no declared version, or one that names a source other than a registry,
-// reports whatever the file says, and the caller sorts it out.
+// that names a source other than a registry reports whatever the file says,
+// and the caller sorts it out. The one value it never reports is Latest: a
+// file that declares "latest" names no range, so it is the same as declaring
+// nothing.
 func Spec(declared, version string, reportSpecs bool) string {
 	if !reportSpecs || version != Latest {
 		return ""
 	}
 
-	return strings.TrimSpace(declared)
+	declared = strings.TrimSpace(declared)
+	if declared == Latest {
+		return ""
+	}
+
+	return declared
 }

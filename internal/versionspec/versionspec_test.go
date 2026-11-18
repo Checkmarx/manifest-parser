@@ -15,6 +15,8 @@ func TestSpec(t *testing.T) {
 		{"not reported by default", "^1.0.0", Latest, false, ""},
 		{"never next to an exact version", "1.0.0", "1.0.0", true, ""},
 		{"nothing declared", "", Latest, true, ""},
+		{"declared latest is not a range", Latest, Latest, true, ""},
+		{"declared latest, padded", " latest ", Latest, true, ""},
 	}
 
 	for _, tt := range tests {

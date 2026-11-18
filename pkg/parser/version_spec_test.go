@@ -25,7 +25,7 @@ var versionFixtures = []struct {
 	{
 		file: "package.json",
 		content: `{"dependencies": {"exact": "4.0.0", "caret": "^4.0.0", "x": "1.x",
-  "file": "file:../langchain", "git": "git+https://github.com/x/y.git", "star": "*"}}`,
+  "file": "file:../langchain", "git": "git+https://github.com/x/y.git", "star": "*", "tag": "latest"}}`,
 		want: map[string]want{
 			"exact": {"4.0.0", ""},
 			"caret": {"latest", "^4.0.0"},
@@ -33,6 +33,7 @@ var versionFixtures = []struct {
 			"file":  {"file:../langchain", ""},
 			"git":   {"git+https://github.com/x/y.git", ""},
 			"star":  {"latest", "*"},
+			"tag":   {"latest", ""},
 		},
 	},
 	{
@@ -52,11 +53,13 @@ var versionFixtures = []struct {
 python = "^3.10"
 exact = "4.0.0"
 caret = "^4.0.0"
+tag = "latest"
 git = { git = "https://github.com/x/y.git" }
 `,
 		want: map[string]want{
 			"exact": {"4.0.0", ""},
 			"caret": {"latest", "^4.0.0"},
+			"tag":   {"latest", ""},
 			"git":   {"latest", ""},
 		},
 	},
@@ -94,12 +97,14 @@ setup(
 <properties><openai.version>0.7.2</openai.version><range>[1.0,2.0)</range></properties>
 <dependencyManagement><dependencies>
 <dependency><groupId>g</groupId><artifactId>managed</artifactId><version>[1.0,2.0)</version></dependency>
+<dependency><groupId>g</groupId><artifactId>own</artifactId><version>[3.0,)</version></dependency>
 </dependencies></dependencyManagement>
 <dependencies>
 <dependency><groupId>g</groupId><artifactId>exact</artifactId><version>4.0.0</version></dependency>
 <dependency><groupId>g</groupId><artifactId>prop</artifactId><version>${openai.version}</version></dependency>
 <dependency><groupId>g</groupId><artifactId>range</artifactId><version>${range}</version></dependency>
 <dependency><groupId>g</groupId><artifactId>managed</artifactId></dependency>
+<dependency><groupId>g</groupId><artifactId>own</artifactId><version>[2.10,2.13)</version></dependency>
 <dependency><groupId>g</groupId><artifactId>none</artifactId></dependency>
 <dependency><groupId>g</groupId><artifactId>latest</artifactId><version>LATEST</version></dependency>
 <dependency><groupId>g</groupId><artifactId>missing</artifactId><version>${missing}</version></dependency>
@@ -109,6 +114,7 @@ setup(
 			"g:prop":    {"0.7.2", ""},
 			"g:range":   {"latest", "[1.0,2.0)"},
 			"g:managed": {"latest", "[1.0,2.0)"},
+			"g:own":     {"latest", "[2.10,2.13)"},
 			"g:none":    {"latest", ""},
 			"g:latest":  {"LATEST", ""},
 			"g:missing": {"${missing}", ""},
@@ -119,12 +125,14 @@ setup(
 		content: "dependencies {\n" +
 			"    implementation 'g:exact:4.0.0'\n" +
 			"    implementation 'g:range:1.+'\n" +
+			"    implementation 'g:tag:latest'\n" +
 			"    implementation 'g:dynamic:latest.release'\n" +
 			"    implementation 'g:unresolved:$undefinedVersion'\n" +
 			"}\n",
 		want: map[string]want{
 			"g:exact":      {"4.0.0", ""},
 			"g:range":      {"latest", "1.+"},
+			"g:tag":        {"latest", ""},
 			"g:dynamic":    {"latest.release", ""},
 			"g:unresolved": {"$undefinedVersion", ""},
 		},
@@ -153,12 +161,14 @@ dynamic = { group = "g", name = "dynamic", version = "1.+" }
 <PackageReference Include="Caret" Version="^4.0.0" />
 <PackageReference Include="Range" Version="[1.0,2.0)" />
 <PackageReference Include="Prop" Version="$(OpenAIVersion)" />
+<PackageReference Include="Tag" Version="latest" />
 </ItemGroup></Project>`,
 		want: map[string]want{
 			"Exact": {"4.0.0", ""},
 			"Caret": {"latest", "^4.0.0"},
 			"Range": {"latest", "[1.0,2.0)"},
 			"Prop":  {"latest", "$(OpenAIVersion)"},
+			"Tag":   {"latest", ""},
 		},
 	},
 	{
