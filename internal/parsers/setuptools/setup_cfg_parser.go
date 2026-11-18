@@ -6,10 +6,15 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/Checkmarx/manifest-parser/internal/versionspec"
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
 
-type SetupCfgParser struct{}
+type SetupCfgParser struct {
+	// ReportVersionSpecs sets Package.VersionSpec to the declared range when no
+	// exact version is known. See parser.WithVersionSpecs.
+	ReportVersionSpecs bool
+}
 
 func extractVersion(line string) string {
 	var version string
@@ -113,6 +118,7 @@ func (p *SetupCfgParser) Parse(manifestFile string) ([]models.Package, error) {
 						PackageManager: "pypi",
 						PackageName:    pkgName,
 						Version:        version,
+						VersionSpec:    versionspec.Spec(versionspec.RequirementSpec(depLine), version, p.ReportVersionSpecs),
 						FilePath:       manifestFile,
 						Locations: []models.Location{{
 							Line:       lineNum,
@@ -146,6 +152,7 @@ func (p *SetupCfgParser) Parse(manifestFile string) ([]models.Package, error) {
 									PackageManager: "pypi",
 									PackageName:    pkgName,
 									Version:        version,
+									VersionSpec:    versionspec.Spec(versionspec.RequirementSpec(depLine), version, p.ReportVersionSpecs),
 									FilePath:       manifestFile,
 									Locations: []models.Location{{
 										Line:       lineNum,

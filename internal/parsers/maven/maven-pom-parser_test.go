@@ -349,7 +349,7 @@ func TestParseVersion(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := resolveVersion(tt.version, tt.props, tt.managedDeps, tt.groupId, tt.artifactId)
+			result, _ := resolveVersion(tt.version, tt.props, tt.managedDeps, tt.groupId, tt.artifactId)
 			if result != tt.expected {
 				t.Errorf("resolveVersion(%q, %v, %v, %q, %q) = %q, want %q",
 					tt.version, tt.props, tt.managedDeps, tt.groupId, tt.artifactId,
@@ -507,4 +507,93 @@ func TestMavenPomParser_ParseRealFile(t *testing.T) {
 	}
 
 	testdata.ValidatePackages(t, packages, expectedPackages)
+}
+
+func TestResolveVersionDeclared(t *testing.T) {
+	managed := []MavenDependency{
+		{GroupId: "org.example", ArtifactId: "ranged", Version: "[2.15,)"},
+		{GroupId: "org.example", ArtifactId: "pinned", Version: "1.0.0"},
+		{GroupId: "org.example", ArtifactId: "prop", Version: "${lib.range}"},
+	}
+	props := map[string]string{"lib.range": "[3.0,4.0)", "own.range": "[2.10,2.13)"}
+
+	tests := []struct {
+		name             string
+		version          string
+		artifactId       string
+		expectedVersion  string
+		expectedDeclared string
+	}{
+		{"own range wins over managed range", "[2.10,2.13)", "ranged", "latest", "[2.10,2.13)"},
+		{"own range from property wins over managed range", "${own.range}", "ranged", "latest", "[2.10,2.13)"},
+		{"no version falls back to managed range", "", "ranged", "latest", "[2.15,)"},
+		{"no version falls back to managed range from property", "", "prop", "latest", "[3.0,4.0)"},
+		{"own range with managed pin keeps the managed version", "[1.0,2.0)", "pinned", "1.0.0", "[1.0,2.0)"},
+		{"own range with no managed entry", "[1.0,2.0)", "unmanaged", "latest", "[1.0,2.0)"},
+		{"no version and no managed entry", "", "unmanaged", "latest", ""},
+		{"exact version", "1.2.3", "ranged", "1.2.3", "1.2.3"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			version, declared := resolveVersion(tt.version, props, managed, "org.example", tt.artifactId)
+			if version != tt.expectedVersion || declared != tt.expectedDeclared {
+				t.Errorf("resolveVersion(%q) = (%q, %q), want (%q, %q)",
+					tt.version, version, declared, tt.expectedVersion, tt.expectedDeclared)
+			}
+		})
+	}
+}
+
+func TestMavenPomParser_VersionSpec(t *testing.T) {
+	pom := `<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>g</groupId><artifactId>a</artifactId><version>1</version>
+  <dependencyManagement><dependencies>
+    <dependency><groupId>com.fasterxml.jackson.core</groupId><artifactId>jackson-databind</artifactId><version>[2.15,)</version></dependency>
+    <dependency><groupId>org.slf4j</groupId><artifactId>slf4j-api</artifactId><version>[2.0,)</version></dependency>
+    <dependency><groupId>junit</groupId><artifactId>junit</artifactId><version>4.13.2</version></dependency>
+  </dependencies></dependencyManagement>
+  <dependencies>
+    <dependency><groupId>com.fasterxml.jackson.core</groupId><artifactId>jackson-databind</artifactId><version>[2.10,2.13)</version></dependency>
+    <dependency><groupId>org.slf4j</groupId><artifactId>slf4j-api</artifactId></dependency>
+    <dependency><groupId>junit</groupId><artifactId>junit</artifactId></dependency>
+  </dependencies>
+</project>`
+
+	testFile := filepath.Join(t.TempDir(), "pom.xml")
+	if err := os.WriteFile(testFile, []byte(pom), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	expected := map[string][2]string{
+		"com.fasterxml.jackson.core:jackson-databind": {"latest", "[2.10,2.13)"},
+		"org.slf4j:slf4j-api":                         {"latest", "[2.0,)"},
+		"junit:junit":                                 {"4.13.2", ""},
+	}
+
+	for _, reportSpecs := range []bool{true, false} {
+		pkgs, err := (&MavenPomParser{ReportVersionSpecs: reportSpecs}).Parse(testFile)
+		if err != nil {
+			t.Fatalf("Unexpected error: %v", err)
+		}
+
+		if len(pkgs) != len(expected) {
+			t.Fatalf("got %d packages, want %d", len(pkgs), len(expected))
+		}
+
+		for _, pkg := range pkgs {
+			want := expected[pkg.PackageName]
+
+			wantSpec := want[1]
+			if !reportSpecs {
+				wantSpec = ""
+			}
+
+			if pkg.Version != want[0] || pkg.VersionSpec != wantSpec {
+				t.Errorf("reportSpecs=%v %s: got (%q, %q), want (%q, %q)",
+					reportSpecs, pkg.PackageName, pkg.Version, pkg.VersionSpec, want[0], wantSpec)
+			}
+		}
+	}
 }

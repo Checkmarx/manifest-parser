@@ -8,10 +8,15 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/Checkmarx/manifest-parser/internal/versionspec"
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
 
-type DotnetPackagesConfigParser struct{}
+type DotnetPackagesConfigParser struct {
+	// ReportVersionSpecs sets Package.VersionSpec to the declared range when no
+	// exact version is known. See parser.WithVersionSpecs.
+	ReportVersionSpecs bool
+}
 
 type PackageConfig struct {
 	ID            string `xml:"id,attr"`
@@ -184,6 +189,7 @@ func (p *DotnetPackagesConfigParser) Parse(manifestFile string) ([]models.Packag
 			PackageManager: "nuget",
 			PackageName:    pkg.ID,
 			Version:        parseVersionConfig(version),
+			VersionSpec:    versionspec.Spec(version, parseVersionConfig(version), p.ReportVersionSpecs),
 			FilePath:       manifestFile,
 			Locations:      locations,
 		})
