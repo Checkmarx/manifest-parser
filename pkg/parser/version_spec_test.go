@@ -126,6 +126,10 @@ setup(
 			"    implementation 'g:exact:4.0.0'\n" +
 			"    implementation 'g:range:1.+'\n" +
 			"    implementation 'g:tag:latest'\n" +
+			"    implementation 'g:aar:[1.0,2.0)@aar'\n" +
+			"    implementation 'g:cls:1.+:jdk8'\n" +
+			"    implementation 'g:strict:1.+!!'\n" +
+			"    implementation group: 'g', name: 'kv', version: '2.+'\n" +
 			"    implementation 'g:dynamic:latest.release'\n" +
 			"    implementation 'g:unresolved:$undefinedVersion'\n" +
 			"}\n",
@@ -133,6 +137,10 @@ setup(
 			"g:exact":      {"4.0.0", ""},
 			"g:range":      {"latest", "1.+"},
 			"g:tag":        {"latest", ""},
+			"g:aar":        {"latest", "[1.0,2.0)"},
+			"g:cls":        {"latest", "1.+"},
+			"g:strict":     {"latest", "1.+"},
+			"g:kv":         {"latest", "2.+"},
 			"g:dynamic":    {"latest.release", ""},
 			"g:unresolved": {"$undefinedVersion", ""},
 		},

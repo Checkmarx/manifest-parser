@@ -722,7 +722,9 @@ p := parser.ParsersFactoryWithOptions("package.json", parser.WithVersionSpecs())
 
 The CLI takes the same option as `-version-specs`. `VersionSpec` is only filled
 for npm, PyPI, Maven, Gradle and NuGet manifests; other parsers ignore the
-option. It is only set where `Version` is `"latest"`, and it is left out of JSON
+option. For Gradle it covers the dependencies a build file declares itself:
+version catalogs (`libs.versions.toml` and `libs.x` references) and
+`version { ... }` blocks report no `VersionSpec`. It is only set where `Version` is `"latest"`, and it is left out of JSON
 when empty.
 
 `VersionSpec` is the declaration as written, not a checked range: a package

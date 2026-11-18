@@ -322,7 +322,7 @@ func parseDependencyStatement(statement string, variables map[string]string, rep
 					PackageManager: "gradle",
 					PackageName:    group + ":" + name,
 					Version:        cleaned,
-					VersionSpec:    versionspec.Spec(version, cleaned, reportSpecs),
+					VersionSpec:    versionspec.Spec(declaredVersion(version), cleaned, reportSpecs),
 					FilePath:       "",
 					Locations:      []models.Location{{}},
 				})
@@ -367,7 +367,7 @@ func parseDependencyKeyValue(statement string, variables map[string]string, repo
 		PackageManager: "gradle",
 		PackageName:    fields["group"] + ":" + fields["name"],
 		Version:        cleaned,
-		VersionSpec:    versionspec.Spec(fields["version"], cleaned, reportSpecs),
+		VersionSpec:    versionspec.Spec(declaredVersion(fields["version"]), cleaned, reportSpecs),
 		FilePath:       "",
 		Locations:      []models.Location{{}},
 	}
@@ -409,6 +409,17 @@ func cleanVersion(version string) string {
 	}
 	// For now, keep classifiers as is
 	return version
+}
+
+// declaredVersion returns the version a dependency declares, without what
+// follows it in the notation: a classifier ("1.+:jdk8"), an artifact extension
+// ("[1.0,2.0)@aar") or the strict shorthand ("1.+!!").
+func declaredVersion(version string) string {
+	if i := strings.IndexAny(version, ":@"); i >= 0 {
+		version = version[:i]
+	}
+
+	return strings.TrimSuffix(strings.TrimSpace(version), "!!")
 }
 
 // findLineNumber finds the line number of a substring in content
