@@ -46,24 +46,35 @@ type MavenProject struct {
 }
 
 // resolveVersion replaces ${...} variables from <properties>, handles version ranges,
-// and looks up managed versions
-func resolveVersion(raw string, props map[string]string, managedDeps []MavenDependency, groupId, artifactId string) string {
+// and looks up managed versions. It returns the version, which is "latest" when
+// no exact version is known, and the version as the dependency declares it.
+//
+// A version the dependency declares itself takes precedence over
+// <dependencyManagement>, so the managed version is the declared one only when
+// the dependency declares none. A managed version still decides the resolved
+// version when the dependency's own is a range.
+func resolveVersion(raw string, props map[string]string, managedDeps []MavenDependency, groupId, artifactId string) (version, declared string) {
 	// First, resolve property variables
-	raw = resolveProperty(raw, props)
+	declared = resolveProperty(raw, props)
 
 	// If version is empty or contains range chars, try to find in managed dependencies
-	if raw == "" || strings.ContainsAny(raw, "[]()^~*><") {
+	if declared == "" || strings.ContainsAny(declared, "[]()^~*><") {
 		for _, managedDep := range managedDeps {
 			if managedDep.GroupId == groupId && managedDep.ArtifactId == artifactId {
 				if managedDep.Version != "" {
-					return resolveVersion(managedDep.Version, props, nil, "", "")
+					managedVersion, managedDeclared := resolveVersion(managedDep.Version, props, nil, "", "")
+					if declared == "" {
+						declared = managedDeclared
+					}
+
+					return managedVersion, declared
 				}
 			}
 		}
-		return "latest"
+		return "latest", declared
 	}
 
-	return raw
+	return declared, declared
 }
 
 // resolveProperty replaces raw with its value in <properties> when raw is a
@@ -73,24 +84,6 @@ func resolveProperty(raw string, props map[string]string) string {
 		key := strings.TrimSuffix(strings.TrimPrefix(raw, "${"), "}")
 		if resolved, exists := props[key]; exists {
 			return resolved
-		}
-	}
-
-	return raw
-}
-
-// declaredVersion returns the version a dependency is declared with, for the
-// dependency whose resolveVersion is "latest": the version with its property
-// reference replaced, or the managed version when it has none (or a range). It
-// is "" when the dependency declares no version at all.
-func declaredVersion(raw string, props map[string]string, managedDeps []MavenDependency, groupId, artifactId string) string {
-	raw = resolveProperty(raw, props)
-
-	if raw == "" || strings.ContainsAny(raw, "[]()^~*><") {
-		for _, managedDep := range managedDeps {
-			if managedDep.GroupId == groupId && managedDep.ArtifactId == artifactId && managedDep.Version != "" {
-				return resolveProperty(managedDep.Version, props)
-			}
 		}
 	}
 
@@ -254,12 +247,7 @@ func (p *MavenPomParser) Parse(manifestFile string) ([]models.Package, error) {
 		// Use the enhanced location finding function
 		locations := findDependencyLocations(lines, dep)
 
-		version := resolveVersion(dep.Version, props, project.DependencyManagement.Dependencies, dep.GroupId, dep.ArtifactId)
-
-		var declared string
-		if p.ReportVersionSpecs && version == versionspec.Latest {
-			declared = declaredVersion(dep.Version, props, project.DependencyManagement.Dependencies, dep.GroupId, dep.ArtifactId)
-		}
+		version, declared := resolveVersion(dep.Version, props, project.DependencyManagement.Dependencies, dep.GroupId, dep.ArtifactId)
 
 		// Create package entry
 		packages = append(packages, models.Package{
