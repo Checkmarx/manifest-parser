@@ -2,6 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+
 ## Project Overview
 
 Go module that parses package manifests from multiple ecosystems (Maven, npm, Python, Go, .NET, Gradle, SBT, Dart/Flutter, Swift, CocoaPods, Carthage, PHP/Composer, RubyGems, Bower) and returns each declared dependency along with the **exact line/character range** of its declaration. Consumed by [AST-CLI](https://github.com/Checkmarx/ast-cli) to correlate manifest entries with Checkmarx runtime scans — so the `Locations` field is part of the public contract, not a debugging convenience.
