@@ -266,7 +266,7 @@ func TestParseEnvMarkerWithContinuation(t *testing.T) {
 }
 
 func TestParseViaCommentsIgnored(t *testing.T) {
-	content := "asgiref==3.8.1\n    # via django\ndjango==5.2.13\n    # via sample-app\n"
+	content := "asgiref==3.8.1\n    # via django\ndjango==5.2.19\n    # via sample-app\n"
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "requirements.txt")
 	os.WriteFile(filePath, []byte(content), 0644)
@@ -295,7 +295,7 @@ func TestParseViaCommentsIgnored(t *testing.T) {
 		{
 			PackageManager: "pypi",
 			PackageName:    "django",
-			Version:        "5.2.13",
+			Version:        "5.2.19",
 			FilePath:       filePath,
 			Locations: []models.Location{{
 				Line:       2,
@@ -308,7 +308,7 @@ func TestParseViaCommentsIgnored(t *testing.T) {
 }
 
 func TestParseLineContinuationLocationTracking(t *testing.T) {
-	content := "# comment\nasgiref==3.8.1 \\\n    --hash=sha256:abc123 \\\n    --hash=sha256:def456\ndjango==5.2.13\n"
+	content := "# comment\nasgiref==3.8.1 \\\n    --hash=sha256:abc123 \\\n    --hash=sha256:def456\ndjango==5.2.19\n"
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "requirements.txt")
 	os.WriteFile(filePath, []byte(content), 0644)
@@ -355,7 +355,7 @@ func TestPypiParser_Parse_UvExportFile(t *testing.T) {
 		{
 			PackageManager: "pypi",
 			PackageName:    "django",
-			Version:        "5.2.13",
+			Version:        "5.2.19",
 			FilePath:       filePath,
 			Locations: []models.Location{{
 				Line:       8,
@@ -435,7 +435,7 @@ func TestPypiParser_Parse_PipFreezeFile(t *testing.T) {
 		{
 			PackageManager: "pypi",
 			PackageName:    "Django",
-			Version:        "5.2.13",
+			Version:        "5.2.19",
 			FilePath:       filePath,
 			Locations: []models.Location{{
 				Line:       1,
@@ -493,7 +493,7 @@ func TestPypiParser_Parse_PipCompileFile(t *testing.T) {
 		{
 			PackageManager: "pypi",
 			PackageName:    "django",
-			Version:        "5.2.13",
+			Version:        "5.2.19",
 			FilePath:       filePath,
 			Locations: []models.Location{{
 				Line:       8,

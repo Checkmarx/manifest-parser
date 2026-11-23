@@ -6,7 +6,7 @@ asgiref==3.8.1 \
     # via
     #   django
     #   sample-app
-django==5.2.13 \
+django==5.2.19 \
     --hash=sha256:a5cc92645b8eb50e38cdd2f9e6a12db171c61e3e6172a1a51b85e8ebc2291b42 \
     --hash=sha256:b5bb1d13cfe3b22e8a31d7a0bae2777a9c019a81d59ef4f72c8581f0d3e35f0e
     # via sample-app
