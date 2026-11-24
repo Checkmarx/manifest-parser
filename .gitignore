@@ -10,6 +10,9 @@
 *.test
 *.out
 
+# C# build artifacts
+obj/
+
 # Go modules
 vendor/
 
@@ -32,4 +35,4 @@ Thumbs.db
 
 # Dependency directories
 dep/
-node_modules/ 
+node_modules/

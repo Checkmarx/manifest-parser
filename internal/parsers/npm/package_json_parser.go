@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Checkmarx/manifest-parser/internal/versionspec"
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
 
@@ -42,7 +43,11 @@ type lockFile struct {
 }
 
 // NpmParser extracts packages with position information from package.json
-type NpmPackageJsonParser struct{}
+type NpmPackageJsonParser struct {
+	// ReportVersionSpecs sets Package.VersionSpec to the declared range when no
+	// exact version is known. See parser.WithVersionSpecs.
+	ReportVersionSpecs bool
+}
 
 // Extract line and character positions for a key in JSON within a specific section
 func findPositions(fileContent string, key string, sectionName string) (lineStart, startIndex, endIndex int) {
@@ -168,6 +173,7 @@ func (p *NpmPackageJsonParser) Parse(manifestFile string) ([]models.Package, err
 				PackageManager: "npm",
 				PackageName:    name,
 				Version:        resolvedVersion,
+				VersionSpec:    versionspec.Spec(version, resolvedVersion, p.ReportVersionSpecs),
 				FilePath:       manifestFile,
 				Locations: []models.Location{{
 					Line:       lineStart,

@@ -5,14 +5,20 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/Checkmarx/manifest-parser/internal/versionspec"
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 )
 
-type SetupPyParser struct{}
+type SetupPyParser struct {
+	// ReportVersionSpecs sets Package.VersionSpec to the declared range when no
+	// exact version is known. See parser.WithVersionSpecs.
+	ReportVersionSpecs bool
+}
 
 type depWithPosition struct {
 	name       string
 	version    string
+	spec       string
 	lineNum    int
 	startIndex int
 	endIndex   int
@@ -155,6 +161,7 @@ func extractDepsFromListContent(content string, fullText string, searchStartPos 
 		deps = append(deps, depWithPosition{
 			name:       pkgName,
 			version:    version,
+			spec:       versionspec.RequirementSpec(depLine),
 			lineNum:    lineNum,
 			startIndex: startIdx,
 			endIndex:   endIdx,
@@ -286,6 +293,7 @@ func (p *SetupPyParser) Parse(manifestFile string) ([]models.Package, error) {
 				PackageManager: "pypi",
 				PackageName:    dep.name,
 				Version:        dep.version,
+				VersionSpec:    versionspec.Spec(dep.spec, dep.version, p.ReportVersionSpecs),
 				FilePath:       manifestFile,
 				Locations: []models.Location{{
 					Line:       dep.lineNum,
@@ -314,6 +322,7 @@ func (p *SetupPyParser) Parse(manifestFile string) ([]models.Package, error) {
 							PackageManager: "pypi",
 							PackageName:    dep.name,
 							Version:        dep.version,
+							VersionSpec:    versionspec.Spec(dep.spec, dep.version, p.ReportVersionSpecs),
 							FilePath:       manifestFile,
 							Locations: []models.Location{{
 								Line:       dep.lineNum,

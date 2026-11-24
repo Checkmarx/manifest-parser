@@ -27,7 +27,7 @@ Go module that parses package manifests from multiple ecosystems (Maven, npm, Py
 cmd/                            CLI entry point (main.go)
 pkg/parser/                     Public API
   ├── parser.go                 Parser interface
-  ├── parser_factory.go         ParsersFactory — sole public entry point
+  ├── parser_factory.go         ParsersFactory / ParsersFactoryWithOptions — the public entry points
   ├── manifest-file-selector.go Filename → Manifest enum mapping
   └── models/
       └── package_model.go      Package / Location structs
@@ -95,7 +95,7 @@ type Parser interface {
 }
 ```
 
-**`ParsersFactory`** ([pkg/parser/parser_factory.go](pkg/parser/parser_factory.go)) — the **only** public entry point. Returns a concrete `Parser` for the given filename, or `nil` for unsupported files.
+**`ParsersFactory` and `ParsersFactoryWithOptions`** ([pkg/parser/parser_factory.go](pkg/parser/parser_factory.go)) — are the **only** public entry points. Each returns a concrete `Parser` for the given filename, or `nil` for unsupported files. `ParsersFactoryWithOptions(manifest, opts...)` takes options; `parser.WithVersionSpecs()` ([pkg/parser/options.go](pkg/parser/options.go)) turns on `Package.VersionSpec`. `ParsersFactory` is `ParsersFactoryWithOptions` with no options, so its signature and output are unchanged for existing callers such as AST-CLI.
 
 **`Package` / `Location` structs** ([pkg/parser/models/package_model.go](pkg/parser/models/package_model.go)):
 ```go
@@ -103,6 +103,7 @@ type Package struct {
     PackageManager string
     PackageName    string
     Version        string
+    VersionSpec    string // declared range, only with WithVersionSpecs; omitted from JSON when empty
     FilePath       string
     Locations      []Location
 }
@@ -150,7 +151,8 @@ Per-ecosystem parsers live under [internal/parsers/](internal/parsers/):
 - **Unresolvable or ranged versions resolve to the literal string `"latest"`**, never an empty string. Callers branch on this value.
 - **`PackageManager` strings are part of the contract**: `"gradle"`, `"mvn"`, `"npm"`, `"pypi"`, `"go"`, `"nuget"`, `"sbt"`, `"pub"`, `"swift"`, `"cocoapods"`, `"carthage"`, `"packagist"`, `"rubygems"`. Don't rename them.
 - Maven emits one `Location` per **non-comment line** of the `<dependency>` block (open tag, each child element, close tag). Single-line `Locations` for Maven would be a regression.
-- Do not add `ParsersFactory` overloads or alternative entry points without coordinating with AST-CLI.
+- `ParsersFactory` and `ParsersFactoryWithOptions` are the only entry points, and `ParsersFactory` must keep its signature and output. Do not add further overloads or alternative entry points without coordinating with AST-CLI.
+- `Package.VersionSpec` is opt-in (`WithVersionSpecs`) and only set where `Version` is `"latest"`; `internal/versionspec.Spec` applies that rule, so parsers call it instead of deciding locally. A declared `"latest"` is not a range, so `Spec` returns `""` for it. It covers npm, PyPI (`pypi/`, `poetry/`, `setuptools/`), Maven, Gradle and NuGet; for Gradle only the dependencies `build.gradle` / `build.gradle.kts` declare themselves, not version catalog entries (`libs.versions.toml` and `libs.x` references) or `version { ... }` blocks. A Gradle spec stops at the version: classifiers (`:jdk8`), extensions (`@aar`) and the `!!` shorthand are not part of it. Adding it must not change `Version`: a parser that passes a non-exact value through as the version (npm `1.x`, Maven `LATEST`) keeps doing so, and the caller sorts it out.
 - **Do not modify or rename existing `PackageManager` strings**. AST-CLI and Checkmarx One SCA branch on these values — a silent rename breaks downstream parsing with no compile-time error. If a rename is genuinely required, stop and confirm with the user.
 - All Python parsers (`pypi/`, `poetry/`, `setuptools/`) return `PackageManager` = `"pypi"` because all Python packages ultimately live on PyPI regardless of the tool that declared them. Do not introduce separate strings like `"poetry"` or `"setuptools"`.
 - `bower/` deliberately returns `PackageManager` = `"npm"`, not `"bower"` — this is intentional (Bower packages are JS-ecosystem packages), not an oversight. Don't "fix" it without confirming with the user first.
@@ -274,7 +276,7 @@ N/A — this is a Go library consumed via `go get github.com/Checkmarx/manifest-
 - `gofmt` and `go vet` clean — CI will fail otherwise.
 - Exported identifiers live in `pkg/`; internal logic lives in `internal/`. Do not add exported symbols to `internal/`.
 - Parser packages follow the naming layout: `internal/parsers/<ecosystem>/<ecosystem>_parser.go` + `<ecosystem>_parser_test.go`.
-- No global state in parsers — each concrete parser type is a stateless zero-value struct.
+- No global state in parsers — each concrete parser type is a plain struct whose zero value works, with no state kept between `Parse` calls. The only configuration is the `ReportVersionSpecs` flag that `ParsersFactoryWithOptions` sets.
 - When splitting file content into lines, always strip `\r` to handle CRLF files on Windows: `strings.TrimRight(line, "\r")`. Failing to do so causes `len(line)` to return one extra byte, producing off-by-one `EndIndex` values.
 
 ## Debugging Steps
